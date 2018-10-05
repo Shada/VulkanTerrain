@@ -1,0 +1,8 @@
+*.out
+GPATH
+GRTAGS
+GTAGS
+suppress.supp
+.valgrindrc
+.vscode
+.git
