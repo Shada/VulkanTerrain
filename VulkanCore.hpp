@@ -1,3 +1,5 @@
+#include <unistd.h>
+#include "vulkan/vk_sdk_platform.h"
 #include <vulkan/vulkan.h>
 #include <vector>
 #include <memory>
@@ -151,6 +153,7 @@ namespace Tobi
             VkPipelineLayout pipelineLayout;
 
             VkRenderPass renderPass;
+            VkPipelineShaderStageCreateInfo shaderStages[2];
 
     };
 

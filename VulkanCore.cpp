@@ -87,7 +87,7 @@ namespace Tobi
         if(instance)
             vkDestroyInstance(instance, nullptr);
     }
-static const char *vertShaderText =
+static const char *vertexShaderText =
     "#version 400\n"
     "#extension GL_ARB_separate_shader_objects : enable\n"
     "#extension GL_ARB_shading_language_420pack : enable\n"
@@ -102,7 +102,7 @@ static const char *vertShaderText =
     "   gl_Position = myBufferVals.mvp * pos;\n"
     "}\n";
 
-static const char *fragShaderText =
+static const char *fragmentShaderText =
     "#version 400\n"
     "#extension GL_ARB_separate_shader_objects : enable\n"
     "#extension GL_ARB_shading_language_420pack : enable\n"
@@ -189,7 +189,7 @@ static const Vertex cubeData[] = {
         initUniformBuffer();
         initDescriptorAndPipelineLayouts(false);
         initRenderpass(depthPresent);
-        initShaders(vertShaderText, fragShaderText);
+        initShaders(vertexShaderText, fragmentShaderText);
         initFrameBuffers(depthPresent);
         initVertexBuffer(cubeData, sizeof(cubeData), sizeof(cubeData[0]), false);
         initDescriptorPool(false);
@@ -1091,9 +1091,23 @@ static const Vertex cubeData[] = {
         res = vkCreateRenderPass(device, &renderPassCreateInfo, NULL, &renderPass);
         assert(res == VK_SUCCESS);
     }
+ 
 
     void VulkanCore::initShaders(const char *vertexShaderText, const char *fragmentShaderText)
-    {}
+    { 
+        VkResult U_ASSERT_ONLY res = VK_SUCCESS;
+        bool U_ASSERT_ONLY retVal = true;
+
+        // If no shaders were submitted, just return
+        if (!(vertexShaderText || fragmentShaderText)) 
+        {
+            std::cout << "shaders not complete" << std::endl;
+            return;
+        }
+
+        // load the shaders here. not sure how to use glslang though, so use some nice wrapper or other good method
+    }
+
     void VulkanCore::initFrameBuffers(bool includeDepth)
     {}
     void VulkanCore::initVertexBuffer(const void *vertexData, uint32_t dataSize, uint32_t dataStride, bool useTexture)
