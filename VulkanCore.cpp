@@ -41,6 +41,11 @@ namespace Tobi
     }
     VulkanCore::~VulkanCore()
     {
+        if(shaderStages[0].module)
+            vkDestroyShaderModule(device, shaderStages[0].module, nullptr);
+        if(shaderStages[1].module)
+            vkDestroyShaderModule(device, shaderStages[1].module, nullptr);
+
         if(renderPass)
             vkDestroyRenderPass(device, renderPass, nullptr);
         if(pipelineLayout)
@@ -165,11 +170,11 @@ static const Vertex cubeData[] = {
 
     void VulkanCore::initVulkan()
     {
-        auto res = initGlobalLayerProperties();
-        if(res != VK_SUCCESS)
+        auto result = initGlobalLayerProperties();
+        if(result != VK_SUCCESS)
         {
             std::cout << "Failed to init GlobalLayerProperties. " 
-               << "Res: " << res << std::endl;
+               << "Res: " << result << std::endl;
             return;
         }
 
@@ -201,15 +206,15 @@ static const Vertex cubeData[] = {
 
     VkResult VulkanCore::initGlobalLayerProperties()
     {
-        VkResult res = VK_SUCCESS;
+        VkResult result = VK_SUCCESS;
         uint32_t instanceLayerCount;
         VkLayerProperties *vkLayerProperties = nullptr;
         do
         {
-            res = vkEnumerateInstanceLayerProperties(&instanceLayerCount, nullptr);
-            if(res)
+            result = vkEnumerateInstanceLayerProperties(&instanceLayerCount, nullptr);
+            if(result)
             {
-                return res;
+                return result;
             }
 
             if(instanceLayerCount == 0)
@@ -221,44 +226,44 @@ static const Vertex cubeData[] = {
                     vkLayerProperties, 
                     instanceLayerCount * sizeof(VkLayerProperties));
             
-            res = vkEnumerateInstanceLayerProperties(
+            result = vkEnumerateInstanceLayerProperties(
                     &instanceLayerCount,
                     vkLayerProperties);
         }
-        while(res == VK_INCOMPLETE);
+        while(result == VK_INCOMPLETE);
         
         for(uint32_t i = 0; i < instanceLayerCount; i++)
         {
             LayerProperties layerProperties;
             layerProperties.properties = vkLayerProperties[i];
-            res = initGlobalExtensionProperties(layerProperties);
-            if(res)
-                return res;
+            result = initGlobalExtensionProperties(layerProperties);
+            if(result)
+                return result;
             instanceLayerProperties.push_back(layerProperties);
         }
         free(vkLayerProperties);
 
-        return res;
+        return result;
     }
 
     VkResult VulkanCore::initGlobalExtensionProperties(LayerProperties &layerProperties)
     {
         VkExtensionProperties *instanceExtensions;
         uint32_t instanceExtensionCount;
-        VkResult res = VK_SUCCESS;
+        VkResult result = VK_SUCCESS;
 
         auto layerName = layerProperties.properties.layerName;
         
         do
         {
-            res = vkEnumerateInstanceExtensionProperties(
+            result = vkEnumerateInstanceExtensionProperties(
                     layerName,
                     &instanceExtensionCount,
                     nullptr);
             
-            if(res)
+            if(result)
             {
-                return res;
+                return result;
             }
 
             if(instanceExtensionCount == 0)
@@ -268,14 +273,14 @@ static const Vertex cubeData[] = {
 
             layerProperties.instanceExtensions.resize(instanceExtensionCount);
             instanceExtensions = layerProperties.instanceExtensions.data();
-            res = vkEnumerateInstanceExtensionProperties(
+            result = vkEnumerateInstanceExtensionProperties(
                     layerName,
                     &instanceExtensionCount,
                     instanceExtensions);
         }
-        while(res == VK_INCOMPLETE);
+        while(result == VK_INCOMPLETE);
 
-        return res;
+        return result;
     }
 
     void VulkanCore::initInstanceExtensionNames()
@@ -301,7 +306,7 @@ static const Vertex cubeData[] = {
 
     VkResult VulkanCore::initInstance(char const *const appShortName)
     {
-        VkResult res = VK_SUCCESS;
+        VkResult result = VK_SUCCESS;
         VkApplicationInfo applicationInfo = {};
         applicationInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
         applicationInfo.pNext = nullptr;
@@ -323,10 +328,10 @@ static const Vertex cubeData[] = {
         instanceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(instanceExtensionNames.size());
         instanceCreateInfo.ppEnabledExtensionNames = instanceExtensionNames.data();
 
-        res = vkCreateInstance(&instanceCreateInfo, nullptr, &instance);
-        assert(res == VK_SUCCESS);
+        result = vkCreateInstance(&instanceCreateInfo, nullptr, &instance);
+        assert(result == VK_SUCCESS);
 
-        return res;
+        return result;
     }
 //TODO: move to some utility library
 #if defined(NDEBUG) && defined(__GNUC__)
@@ -338,12 +343,12 @@ static const Vertex cubeData[] = {
     VkResult VulkanCore::initEnumerateDevice(uint32_t gpuCount)
     {
         uint32_t const U_ASSERT_ONLY requiredGpuCount = gpuCount;
-        VkResult res = vkEnumeratePhysicalDevices(instance, &gpuCount, nullptr);
+        VkResult result = vkEnumeratePhysicalDevices(instance, &gpuCount, nullptr);
         assert(gpuCount);
         gpus.resize(gpuCount);
 
-        res = vkEnumeratePhysicalDevices(instance, &gpuCount, gpus.data());
-        assert(!res && gpuCount >= requiredGpuCount);
+        result = vkEnumeratePhysicalDevices(instance, &gpuCount, gpus.data());
+        assert(!result && gpuCount >= requiredGpuCount);
 
         // TODO: is this something I should do for all gpus? if I have several, I want to utilize all
         vkGetPhysicalDeviceQueueFamilyProperties(gpus[0], &queueFamilyCount, nullptr);
@@ -364,12 +369,12 @@ static const Vertex cubeData[] = {
             initDeviceExtensionProperties(layerProperties);
         }
 
-        return res;
+        return result;
     }
 
     VkResult VulkanCore::initDeviceExtensionProperties(LayerProperties &layerProperties)
     {
-        VkResult res = VK_SUCCESS;
+        VkResult result = VK_SUCCESS;
         
         auto layerName = layerProperties.properties.layerName;
         
@@ -378,15 +383,15 @@ static const Vertex cubeData[] = {
             VkExtensionProperties *deviceExtensions;
             uint32_t deviceExtensionCount;
 
-            res = vkEnumerateDeviceExtensionProperties(
+            result = vkEnumerateDeviceExtensionProperties(
                     gpus[0], 
                     layerName, 
                     &deviceExtensionCount,
                     nullptr);
 
-            if(res)
+            if(result)
             {
-                return res;
+                return result;
             }
 
             if(deviceExtensionCount == 0)
@@ -396,20 +401,20 @@ static const Vertex cubeData[] = {
 
             layerProperties.deviceExtensions.resize(deviceExtensionCount);
             deviceExtensions = layerProperties.deviceExtensions.data();
-            res = vkEnumerateDeviceExtensionProperties(
+            result = vkEnumerateDeviceExtensionProperties(
                     gpus[0], 
                     layerName,
                     &deviceExtensionCount,
                     deviceExtensions);                    
         }
-        while(res == VK_INCOMPLETE);
+        while(result == VK_INCOMPLETE);
 
-        return res;
+        return result;
     }
 
     void VulkanCore::initSwapchainExtension()
     {
-        VkResult U_ASSERT_ONLY res = VK_SUCCESS;
+        VkResult U_ASSERT_ONLY result = VK_SUCCESS;
 
 #ifdef _WIN32
         VkWin32SurfaceCreateInfoKHR surfaceCreateInfo = {};
@@ -417,7 +422,7 @@ static const Vertex cubeData[] = {
         surfaceCreateInfo.pNext = nullptr;
         surfaceCreateInfo.hinstance = window->getConnection();
         surfaceCreateInfo.hwnd = window->getWindow();
-        res = vkCreateWin32SurfaceKHR(instance, &surfaceCreateInfo, nullptr, &surface);
+        result = vkCreateWin32SurfaceKHR(instance, &surfaceCreateInfo, nullptr, &surface);
 #elif defined(__ANDROID__)
         // this is not yet supported
         /*
@@ -428,7 +433,7 @@ static const Vertex cubeData[] = {
         surfaceCreateInfo.pNext = nullptr;
         surfaceCreateInfo.flags = 0;
         surfaceCreateInfo.window = AndroidGetApplicationWindow();
-        res = fpCreateAndroidSurfaceKHR(instance, &surfaceCreateInfo, nullptr, &surface);
+        result = fpCreateAndroidSurfaceKHR(instance, &surfaceCreateInfo, nullptr, &surface);
         */
 #elif defined(VK_USE_PLATFOR_IOS_MVK)
         VkIOSSurfaceInfoMVK surfaceCreateInfo = {};
@@ -436,7 +441,7 @@ static const Vertex cubeData[] = {
         surfaceCreateInfo.pNext = nullptr;
         surfaceCreateInfo.flags = 0;
         surfaceCreateInfo.pView = window->getWindow();
-        res = vkCreateIOSSurfaceMVK(instance, &surfaceCreateInfo, nullptr, &surface);
+        result = vkCreateIOSSurfaceMVK(instance, &surfaceCreateInfo, nullptr, &surface);
 #elif defined(VK_USE_PLATFORM_MACOS_MVK)
         VkMacOSSurfaceCreateInfo surfaceCreateInfo = {};
         surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_MACOS_STRUCTURE_CREATE_INFO_MVK;
@@ -449,16 +454,16 @@ static const Vertex cubeData[] = {
         surfaceCreateInfo.pNext = nullptr;
         surfaceCreateInfo.display = window->getDisplay();
         surfaceCreateInfo.surface = window->getWindow();
-        res = vkCreateWaylandSurfaceKHR(instance, &surfaceCreateInfo, nullptr, &surface);
+        result = vkCreateWaylandSurfaceKHR(instance, &surfaceCreateInfo, nullptr, &surface);
 #else
         VkXcbSurfaceCreateInfoKHR surfaceCreateInfo = {};
         surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR;
         surfaceCreateInfo.pNext = nullptr;
         surfaceCreateInfo.connection = window->getConnection();
         surfaceCreateInfo.window = window->getWindow();
-        res = vkCreateXcbSurfaceKHR(instance, &surfaceCreateInfo, nullptr, &surface);
+        result = vkCreateXcbSurfaceKHR(instance, &surfaceCreateInfo, nullptr, &surface);
 #endif
-        assert(res == VK_SUCCESS);
+        assert(result == VK_SUCCESS);
         
         VkBool32 *pSupportsPresent = (VkBool32 *)malloc(queueFamilyCount * sizeof(VkBool32));
         for(uint32_t i = 0; i < queueFamilyCount; i++)
@@ -505,11 +510,11 @@ static const Vertex cubeData[] = {
         }
 
         uint32_t formatCount;
-        res = vkGetPhysicalDeviceSurfaceFormatsKHR(gpus[0], surface, &formatCount, nullptr);
-        assert(res == VK_SUCCESS);
+        result = vkGetPhysicalDeviceSurfaceFormatsKHR(gpus[0], surface, &formatCount, nullptr);
+        assert(result == VK_SUCCESS);
         VkSurfaceFormatKHR *surfaceFormats = (VkSurfaceFormatKHR *)malloc(formatCount * sizeof(VkSurfaceFormatKHR));
-        res = vkGetPhysicalDeviceSurfaceFormatsKHR(gpus[0], surface, &formatCount, surfaceFormats);
-        assert(res == VK_SUCCESS);
+        result = vkGetPhysicalDeviceSurfaceFormatsKHR(gpus[0], surface, &formatCount, surfaceFormats);
+        assert(result == VK_SUCCESS);
 
         if(formatCount == 1 && surfaceFormats[0].format == VK_FORMAT_UNDEFINED)
         {
@@ -526,7 +531,7 @@ static const Vertex cubeData[] = {
 
     VkResult VulkanCore::initDevice()
     {
-        VkResult res = VK_SUCCESS;
+        VkResult result = VK_SUCCESS;
         
         float queuePriorities[1] = {0.0};
         VkDeviceQueueCreateInfo deviceQueueCreateInfo = {};
@@ -547,15 +552,15 @@ static const Vertex cubeData[] = {
             : nullptr;
         deviceCreateInfo.pEnabledFeatures = nullptr;
 
-        res = vkCreateDevice(gpus[0], &deviceCreateInfo, nullptr, &device);
-        assert(res == VK_SUCCESS);
+        result = vkCreateDevice(gpus[0], &deviceCreateInfo, nullptr, &device);
+        assert(result == VK_SUCCESS);
 
-        return res;
+        return result;
     }
 
     void VulkanCore::initCommandPool()
     {
-        VkResult U_ASSERT_ONLY res = VK_SUCCESS;
+        VkResult U_ASSERT_ONLY result = VK_SUCCESS;
         
         VkCommandPoolCreateInfo commandPoolCreateInfo = {};
         commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -563,13 +568,13 @@ static const Vertex cubeData[] = {
         commandPoolCreateInfo.queueFamilyIndex = graphicsQueueFamilyIndex;
         commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
-        res = vkCreateCommandPool(device, &commandPoolCreateInfo, nullptr, &commandPool);
-        assert(res == VK_SUCCESS);
+        result = vkCreateCommandPool(device, &commandPoolCreateInfo, nullptr, &commandPool);
+        assert(result == VK_SUCCESS);
     }
 
     void VulkanCore::initCommandBuffer()
     {
-        VkResult U_ASSERT_ONLY res = VK_SUCCESS; 
+        VkResult U_ASSERT_ONLY result = VK_SUCCESS; 
         VkCommandBufferAllocateInfo commandBufferAllocateInfo = {};
         commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
         commandBufferAllocateInfo.pNext = nullptr;
@@ -577,13 +582,13 @@ static const Vertex cubeData[] = {
         commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
         commandBufferAllocateInfo.commandBufferCount = 1;
 
-        res = vkAllocateCommandBuffers(device, &commandBufferAllocateInfo, &commandBuffer);
-        assert(res == VK_SUCCESS);
+        result = vkAllocateCommandBuffers(device, &commandBufferAllocateInfo, &commandBuffer);
+        assert(result == VK_SUCCESS);
     }
 
     void VulkanCore::executeBeginCommandBuffer() 
     {
-        VkResult U_ASSERT_ONLY res = VK_SUCCESS;
+        VkResult U_ASSERT_ONLY result = VK_SUCCESS;
 
         VkCommandBufferBeginInfo commandBufferBeginInfo = {};
         commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -591,16 +596,16 @@ static const Vertex cubeData[] = {
         commandBufferBeginInfo.flags = 0;
         commandBufferBeginInfo.pInheritanceInfo = nullptr;
 
-        res = vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo);
-        assert(res == VK_SUCCESS);
+        result = vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo);
+        assert(result == VK_SUCCESS);
     }
 
     void VulkanCore::executeEndCommandBuffer() 
     {
-        VkResult U_ASSERT_ONLY res = VK_SUCCESS;
+        VkResult U_ASSERT_ONLY result = VK_SUCCESS;
 
-        res = vkEndCommandBuffer(commandBuffer);
-        assert(res == VK_SUCCESS);
+        result = vkEndCommandBuffer(commandBuffer);
+        assert(result == VK_SUCCESS);
     }
 
     void VulkanCore::initDeviceQueue() 
@@ -620,19 +625,19 @@ static const Vertex cubeData[] = {
     void VulkanCore::initSwapChain(VkImageUsageFlags usageFlags) 
     {   /* DEPENDS on commandBuffer and queue initialized */
 
-        VkResult U_ASSERT_ONLY res = VK_SUCCESS;
+        VkResult U_ASSERT_ONLY result = VK_SUCCESS;
         VkSurfaceCapabilitiesKHR surfaceCapabilities;
 
-        res = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(gpus[0], surface, &surfaceCapabilities);
-        assert(res == VK_SUCCESS);
+        result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(gpus[0], surface, &surfaceCapabilities);
+        assert(result == VK_SUCCESS);
 
         uint32_t presentModeCount;
-        res = vkGetPhysicalDeviceSurfacePresentModesKHR(gpus[0], surface, &presentModeCount, nullptr);
-        assert(res == VK_SUCCESS);
+        result = vkGetPhysicalDeviceSurfacePresentModesKHR(gpus[0], surface, &presentModeCount, nullptr);
+        assert(result == VK_SUCCESS);
         VkPresentModeKHR *presentModes = (VkPresentModeKHR *)malloc(presentModeCount * sizeof(VkPresentModeKHR));
         assert(presentModes);
-        res = vkGetPhysicalDeviceSurfacePresentModesKHR(gpus[0], surface, &presentModeCount, presentModes);
-        assert(res == VK_SUCCESS);
+        result = vkGetPhysicalDeviceSurfacePresentModesKHR(gpus[0], surface, &presentModeCount, presentModes);
+        assert(result == VK_SUCCESS);
 
         VkExtent2D swapChainExtent;
         // width and height are either both 0xFFFFFFFF, or both not 0xFFFFFFFF.
@@ -740,16 +745,16 @@ static const Vertex cubeData[] = {
             swapChainCreateInfo.pQueueFamilyIndices = queueFamilyIndices;
         }
 
-        res = vkCreateSwapchainKHR(device, &swapChainCreateInfo, nullptr, &swapChain);
-        assert(res == VK_SUCCESS);
+        result = vkCreateSwapchainKHR(device, &swapChainCreateInfo, nullptr, &swapChain);
+        assert(result == VK_SUCCESS);
 
-        res = vkGetSwapchainImagesKHR(device, swapChain, &swapChainImageCount, nullptr);
-        assert(res == VK_SUCCESS);
+        result = vkGetSwapchainImagesKHR(device, swapChain, &swapChainImageCount, nullptr);
+        assert(result == VK_SUCCESS);
 
         VkImage *swapChainImages = (VkImage *)malloc(swapChainImageCount * sizeof(VkImage));
         assert(swapChainImages);
-        res = vkGetSwapchainImagesKHR(device, swapChain, &swapChainImageCount, swapChainImages);
-        assert(res == VK_SUCCESS);
+        result = vkGetSwapchainImagesKHR(device, swapChain, &swapChainImageCount, swapChainImages);
+        assert(result == VK_SUCCESS);
 
         for (uint32_t i = 0; i < swapChainImageCount; i++) 
         {
@@ -775,9 +780,9 @@ static const Vertex cubeData[] = {
 
             colorImageViewCreateInfo.image = swapChainBuffer.image;
 
-            res = vkCreateImageView(device, &colorImageViewCreateInfo, nullptr, &swapChainBuffer.view);
+            result = vkCreateImageView(device, &colorImageViewCreateInfo, nullptr, &swapChainBuffer.view);
             buffers.push_back(swapChainBuffer);
-            assert(res == VK_SUCCESS);
+            assert(result == VK_SUCCESS);
         }
         free(swapChainImages);
         currentBuffer = 0;
@@ -790,7 +795,7 @@ static const Vertex cubeData[] = {
     
     void VulkanCore::initDepthBuffer() 
     {
-        VkResult U_ASSERT_ONLY res = VK_SUCCESS;
+        VkResult U_ASSERT_ONLY result = VK_SUCCESS;
         bool U_ASSERT_ONLY pass = true;
         VkImageCreateInfo imageCreateInfo = {};
 
@@ -870,8 +875,8 @@ static const Vertex cubeData[] = {
         VkMemoryRequirements memoryRequirements;
 
         // Create image 
-        res = vkCreateImage(device, &imageCreateInfo, nullptr, &depthBuffer.image);
-        assert(res == VK_SUCCESS);
+        result = vkCreateImage(device, &imageCreateInfo, nullptr, &depthBuffer.image);
+        assert(result == VK_SUCCESS);
 
         vkGetImageMemoryRequirements(device, depthBuffer.image, &memoryRequirements);
 
@@ -882,17 +887,17 @@ static const Vertex cubeData[] = {
         assert(pass);
 
         // Allocate memory 
-        res = vkAllocateMemory(device, &memoryAllocationInfo, nullptr, &depthBuffer.mem);
-        assert(res == VK_SUCCESS);
+        result = vkAllocateMemory(device, &memoryAllocationInfo, nullptr, &depthBuffer.mem);
+        assert(result == VK_SUCCESS);
 
         // Bind memory 
-        res = vkBindImageMemory(device, depthBuffer.image, depthBuffer.mem, 0);
-        assert(res == VK_SUCCESS);
+        result = vkBindImageMemory(device, depthBuffer.image, depthBuffer.mem, 0);
+        assert(result == VK_SUCCESS);
 
         // Create image view 
         imageViewCreateInfo.image = depthBuffer.image;
-        res = vkCreateImageView(device, &imageViewCreateInfo, nullptr, &depthBuffer.view);
-        assert(res == VK_SUCCESS);
+        result = vkCreateImageView(device, &imageViewCreateInfo, nullptr, &depthBuffer.view);
+        assert(result == VK_SUCCESS);
     }
 
     bool VulkanCore::memoryTypeFromProperties(uint32_t typeBits,
@@ -920,7 +925,7 @@ static const Vertex cubeData[] = {
     // TODO: this is stuff for the camera. the camera should be refactored into a separate class
     void VulkanCore::initUniformBuffer()
     {
-        VkResult U_ASSERT_ONLY res = VK_SUCCESS;
+        VkResult U_ASSERT_ONLY result = VK_SUCCESS;
         bool U_ASSERT_ONLY pass = true;
         float fov = glm::radians(45.0f);
         if (window->getWidth() > window->getHeight()) 
@@ -948,8 +953,8 @@ static const Vertex cubeData[] = {
         bufferCreateInfo.pQueueFamilyIndices = nullptr;
         bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
         bufferCreateInfo.flags = 0;
-        res = vkCreateBuffer(device, &bufferCreateInfo, nullptr, &uniformData.buffer);
-        assert(res == VK_SUCCESS);
+        result = vkCreateBuffer(device, &bufferCreateInfo, nullptr, &uniformData.buffer);
+        assert(result == VK_SUCCESS);
 
         VkMemoryRequirements memoryRequirements;
         vkGetBufferMemoryRequirements(device, uniformData.buffer, &memoryRequirements);
@@ -965,19 +970,19 @@ static const Vertex cubeData[] = {
                                         &memoryAllocationInfo.memoryTypeIndex);
         assert(pass && "No mappable, coherent memory");
 
-        res = vkAllocateMemory(device, &memoryAllocationInfo, nullptr, &(uniformData.memory));
-        assert(res == VK_SUCCESS);
+        result = vkAllocateMemory(device, &memoryAllocationInfo, nullptr, &(uniformData.memory));
+        assert(result == VK_SUCCESS);
 
         uint8_t *pData;
-        res = vkMapMemory(device, uniformData.memory, 0, memoryRequirements.size, 0, (void **)&pData);
-        assert(res == VK_SUCCESS);
+        result = vkMapMemory(device, uniformData.memory, 0, memoryRequirements.size, 0, (void **)&pData);
+        assert(result == VK_SUCCESS);
 
         memcpy(pData, &modelViewProjectionMatrix, sizeof(modelViewProjectionMatrix));
 
         vkUnmapMemory(device, uniformData.memory);
 
-        res = vkBindBufferMemory(device, uniformData.buffer, uniformData.memory, 0);
-        assert(res == VK_SUCCESS);
+        result = vkBindBufferMemory(device, uniformData.buffer, uniformData.memory, 0);
+        assert(result == VK_SUCCESS);
 
         uniformData.bufferInfo.buffer = uniformData.buffer;
         uniformData.bufferInfo.offset = 0;
@@ -1011,11 +1016,11 @@ static const Vertex cubeData[] = {
         descriptorSetLayoutCreateInfo.bindingCount  =useTexture ? 2 : 1;
         descriptorSetLayoutCreateInfo.pBindings = layoutBindings;
 
-        VkResult U_ASSERT_ONLY res = VK_SUCCESS;
+        VkResult U_ASSERT_ONLY result = VK_SUCCESS;
 
         descriptorSetLayout.resize(NUM_DESCRIPTOR_SETS);
-        res = vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCreateInfo, nullptr, descriptorSetLayout.data());
-        assert(res == VK_SUCCESS);
+        result = vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCreateInfo, nullptr, descriptorSetLayout.data());
+        assert(result == VK_SUCCESS);
 
         // Now use the descriptor layout to create a pipeline layout
         VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
@@ -1026,14 +1031,14 @@ static const Vertex cubeData[] = {
         pipelineLayoutCreateInfo.setLayoutCount = NUM_DESCRIPTOR_SETS;
         pipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayout.data();
 
-        res = vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout);
-        assert(res == VK_SUCCESS);
+        result = vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout);
+        assert(result == VK_SUCCESS);
     }
 
     void VulkanCore::initRenderpass(bool includeDepth, bool clear, VkImageLayout finalLayout)
     {   // DEPENDS on init_swap_chain() and init_depth_buffer()
 
-        VkResult U_ASSERT_ONLY res;
+        VkResult U_ASSERT_ONLY result;
         // Need attachments for render target and depth buffer
         VkAttachmentDescription attachments[2];
         attachments[0].format = format;
@@ -1089,15 +1094,15 @@ static const Vertex cubeData[] = {
         renderPassCreateInfo.dependencyCount = 0;
         renderPassCreateInfo.pDependencies = NULL;
 
-        res = vkCreateRenderPass(device, &renderPassCreateInfo, NULL, &renderPass);
-        assert(res == VK_SUCCESS);
+        result = vkCreateRenderPass(device, &renderPassCreateInfo, NULL, &renderPass);
+        assert(result == VK_SUCCESS);
     }
  
 
     void VulkanCore::initShaders(const char *vertexShaderText, const char *fragmentShaderText)
     { 
-        VkResult U_ASSERT_ONLY res = VK_SUCCESS;
-        bool U_ASSERT_ONLY retVal = true;
+        VkResult U_ASSERT_ONLY result = VK_SUCCESS;
+        bool U_ASSERT_ONLY returnValue = true;
 
         // If no shaders were submitted, just return
         if (!(vertexShaderText || fragmentShaderText)) 
@@ -1107,6 +1112,54 @@ static const Vertex cubeData[] = {
         }
 
         initGlslang();
+
+        VkShaderModuleCreateInfo moduleCreateInfo;
+
+        if (vertexShaderText) 
+        {
+            std::vector<unsigned int> vertexShaderSpv;
+            shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+            shaderStages[0].pNext = nullptr;
+            shaderStages[0].pSpecializationInfo = nullptr;
+            shaderStages[0].flags = 0;
+            shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+            shaderStages[0].pName = "main";
+
+            returnValue = GLSLtoSPV(VK_SHADER_STAGE_VERTEX_BIT, vertexShaderText, vertexShaderSpv);
+            assert(returnValue);
+
+            moduleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+            moduleCreateInfo.pNext = nullptr;
+            moduleCreateInfo.flags = 0;
+            moduleCreateInfo.codeSize = vertexShaderSpv.size() * sizeof(unsigned int);
+            moduleCreateInfo.pCode = vertexShaderSpv.data();
+            result = vkCreateShaderModule(device, &moduleCreateInfo, nullptr, &shaderStages[0].module);
+            assert(result == VK_SUCCESS);
+        }
+
+        if (fragmentShaderText) 
+        {
+            std::vector<unsigned int> fragmentShaderSpv;
+            shaderStages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+            shaderStages[1].pNext = nullptr;
+            shaderStages[1].pSpecializationInfo = nullptr;
+            shaderStages[1].flags = 0;
+            shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+            shaderStages[1].pName = "main";
+
+            returnValue = GLSLtoSPV(VK_SHADER_STAGE_FRAGMENT_BIT, fragmentShaderText, fragmentShaderSpv);
+            assert(returnValue);
+
+            moduleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+            moduleCreateInfo.pNext = nullptr;
+            moduleCreateInfo.flags = 0;
+            moduleCreateInfo.codeSize = fragmentShaderSpv.size() * sizeof(unsigned int);
+            moduleCreateInfo.pCode = fragmentShaderSpv.data();
+            result = vkCreateShaderModule(device, &moduleCreateInfo, nullptr, &shaderStages[1].module);
+            assert(result == VK_SUCCESS);
+        }
+
+        finalizeGlslang();
     }
 
     void VulkanCore::initFrameBuffers(bool includeDepth)
