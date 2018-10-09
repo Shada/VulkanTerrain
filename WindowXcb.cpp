@@ -22,7 +22,7 @@ namespace Tobi
 
         xcb_destroy_window(connection, window);
         xcb_disconnect(connection);
-        delete(atomWmDeleteWindow);
+        free(atomWmDeleteWindow);
     }
 
     void WindowXcb::createWindow()
@@ -114,7 +114,7 @@ namespace Tobi
                 32,
                 1,
                 &(*atomWmDeleteWindow).atom);
-        delete(reply);
+        free(reply);
 
         xcb_map_window(connection, window);
 
@@ -134,7 +134,7 @@ namespace Tobi
                 break;
             }
         }
-        delete(e);
+        free(e);
     }
 
     void WindowXcb::initInstanceExtensionNames()
