@@ -107,7 +107,7 @@ namespace Tobi
             std::unique_ptr<WindowXcb> window;
 
             VkSwapchainKHR swapChain;
-            std::vector<SwapChainBuffer> buffers;
+            std::vector<SwapChainBuffer> swapChainBuffers;
             uint32_t swapChainImageCount;
             uint32_t currentBuffer;
 
@@ -132,7 +132,7 @@ namespace Tobi
             VkFormat format;
 
             VkCommandPool commandPool;
-            // TODO: possible to have several command buffers in the future
+            // TODO: possible to have several command swapChainBuffers in the future
             VkCommandBuffer commandBuffer;
 
             VkQueue presentQueue;
@@ -140,6 +140,8 @@ namespace Tobi
 
 			ImageBuffer depthBuffer;
 			VkFormat depthBufferFormat;
+
+            VkFramebuffer *frameBuffers;
 
 			UniformData uniformData;
 

@@ -41,6 +41,11 @@ namespace Tobi
     }
     VulkanCore::~VulkanCore()
     {
+        for (uint32_t i = 0; i < swapChainImageCount; i++)
+        {
+            vkDestroyFramebuffer(device, frameBuffers[i], nullptr);
+        }
+        free(frameBuffers);
         if(shaderStages[0].module)
             vkDestroyShaderModule(device, shaderStages[0].module, nullptr);
         if(shaderStages[1].module)
@@ -69,7 +74,7 @@ namespace Tobi
         {
             for(uint32_t i = 0; i < swapChainImageCount; i++)
             {
-                vkDestroyImageView(device, buffers[i].view, nullptr);
+                vkDestroyImageView(device, swapChainBuffers[i].view, nullptr);
             }
             vkDestroySwapchainKHR(device, swapChain, nullptr);
         }
@@ -781,7 +786,7 @@ static const Vertex cubeData[] = {
             colorImageViewCreateInfo.image = swapChainBuffer.image;
 
             result = vkCreateImageView(device, &colorImageViewCreateInfo, nullptr, &swapChainBuffer.view);
-            buffers.push_back(swapChainBuffer);
+            swapChainBuffers.push_back(swapChainBuffer);
             assert(result == VK_SUCCESS);
         }
         free(swapChainImages);
@@ -1039,29 +1044,29 @@ static const Vertex cubeData[] = {
     {   // DEPENDS on init_swap_chain() and init_depth_buffer()
 
         VkResult U_ASSERT_ONLY result;
-        // Need attachments for render target and depth buffer
-        VkAttachmentDescription attachments[2];
-        attachments[0].format = format;
-        attachments[0].samples = NUM_SAMPLES;
-        attachments[0].loadOp = clear ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
-        attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        attachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        attachments[0].finalLayout = finalLayout;
-        attachments[0].flags = 0;
+        // Need imageViewAttachments for render target and depth buffer
+        VkAttachmentDescription imageViewAttachments[2];
+        imageViewAttachments[0].format = format;
+        imageViewAttachments[0].samples = NUM_SAMPLES;
+        imageViewAttachments[0].loadOp = clear ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
+        imageViewAttachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        imageViewAttachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        imageViewAttachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        imageViewAttachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        imageViewAttachments[0].finalLayout = finalLayout;
+        imageViewAttachments[0].flags = 0;
 
         if (includeDepth) 
         {
-            attachments[1].format = depthBufferFormat;
-            attachments[1].samples = NUM_SAMPLES;
-            attachments[1].loadOp = clear ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
-            attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-            attachments[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
-            attachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
-            attachments[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-            attachments[1].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-            attachments[1].flags = 0;
+            imageViewAttachments[1].format = depthBufferFormat;
+            imageViewAttachments[1].samples = NUM_SAMPLES;
+            imageViewAttachments[1].loadOp = clear ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
+            imageViewAttachments[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+            imageViewAttachments[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+            imageViewAttachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
+            imageViewAttachments[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            imageViewAttachments[1].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+            imageViewAttachments[1].flags = 0;
         }
 
         VkAttachmentReference colorAttachmentReference = {};
@@ -1088,7 +1093,7 @@ static const Vertex cubeData[] = {
         renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
         renderPassCreateInfo.pNext = nullptr;
         renderPassCreateInfo.attachmentCount = includeDepth ? 2 : 1;
-        renderPassCreateInfo.pAttachments = attachments;
+        renderPassCreateInfo.pAttachments = imageViewAttachments;
         renderPassCreateInfo.subpassCount = 1;
         renderPassCreateInfo.pSubpasses = &subpass;
         renderPassCreateInfo.dependencyCount = 0;
@@ -1163,7 +1168,33 @@ static const Vertex cubeData[] = {
     }
 
     void VulkanCore::initFrameBuffers(bool includeDepth)
-    {}
+    {
+        // DEPENDS on init_depth_buffer(), init_renderpass() and
+        // init_swapchain_extension() 
+
+        VkResult U_ASSERT_ONLY result;
+        VkImageView imageViewAttachments[2];
+        imageViewAttachments[1] = depthBuffer.view;
+
+        VkFramebufferCreateInfo frameBufferCreateInfo = {};
+        frameBufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        frameBufferCreateInfo.pNext = nullptr;
+        frameBufferCreateInfo.renderPass = renderPass;
+        frameBufferCreateInfo.attachmentCount = includeDepth ? 2 : 1;
+        frameBufferCreateInfo.pAttachments = imageViewAttachments;
+        frameBufferCreateInfo.width = window->getWidth();
+        frameBufferCreateInfo.height = window->getHeight();
+        frameBufferCreateInfo.layers = 1;
+
+        frameBuffers = (VkFramebuffer *)malloc(swapChainImageCount * sizeof(VkFramebuffer));
+
+        for (uint32_t i = 0; i < swapChainImageCount; i++) 
+        {
+            imageViewAttachments[0] = swapChainBuffers[i].view;
+            result = vkCreateFramebuffer(device, &frameBufferCreateInfo, nullptr, &frameBuffers[i]);
+            assert(result == VK_SUCCESS);
+        }
+    }
     void VulkanCore::initVertexBuffer(const void *vertexData, uint32_t dataSize, uint32_t dataStride, bool useTexture)
     {}
     void VulkanCore::initDescriptorPool(bool useTexture)
