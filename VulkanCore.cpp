@@ -6,6 +6,7 @@
 #include <cstring>
 
 #include "VulkanCore.hpp"
+#include "util.hpp"
 
 namespace Tobi
 {
@@ -1105,7 +1106,7 @@ static const Vertex cubeData[] = {
             return;
         }
 
-        // load the shaders here. not sure how to use glslang though, so use some nice wrapper or other good method
+        initGlslang();
     }
 
     void VulkanCore::initFrameBuffers(bool includeDepth)
