@@ -9,8 +9,20 @@
 
 #include "WindowXcb.hpp"
 
+// Number of samples needs to be the same at image creation,      
+// renderpass creation and pipeline creation.                     
 #define NUM_SAMPLES VK_SAMPLE_COUNT_1_BIT
+
+// Number of descriptor sets needs to be the same at alloc,       
+// pipeline layout creation, and descriptor set layout creation   
 #define NUM_DESCRIPTOR_SETS 1
+
+
+// Number of viewports and number of scissors have to be the same 
+// at pipeline creation and in any call to set them dynamically   
+// They also have to be the same as each other                    
+#define NUM_VIEWPORTS 1
+#define NUM_SCISSORS NUM_VIEWPORTS
 
 namespace Tobi
 {
@@ -47,6 +59,10 @@ namespace Tobi
         VkDeviceMemory memory;
         VkDescriptorBufferInfo bufferInfo;
     } VertexBuffer;
+    typedef struct TTextureData
+    {
+        VkDescriptorImageInfo imageInfo;
+    } TextureData;
 
     class VulkanCore
     {
@@ -108,7 +124,7 @@ namespace Tobi
             void initDescriptorPool(bool useTexture);
             void initDescriptorSet(bool useTexture);
             void initPipelineCache();
-            void initPipeline(bool includeDepth);
+            void initPipeline(VkBool32 includeDepth, VkBool32 includeVertexInput = VK_TRUE);
             
 
             std::unique_ptr<WindowXcb> window;
@@ -126,6 +142,12 @@ namespace Tobi
             VkInstance instance;
             VkDevice device;
             VkSurfaceKHR surface;
+
+            VkDescriptorPool descriptorPool;
+            std::vector<VkDescriptorSet> descriptorSets;
+
+            VkPipelineCache pipelineCache;
+            VkPipeline pipeline;
 
             std::vector<VkPhysicalDevice> gpus;
             uint32_t queueFamilyCount;
@@ -151,6 +173,8 @@ namespace Tobi
             VkFramebuffer *frameBuffers;
 
 			UniformData uniformData;
+
+            TextureData textureData;
 
             glm::mat4 projectionMatrix;
             glm::mat4 viewMatrix;
