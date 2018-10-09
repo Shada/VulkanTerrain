@@ -6,13 +6,13 @@
 #include <cstring>
 
 #include "VulkanCore.hpp"
+
 #include "util.hpp"
 
 namespace Tobi
 {
     VulkanCore::VulkanCore()
-        : instance(nullptr),
-          queueFamilyCount(0),
+        : queueFamilyCount(0),
           surface(nullptr),
           device(nullptr),
           commandPool(nullptr),
@@ -25,9 +25,9 @@ namespace Tobi
           graphicsQueueFamilyIndex(0),
           presentQueueFamilyIndex(0),
           window(nullptr),
-          depthBuffer{nullptr,nullptr,nullptr},
+          depthBuffer{nullptr, nullptr, nullptr},
           depthBufferFormat(VK_FORMAT_UNDEFINED),
-          uniformData{nullptr,nullptr,nullptr},
+          uniformData{nullptr, nullptr, nullptr},
           pipelineLayout(nullptr),
           renderPass(nullptr)
     {
@@ -37,6 +37,7 @@ namespace Tobi
                                                                                                      
         window = std::make_unique<WindowXcb>(settings);                                   
         window->createWindow();
+        
         initVulkan();
     }
     VulkanCore::~VulkanCore()
@@ -89,7 +90,6 @@ namespace Tobi
         }
         if(commandBuffer)
         {
-            executeEndCommandBuffer();
             VkCommandBuffer commandBuffers[1] = {commandBuffer};
             vkFreeCommandBuffers(device, commandPool, 1, commandBuffers);
         }
@@ -102,10 +102,7 @@ namespace Tobi
         }
 
         if(surface)                                                                                  
-            vkDestroySurfaceKHR(instance, surface, nullptr);     
-
-        if(instance)
-            vkDestroyInstance(instance, nullptr);
+            vkDestroySurfaceKHR(window->getInstance(), surface, nullptr);     
     }
 static const char *vertexShaderText =
     "#version 400\n"
@@ -194,15 +191,12 @@ static const Vertex cubeData[] = {
 
         const bool depthPresent = true;
 
-        initInstanceExtensionNames();
         initDeviceExtensionNames();
-        initInstance("The funny app");
         initEnumerateDevice();
         initSwapchainExtension();
         initDevice();
         initCommandPool();
         initCommandBuffer();
-        executeBeginCommandBuffer();
         initDeviceQueue();
         initSwapChain();
         initDepthBuffer();
@@ -255,6 +249,8 @@ static const Vertex cubeData[] = {
         renderPassBeginInfo.renderArea.extent.height = window->getHeight();
         renderPassBeginInfo.clearValueCount = 2;
         renderPassBeginInfo.pClearValues = clearValues;
+
+        executeBeginCommandBuffer();
 
         vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
@@ -432,56 +428,13 @@ static const Vertex cubeData[] = {
         return result;
     }
 
-    void VulkanCore::initInstanceExtensionNames()
-    {
-        instanceExtensionNames.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
-#ifdef __ANDROID__
-        instanceExtensionNames.push_back(VK_KHR_ANDROID_SURFACE_EXTENSION_NAME);
-#elif defined(_WIN32)
-        instanceExtensionNames.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
-#elif defined(VK_USE_PLATFORM_IOS_MVK)
-        instanceExtensionNames.push_back(VK_KHR_IOS_SURFACE_EXTENSION_NAME);
-#elif defined(VK_USE_PLATFORM_WAYLAND)
-        instanceExtensionNames.push_back(VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME);
-#else
-        instanceExtensionNames.push_back(VK_KHR_XCB_SURFACE_EXTENSION_NAME);
-#endif
-    }
 
     void VulkanCore::initDeviceExtensionNames()
     {
         deviceExtensionNames.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
     }
 
-    VkResult VulkanCore::initInstance(char const *const appShortName)
-    {
-        VkResult result = VK_SUCCESS;
-        VkApplicationInfo applicationInfo = {};
-        applicationInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-        applicationInfo.pNext = nullptr;
-        applicationInfo.pApplicationName = appShortName;
-        applicationInfo.applicationVersion = 1;
-        applicationInfo.pEngineName = appShortName;
-        applicationInfo.engineVersion = 1;
-        applicationInfo.apiVersion = VK_API_VERSION_1_0;
-
-        VkInstanceCreateInfo instanceCreateInfo = {};
-        instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-        instanceCreateInfo.pNext = nullptr;
-        instanceCreateInfo.flags = 0;
-        instanceCreateInfo.pApplicationInfo = &applicationInfo;
-        instanceCreateInfo.enabledLayerCount = static_cast<uint32_t>(instanceLayerNames.size());
-        instanceCreateInfo.ppEnabledLayerNames = instanceLayerNames.size() 
-            ? instanceLayerNames.data() 
-            : nullptr;
-        instanceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(instanceExtensionNames.size());
-        instanceCreateInfo.ppEnabledExtensionNames = instanceExtensionNames.data();
-
-        result = vkCreateInstance(&instanceCreateInfo, nullptr, &instance);
-        assert(result == VK_SUCCESS);
-
-        return result;
-    }
+    
 //TODO: move to some utility library
 #if defined(NDEBUG) && defined(__GNUC__)
 #define U_ASSERT_ONLY __attribute__((unused))
@@ -492,11 +445,11 @@ static const Vertex cubeData[] = {
     VkResult VulkanCore::initEnumerateDevice(uint32_t gpuCount)
     {
         uint32_t const U_ASSERT_ONLY requiredGpuCount = gpuCount;
-        VkResult result = vkEnumeratePhysicalDevices(instance, &gpuCount, nullptr);
+        VkResult result = vkEnumeratePhysicalDevices(window->getInstance(), &gpuCount, nullptr);
         assert(gpuCount);
         gpus.resize(gpuCount);
 
-        result = vkEnumeratePhysicalDevices(instance, &gpuCount, gpus.data());
+        result = vkEnumeratePhysicalDevices(window->getInstance(), &gpuCount, gpus.data());
         assert(!result && gpuCount >= requiredGpuCount);
 
         // TODO: is this something I should do for all gpus? if I have several, I want to utilize all
@@ -571,18 +524,18 @@ static const Vertex cubeData[] = {
         surfaceCreateInfo.pNext = nullptr;
         surfaceCreateInfo.hinstance = window->getConnection();
         surfaceCreateInfo.hwnd = window->getWindow();
-        result = vkCreateWin32SurfaceKHR(instance, &surfaceCreateInfo, nullptr, &surface);
+        result = vkCreateWin32SurfaceKHR(window->getInstance(), &surfaceCreateInfo, nullptr, &surface);
 #elif defined(__ANDROID__)
         // this is not yet supported
         /*
-        GET_INSTANCE_PROC_ADDR(instance, CreateAndroidSurfaceKHR);
+        GET_INSTANCE_PROC_ADDR(window->getInstance(), CreateAndroidSurfaceKHR);
 
         VkAndroidSurfaceCreateInfoKHR surfaceCreateInfo = {};
         surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR;
         surfaceCreateInfo.pNext = nullptr;
         surfaceCreateInfo.flags = 0;
         surfaceCreateInfo.window = AndroidGetApplicationWindow();
-        result = fpCreateAndroidSurfaceKHR(instance, &surfaceCreateInfo, nullptr, &surface);
+        result = fpCreateAndroidSurfaceKHR(window->getInstance(), &surfaceCreateInfo, nullptr, &surface);
         */
 #elif defined(VK_USE_PLATFOR_IOS_MVK)
         VkIOSSurfaceInfoMVK surfaceCreateInfo = {};
@@ -590,7 +543,7 @@ static const Vertex cubeData[] = {
         surfaceCreateInfo.pNext = nullptr;
         surfaceCreateInfo.flags = 0;
         surfaceCreateInfo.pView = window->getWindow();
-        result = vkCreateIOSSurfaceMVK(instance, &surfaceCreateInfo, nullptr, &surface);
+        result = vkCreateIOSSurfaceMVK(window->getInstance(), &surfaceCreateInfo, nullptr, &surface);
 #elif defined(VK_USE_PLATFORM_MACOS_MVK)
         VkMacOSSurfaceCreateInfo surfaceCreateInfo = {};
         surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_MACOS_STRUCTURE_CREATE_INFO_MVK;
@@ -603,14 +556,14 @@ static const Vertex cubeData[] = {
         surfaceCreateInfo.pNext = nullptr;
         surfaceCreateInfo.display = window->getDisplay();
         surfaceCreateInfo.surface = window->getWindow();
-        result = vkCreateWaylandSurfaceKHR(instance, &surfaceCreateInfo, nullptr, &surface);
+        result = vkCreateWaylandSurfaceKHR(window->getInstance(), &surfaceCreateInfo, nullptr, &surface);
 #else
         VkXcbSurfaceCreateInfoKHR surfaceCreateInfo = {};
         surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR;
         surfaceCreateInfo.pNext = nullptr;
         surfaceCreateInfo.connection = window->getConnection();
         surfaceCreateInfo.window = window->getWindow();
-        result = vkCreateXcbSurfaceKHR(instance, &surfaceCreateInfo, nullptr, &surface);
+        result = vkCreateXcbSurfaceKHR(window->getInstance(), &surfaceCreateInfo, nullptr, &surface);
 #endif
         assert(result == VK_SUCCESS);
         

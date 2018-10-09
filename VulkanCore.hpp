@@ -83,15 +83,12 @@ namespace Tobi
             VkResult initGlobalLayerProperties();
             VkResult initGlobalExtensionProperties(LayerProperties &layerProperties);
 
-            void initInstanceExtensionNames();
-            
             void initDeviceExtensionNames();
            
             VkResult initDeviceExtensionProperties(LayerProperties &layerProperties);
 
             VkResult initDevice();
             VkResult initEnumerateDevice(uint32_t gpu_count = 1);
-            VkResult initInstance(char const *const appShortName);
 
             void initSwapchainExtension();
            
@@ -142,11 +139,8 @@ namespace Tobi
             uint32_t currentBuffer;
 
             std::vector<LayerProperties> instanceLayerProperties;
-            std::vector<const char *> instanceExtensionNames;
             std::vector<const char *> deviceExtensionNames;
-            std::vector<const char *> instanceLayerNames;
 
-            VkInstance instance;
             VkDevice device;
             VkSurfaceKHR surface;
 

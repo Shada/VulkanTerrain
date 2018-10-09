@@ -6,39 +6,59 @@
 namespace Tobi
 {
     WindowXcb::WindowXcb(WindowSettings windowSettings)
-        : windowSettings(windowSettings),
+        : windowSettings(windowSettings), 
         connection(nullptr),
         screen(nullptr),
-        atom_wm_delete_window(nullptr)
+        atomWmDeleteWindow(nullptr),
+        window(0)
     { }
 
     WindowXcb::~WindowXcb() 
     {
+        if(instance)
+        {
+            vkDestroyInstance(instance, nullptr);
+        }
+
         xcb_destroy_window(connection, window);
         xcb_disconnect(connection);
-        free(atom_wm_delete_window);
-    } 
+        delete(atomWmDeleteWindow);
+    }
 
-    void WindowXcb::init_connection()
+    void WindowXcb::createWindow()
+    {
+        assert(windowSettings.width > 0);
+        assert(windowSettings.height > 0);
+
+        initConnection();
+        initWindow();
+
+        initInstanceExtensionNames();
+        initInstance("TobiApp");
+    }
+
+    void WindowXcb::initConnection()
     {
         int scr;
-        connection = xcb_connect(NULL, &scr);
-        if(connection == NULL || xcb_connection_has_error(connection))
+        connection = xcb_connect(nullptr, &scr);
+        if(connection == nullptr || xcb_connection_has_error(connection))
         {
             std::cout << "Unable to make an XCB connection" << std::endl;
             exit(-1); // change to throw exception instead, and log exceptions when caught
         }
 
         const auto setup = xcb_get_setup(connection);
-        auto setup_iterator = xcb_setup_roots_iterator(setup);
+        auto setupIterator = xcb_setup_roots_iterator(setup);
 
         while(scr-- > 0)
-            xcb_screen_next(&setup_iterator);
+        {
+            xcb_screen_next(&setupIterator);
+        }
 
-        screen = setup_iterator.data;
+        screen = setupIterator.data;
     }
 
-    void WindowXcb::init_window()
+    void WindowXcb::initWindow()
     {
         assert(connection != nullptr);
         
@@ -79,7 +99,8 @@ namespace Tobi
                 0,
                 16,
                 "WM_DELETE_WINDOW");
-        atom_wm_delete_window = xcb_intern_atom_reply(
+        
+        atomWmDeleteWindow = xcb_intern_atom_reply(
                 connection,
                 deleteCookie,
                 0);
@@ -92,8 +113,8 @@ namespace Tobi
                 4,
                 32,
                 1,
-                &(*atom_wm_delete_window).atom);
-        free(reply);
+                &(*atomWmDeleteWindow).atom);
+        delete(reply);
 
         xcb_map_window(connection, window);
 
@@ -109,23 +130,54 @@ namespace Tobi
         while((e = xcb_wait_for_event(connection)))
         {
             if((e->response_type & ~0x80) == XCB_EXPOSE)
+            {
                 break;
+            }
         }
-        free(e);
+        delete(e);
     }
 
-    void WindowXcb::createWindow()
+    void WindowXcb::initInstanceExtensionNames()
     {
-        assert(windowSettings.width > 0);
-        assert(windowSettings.height > 0);
+        instanceExtensionNames.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
+#ifdef __ANDROID__
+        instanceExtensionNames.push_back(VK_KHR_ANDROID_SURFACE_EXTENSION_NAME);
+#elif defined(_WIN32)
+        instanceExtensionNames.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
+#elif defined(VK_USE_PLATFORM_IOS_MVK)
+        instanceExtensionNames.push_back(VK_KHR_IOS_SURFACE_EXTENSION_NAME);
+#elif defined(VK_USE_PLATFORM_WAYLAND)
+        instanceExtensionNames.push_back(VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME);
+#else
+        instanceExtensionNames.push_back(VK_KHR_XCB_SURFACE_EXTENSION_NAME);
+#endif
+    }
 
-        init_connection();
+    void WindowXcb::initInstance(char const *const applicationShortName)
+    {
+        VkApplicationInfo applicationInfo = {};
+        applicationInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+        applicationInfo.pNext = nullptr;
+        applicationInfo.pApplicationName = applicationShortName;
+        applicationInfo.applicationVersion = 1;
+        applicationInfo.pEngineName = applicationShortName;
+        applicationInfo.engineVersion = 1;
+        applicationInfo.apiVersion = VK_API_VERSION_1_0;
 
-        init_window();
-        std::cout<<"Creating Window: " 
-            << windowSettings.height 
-            << "x" 
-            << windowSettings.width <<std::endl;
+        VkInstanceCreateInfo instanceCreateInfo = {};
+        instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+        instanceCreateInfo.pNext = nullptr;
+        instanceCreateInfo.flags = 0;
+        instanceCreateInfo.pApplicationInfo = &applicationInfo;
+        instanceCreateInfo.enabledLayerCount = static_cast<uint32_t>(instanceLayerNames.size());
+        instanceCreateInfo.ppEnabledLayerNames = instanceLayerNames.size() 
+            ? instanceLayerNames.data() 
+            : nullptr;
+        instanceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(instanceExtensionNames.size());
+        instanceCreateInfo.ppEnabledExtensionNames = instanceExtensionNames.data();
+
+        auto result = vkCreateInstance(&instanceCreateInfo, nullptr, &instance);
+        assert(result == VK_SUCCESS);
     }
 }  // Tobi
 
