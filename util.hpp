@@ -35,3 +35,6 @@ bool GLSLtoSPV(const VkShaderStageFlagBits shader_type, const char *pshader,
                std::vector<unsigned int> &spirv);
 void initGlslang();
 void finalizeGlslang();
+
+
+void waitSeconds(int seconds);

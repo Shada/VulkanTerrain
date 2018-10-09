@@ -32,8 +32,8 @@ namespace Tobi
           renderPass(nullptr)
     {
         WindowSettings settings;                                                               
-        settings.width = 500;                                                                        
-        settings.height = 300;                                                                       
+        settings.width = 800;                                                                        
+        settings.height = 800;                                                                       
                                                                                                      
         window = std::make_unique<WindowXcb>(settings);                                   
         window->createWindow();
@@ -216,6 +216,141 @@ static const Vertex cubeData[] = {
         initDescriptorSet(false);
         initPipelineCache();
         initPipeline(depthPresent);
+
+
+        // VULKAN_KEY_START 
+
+        VkClearValue clearValues[2];
+        clearValues[0].color.float32[0] = 0.2f;
+        clearValues[0].color.float32[1] = 0.2f;
+        clearValues[0].color.float32[2] = 0.2f;
+        clearValues[0].color.float32[3] = 0.2f;
+        clearValues[1].depthStencil.depth = 1.0f;
+        clearValues[1].depthStencil.stencil = 0;
+
+        VkSemaphore imageAcquiredSemaphore;
+        VkSemaphoreCreateInfo imageAcquiredSemaphoreCreateInfo;
+        imageAcquiredSemaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+        imageAcquiredSemaphoreCreateInfo.pNext = nullptr;
+        imageAcquiredSemaphoreCreateInfo.flags = 0;
+
+        result = vkCreateSemaphore(device, &imageAcquiredSemaphoreCreateInfo, nullptr, &imageAcquiredSemaphore);
+        assert(result == VK_SUCCESS);
+
+        // Get the index of the next available swapchain image:
+        result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAcquiredSemaphore, VK_NULL_HANDLE,
+                                    &currentBuffer);
+        // TODO: Deal with the VK_SUBOPTIMAL_KHR and VK_ERROR_OUT_OF_DATE_KHR
+        // return codes
+        assert(result == VK_SUCCESS);
+
+        VkRenderPassBeginInfo renderPassBeginInfo;
+        renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        renderPassBeginInfo.pNext = nullptr;
+        renderPassBeginInfo.renderPass = renderPass;
+        renderPassBeginInfo.framebuffer = frameBuffers[currentBuffer];
+        renderPassBeginInfo.renderArea.offset.x = 0;
+        renderPassBeginInfo.renderArea.offset.y = 0;
+        renderPassBeginInfo.renderArea.extent.width = window->getWidth();
+        renderPassBeginInfo.renderArea.extent.height = window->getHeight();
+        renderPassBeginInfo.clearValueCount = 2;
+        renderPassBeginInfo.pClearValues = clearValues;
+
+        vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, NUM_DESCRIPTOR_SETS,
+                                descriptorSets.data(), 0, nullptr);
+
+        const VkDeviceSize offsets[1] = {0};
+        vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffer.buffer, offsets);
+
+        initViewPorts();
+        initScissors();
+
+        vkCmdDraw(commandBuffer, 12 * 3, 1, 0, 0);
+        vkCmdEndRenderPass(commandBuffer);
+        result = vkEndCommandBuffer(commandBuffer);
+        const VkCommandBuffer commandBuffers[] = {commandBuffer};
+        VkFenceCreateInfo fenceCreateInfo;
+        VkFence drawFence;
+        fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+        fenceCreateInfo.pNext = nullptr;
+        fenceCreateInfo.flags = 0;
+        vkCreateFence(device, &fenceCreateInfo, nullptr, &drawFence);
+
+        VkPipelineStageFlags pipelineStageFlags = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        VkSubmitInfo submitInfo[1] = {};
+        submitInfo[0].pNext = nullptr;
+        submitInfo[0].sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submitInfo[0].waitSemaphoreCount = 1;
+        submitInfo[0].pWaitSemaphores = &imageAcquiredSemaphore;
+        submitInfo[0].pWaitDstStageMask = &pipelineStageFlags;
+        submitInfo[0].commandBufferCount = 1;
+        submitInfo[0].pCommandBuffers = commandBuffers;
+        submitInfo[0].signalSemaphoreCount = 0;
+        submitInfo[0].pSignalSemaphores = nullptr;
+
+        /* Queue the command buffer for execution */
+        result = vkQueueSubmit(graphicsQueue, 1, submitInfo, drawFence);
+        assert(result == VK_SUCCESS);
+
+        /* Now present the image in the window */
+
+        VkPresentInfoKHR present;
+        present.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+        present.pNext = nullptr;
+        present.swapchainCount = 1;
+        present.pSwapchains = &swapChain;
+        present.pImageIndices = &currentBuffer;
+        present.pWaitSemaphores = nullptr;
+        present.waitSemaphoreCount = 0;
+        present.pResults = nullptr;
+
+        /* Make sure command buffer is finished before presenting */
+        do 
+        {
+            result = vkWaitForFences(device, 1, &drawFence, VK_TRUE, FENCE_TIMEOUT);
+        } while (result == VK_TIMEOUT);
+
+        assert(result == VK_SUCCESS);
+        result = vkQueuePresentKHR(presentQueue, &present);
+        assert(result == VK_SUCCESS);
+
+        waitSeconds(1);
+        /* VULKAN_KEY_END */
+        
+        vkDestroySemaphore(device, imageAcquiredSemaphore, nullptr);
+        vkDestroyFence(device, drawFence, nullptr);                                                               
+
+    }
+
+    void VulkanCore::initViewPorts()
+    {
+#ifdef __ANDROID__
+        // Disable dynamic viewport on Android. Some drive has an issue with the dynamic viewport
+        // feature.
+#else
+        viewPort.height = (float)window->getWidth();
+        viewPort.width = (float)window->getHeight();
+        viewPort.minDepth = (float)0.0f;
+        viewPort.maxDepth = (float)1.0f;
+        viewPort.x = 0;
+        viewPort.y = 0;
+        vkCmdSetViewport(commandBuffer, 0, NUM_VIEWPORTS, &viewPort);
+#endif
+    }
+    void VulkanCore::initScissors() {
+#ifdef __ANDROID__
+    // Disable dynamic viewport on Android. Some drive has an issue with the dynamic scissors
+    // feature.
+#else
+        scissor.extent.width = window->getWidth();
+        scissor.extent.height = window->getHeight();
+        scissor.offset.x = 0;
+        scissor.offset.y = 0;
+        vkCmdSetScissor(commandBuffer, 0, NUM_SCISSORS, &scissor);
+#endif
     }
 
     VkResult VulkanCore::initGlobalLayerProperties()

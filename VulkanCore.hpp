@@ -24,6 +24,9 @@
 #define NUM_VIEWPORTS 1
 #define NUM_SCISSORS NUM_VIEWPORTS
 
+// Amount of time, in nanoseconds, to wait for a command buffer to complete 
+#define FENCE_TIMEOUT 100000000
+
 namespace Tobi
 {
     typedef struct 
@@ -125,7 +128,11 @@ namespace Tobi
             void initDescriptorSet(bool useTexture);
             void initPipelineCache();
             void initPipeline(VkBool32 includeDepth, VkBool32 includeVertexInput = VK_TRUE);
-            
+            void initScissors();
+            void initViewPorts();
+
+            VkRect2D scissor;
+            VkViewport viewPort;
 
             std::unique_ptr<WindowXcb> window;
 
