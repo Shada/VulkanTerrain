@@ -30,7 +30,7 @@ namespace Tobi
     typedef struct TImageBuffer
     {
         VkImage image;
-        VkDeviceMemory mem;
+        VkDeviceMemory memory;
         VkImageView view;
     } ImageBuffer;
 
@@ -40,6 +40,13 @@ namespace Tobi
         VkDeviceMemory memory;
         VkDescriptorBufferInfo bufferInfo;
     } UniformData;
+
+    typedef struct TVertexBuffer
+    {
+        VkBuffer buffer;
+        VkDeviceMemory memory;
+        VkDescriptorBufferInfo bufferInfo;
+    } VertexBuffer;
 
     class VulkanCore
     {
@@ -157,6 +164,9 @@ namespace Tobi
             VkRenderPass renderPass;
             VkPipelineShaderStageCreateInfo shaderStages[2];
 
+            VkVertexInputBindingDescription vertexInputBinding;
+            VkVertexInputAttributeDescription vertexInputAttributes[2];
+            VertexBuffer vertexBuffer;
     };
 
 }

@@ -41,6 +41,9 @@ namespace Tobi
     }
     VulkanCore::~VulkanCore()
     {
+        vkDestroyBuffer(device, vertexBuffer.buffer, nullptr);
+        vkFreeMemory(device, vertexBuffer.memory, nullptr);
+
         for (uint32_t i = 0; i < swapChainImageCount; i++)
         {
             vkDestroyFramebuffer(device, frameBuffers[i], nullptr);
@@ -68,8 +71,8 @@ namespace Tobi
             vkDestroyImageView(device, depthBuffer.view, nullptr);
         if(depthBuffer.image)
             vkDestroyImage(device, depthBuffer.image, nullptr);
-        if(depthBuffer.mem)
-            vkFreeMemory(device, depthBuffer.mem, nullptr);
+        if(depthBuffer.memory)
+            vkFreeMemory(device, depthBuffer.memory, nullptr);
         if(swapChain)
         {
             for(uint32_t i = 0; i < swapChainImageCount; i++)
@@ -892,11 +895,11 @@ static const Vertex cubeData[] = {
         assert(pass);
 
         // Allocate memory 
-        result = vkAllocateMemory(device, &memoryAllocationInfo, nullptr, &depthBuffer.mem);
+        result = vkAllocateMemory(device, &memoryAllocationInfo, nullptr, &depthBuffer.memory);
         assert(result == VK_SUCCESS);
 
         // Bind memory 
-        result = vkBindImageMemory(device, depthBuffer.image, depthBuffer.mem, 0);
+        result = vkBindImageMemory(device, depthBuffer.image, depthBuffer.memory, 0);
         assert(result == VK_SUCCESS);
 
         // Create image view 
@@ -966,7 +969,7 @@ static const Vertex cubeData[] = {
 
         VkMemoryAllocateInfo memoryAllocationInfo = {};
         memoryAllocationInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-        memoryAllocationInfo.pNext = NULL;
+        memoryAllocationInfo.pNext = nullptr;
         memoryAllocationInfo.memoryTypeIndex = 0;
 
         memoryAllocationInfo.allocationSize = memoryRequirements.size;
@@ -1097,9 +1100,9 @@ static const Vertex cubeData[] = {
         renderPassCreateInfo.subpassCount = 1;
         renderPassCreateInfo.pSubpasses = &subpass;
         renderPassCreateInfo.dependencyCount = 0;
-        renderPassCreateInfo.pDependencies = NULL;
+        renderPassCreateInfo.pDependencies = nullptr;
 
-        result = vkCreateRenderPass(device, &renderPassCreateInfo, NULL, &renderPass);
+        result = vkCreateRenderPass(device, &renderPassCreateInfo, nullptr, &renderPass);
         assert(result == VK_SUCCESS);
     }
  
@@ -1196,7 +1199,65 @@ static const Vertex cubeData[] = {
         }
     }
     void VulkanCore::initVertexBuffer(const void *vertexData, uint32_t dataSize, uint32_t dataStride, bool useTexture)
-    {}
+    {
+        VkResult U_ASSERT_ONLY result;
+        bool U_ASSERT_ONLY pass;
+
+        VkBufferCreateInfo bufferCreateInfo = {};
+        bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+        bufferCreateInfo.pNext = nullptr;
+        bufferCreateInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+        bufferCreateInfo.size = dataSize;
+        bufferCreateInfo.queueFamilyIndexCount = 0;
+        bufferCreateInfo.pQueueFamilyIndices = nullptr;
+        bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+        bufferCreateInfo.flags = 0;
+        result = vkCreateBuffer(device, &bufferCreateInfo, nullptr, &vertexBuffer.buffer);
+        assert(result == VK_SUCCESS);
+
+        VkMemoryRequirements memoryRequirements;
+        vkGetBufferMemoryRequirements(device, vertexBuffer.buffer, &memoryRequirements);
+
+        VkMemoryAllocateInfo memoryAllocationInfo = {};
+        memoryAllocationInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+        memoryAllocationInfo.pNext = nullptr;
+        memoryAllocationInfo.memoryTypeIndex = 0;
+
+        memoryAllocationInfo.allocationSize = memoryRequirements.size;
+        pass = memoryTypeFromProperties(memoryRequirements.memoryTypeBits,
+                                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                                        &memoryAllocationInfo.memoryTypeIndex);
+        assert(pass && "No mappable, coherent memory");
+
+        result = vkAllocateMemory(device, &memoryAllocationInfo, nullptr, &(vertexBuffer.memory));
+        assert(result == VK_SUCCESS);
+        vertexBuffer.bufferInfo.range = memoryRequirements.size;
+        vertexBuffer.bufferInfo.offset = 0;
+
+        uint8_t *pData;
+        result = vkMapMemory(device, vertexBuffer.memory, 0, memoryRequirements.size, 0, (void **)&pData);
+        assert(result == VK_SUCCESS);
+
+        memcpy(pData, vertexData, dataSize);
+
+        vkUnmapMemory(device, vertexBuffer.memory);
+
+        result = vkBindBufferMemory(device, vertexBuffer.buffer, vertexBuffer.memory, 0);
+        assert(result == VK_SUCCESS);
+
+        vertexInputBinding.binding = 0;
+        vertexInputBinding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+        vertexInputBinding.stride = dataStride;
+
+        vertexInputAttributes[0].binding = 0;
+        vertexInputAttributes[0].location = 0;
+        vertexInputAttributes[0].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+        vertexInputAttributes[0].offset = 0;
+        vertexInputAttributes[1].binding = 0;
+        vertexInputAttributes[1].location = 1;
+        vertexInputAttributes[1].format = useTexture ? VK_FORMAT_R32G32_SFLOAT : VK_FORMAT_R32G32B32A32_SFLOAT;
+        vertexInputAttributes[1].offset = 16;
+    }
     void VulkanCore::initDescriptorPool(bool useTexture)
     {}
     void VulkanCore::initDescriptorSet(bool useTexture)
