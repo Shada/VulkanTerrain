@@ -23,9 +23,11 @@ void initGlslang() {}
 
 void finalizeGlslang() {}
 
-bool GLSLtoSPV(const VkShaderStageFlagBits shader_type, const char *pshader, std::vector<unsigned int> &spirv) {
+bool GLSLtoSPV(const VkShaderStageFlagBits shaderType, const char *shaderText, std::vector<unsigned int> &spirv) 
+{
     MVKShaderStage shaderStage;
-    switch (shader_type) {
+    switch (shaderType) 
+    {
         case VK_SHADER_STAGE_VERTEX_BIT:
             shaderStage = kMVKShaderStageVertex;
             break;
@@ -50,9 +52,10 @@ bool GLSLtoSPV(const VkShaderStageFlagBits shader_type, const char *pshader, std
     }
 
     mvk::GLSLToSPIRVConverter glslConverter;
-    glslConverter.setGLSL(pshader);
+    glslConverter.setGLSL(shaderText);
     bool wasConverted = glslConverter.convert(shaderStage, false, false);
-    if (wasConverted) {
+    if (wasConverted) 
+    {
         spirv = glslConverter.getSPIRV();
     }
     return wasConverted;
@@ -61,103 +64,106 @@ bool GLSLtoSPV(const VkShaderStageFlagBits shader_type, const char *pshader, std
 #else  // not IOS OR macOS
 
 #ifndef __ANDROID__
-void initResources(TBuiltInResource &Resources) {
-    Resources.maxLights = 32;
-    Resources.maxClipPlanes = 6;
-    Resources.maxTextureUnits = 32;
-    Resources.maxTextureCoords = 32;
-    Resources.maxVertexAttribs = 64;
-    Resources.maxVertexUniformComponents = 4096;
-    Resources.maxVaryingFloats = 64;
-    Resources.maxVertexTextureImageUnits = 32;
-    Resources.maxCombinedTextureImageUnits = 80;
-    Resources.maxTextureImageUnits = 32;
-    Resources.maxFragmentUniformComponents = 4096;
-    Resources.maxDrawBuffers = 32;
-    Resources.maxVertexUniformVectors = 128;
-    Resources.maxVaryingVectors = 8;
-    Resources.maxFragmentUniformVectors = 16;
-    Resources.maxVertexOutputVectors = 16;
-    Resources.maxFragmentInputVectors = 15;
-    Resources.minProgramTexelOffset = -8;
-    Resources.maxProgramTexelOffset = 7;
-    Resources.maxClipDistances = 8;
-    Resources.maxComputeWorkGroupCountX = 65535;
-    Resources.maxComputeWorkGroupCountY = 65535;
-    Resources.maxComputeWorkGroupCountZ = 65535;
-    Resources.maxComputeWorkGroupSizeX = 1024;
-    Resources.maxComputeWorkGroupSizeY = 1024;
-    Resources.maxComputeWorkGroupSizeZ = 64;
-    Resources.maxComputeUniformComponents = 1024;
-    Resources.maxComputeTextureImageUnits = 16;
-    Resources.maxComputeImageUniforms = 8;
-    Resources.maxComputeAtomicCounters = 8;
-    Resources.maxComputeAtomicCounterBuffers = 1;
-    Resources.maxVaryingComponents = 60;
-    Resources.maxVertexOutputComponents = 64;
-    Resources.maxGeometryInputComponents = 64;
-    Resources.maxGeometryOutputComponents = 128;
-    Resources.maxFragmentInputComponents = 128;
-    Resources.maxImageUnits = 8;
-    Resources.maxCombinedImageUnitsAndFragmentOutputs = 8;
-    Resources.maxCombinedShaderOutputResources = 8;
-    Resources.maxImageSamples = 0;
-    Resources.maxVertexImageUniforms = 0;
-    Resources.maxTessControlImageUniforms = 0;
-    Resources.maxTessEvaluationImageUniforms = 0;
-    Resources.maxGeometryImageUniforms = 0;
-    Resources.maxFragmentImageUniforms = 8;
-    Resources.maxCombinedImageUniforms = 8;
-    Resources.maxGeometryTextureImageUnits = 16;
-    Resources.maxGeometryOutputVertices = 256;
-    Resources.maxGeometryTotalOutputComponents = 1024;
-    Resources.maxGeometryUniformComponents = 1024;
-    Resources.maxGeometryVaryingComponents = 64;
-    Resources.maxTessControlInputComponents = 128;
-    Resources.maxTessControlOutputComponents = 128;
-    Resources.maxTessControlTextureImageUnits = 16;
-    Resources.maxTessControlUniformComponents = 1024;
-    Resources.maxTessControlTotalOutputComponents = 4096;
-    Resources.maxTessEvaluationInputComponents = 128;
-    Resources.maxTessEvaluationOutputComponents = 128;
-    Resources.maxTessEvaluationTextureImageUnits = 16;
-    Resources.maxTessEvaluationUniformComponents = 1024;
-    Resources.maxTessPatchComponents = 120;
-    Resources.maxPatchVertices = 32;
-    Resources.maxTessGenLevel = 64;
-    Resources.maxViewports = 16;
-    Resources.maxVertexAtomicCounters = 0;
-    Resources.maxTessControlAtomicCounters = 0;
-    Resources.maxTessEvaluationAtomicCounters = 0;
-    Resources.maxGeometryAtomicCounters = 0;
-    Resources.maxFragmentAtomicCounters = 8;
-    Resources.maxCombinedAtomicCounters = 8;
-    Resources.maxAtomicCounterBindings = 1;
-    Resources.maxVertexAtomicCounterBuffers = 0;
-    Resources.maxTessControlAtomicCounterBuffers = 0;
-    Resources.maxTessEvaluationAtomicCounterBuffers = 0;
-    Resources.maxGeometryAtomicCounterBuffers = 0;
-    Resources.maxFragmentAtomicCounterBuffers = 1;
-    Resources.maxCombinedAtomicCounterBuffers = 1;
-    Resources.maxAtomicCounterBufferSize = 16384;
-    Resources.maxTransformFeedbackBuffers = 4;
-    Resources.maxTransformFeedbackInterleavedComponents = 64;
-    Resources.maxCullDistances = 8;
-    Resources.maxCombinedClipAndCullDistances = 8;
-    Resources.maxSamples = 4;
-    Resources.limits.nonInductiveForLoops = 1;
-    Resources.limits.whileLoops = 1;
-    Resources.limits.doWhileLoops = 1;
-    Resources.limits.generalUniformIndexing = 1;
-    Resources.limits.generalAttributeMatrixVectorIndexing = 1;
-    Resources.limits.generalVaryingIndexing = 1;
-    Resources.limits.generalSamplerIndexing = 1;
-    Resources.limits.generalVariableIndexing = 1;
-    Resources.limits.generalConstantMatrixVectorIndexing = 1;
+void initResources(TBuiltInResource &resources) 
+{
+    resources.maxLights = 32;
+    resources.maxClipPlanes = 6;
+    resources.maxTextureUnits = 32;
+    resources.maxTextureCoords = 32;
+    resources.maxVertexAttribs = 64;
+    resources.maxVertexUniformComponents = 4096;
+    resources.maxVaryingFloats = 64;
+    resources.maxVertexTextureImageUnits = 32;
+    resources.maxCombinedTextureImageUnits = 80;
+    resources.maxTextureImageUnits = 32;
+    resources.maxFragmentUniformComponents = 4096;
+    resources.maxDrawBuffers = 32;
+    resources.maxVertexUniformVectors = 128;
+    resources.maxVaryingVectors = 8;
+    resources.maxFragmentUniformVectors = 16;
+    resources.maxVertexOutputVectors = 16;
+    resources.maxFragmentInputVectors = 15;
+    resources.minProgramTexelOffset = -8;
+    resources.maxProgramTexelOffset = 7;
+    resources.maxClipDistances = 8;
+    resources.maxComputeWorkGroupCountX = 65535;
+    resources.maxComputeWorkGroupCountY = 65535;
+    resources.maxComputeWorkGroupCountZ = 65535;
+    resources.maxComputeWorkGroupSizeX = 1024;
+    resources.maxComputeWorkGroupSizeY = 1024;
+    resources.maxComputeWorkGroupSizeZ = 64;
+    resources.maxComputeUniformComponents = 1024;
+    resources.maxComputeTextureImageUnits = 16;
+    resources.maxComputeImageUniforms = 8;
+    resources.maxComputeAtomicCounters = 8;
+    resources.maxComputeAtomicCounterBuffers = 1;
+    resources.maxVaryingComponents = 60;
+    resources.maxVertexOutputComponents = 64;
+    resources.maxGeometryInputComponents = 64;
+    resources.maxGeometryOutputComponents = 128;
+    resources.maxFragmentInputComponents = 128;
+    resources.maxImageUnits = 8;
+    resources.maxCombinedImageUnitsAndFragmentOutputs = 8;
+    resources.maxCombinedShaderOutputResources = 8;
+    resources.maxImageSamples = 0;
+    resources.maxVertexImageUniforms = 0;
+    resources.maxTessControlImageUniforms = 0;
+    resources.maxTessEvaluationImageUniforms = 0;
+    resources.maxGeometryImageUniforms = 0;
+    resources.maxFragmentImageUniforms = 8;
+    resources.maxCombinedImageUniforms = 8;
+    resources.maxGeometryTextureImageUnits = 16;
+    resources.maxGeometryOutputVertices = 256;
+    resources.maxGeometryTotalOutputComponents = 1024;
+    resources.maxGeometryUniformComponents = 1024;
+    resources.maxGeometryVaryingComponents = 64;
+    resources.maxTessControlInputComponents = 128;
+    resources.maxTessControlOutputComponents = 128;
+    resources.maxTessControlTextureImageUnits = 16;
+    resources.maxTessControlUniformComponents = 1024;
+    resources.maxTessControlTotalOutputComponents = 4096;
+    resources.maxTessEvaluationInputComponents = 128;
+    resources.maxTessEvaluationOutputComponents = 128;
+    resources.maxTessEvaluationTextureImageUnits = 16;
+    resources.maxTessEvaluationUniformComponents = 1024;
+    resources.maxTessPatchComponents = 120;
+    resources.maxPatchVertices = 32;
+    resources.maxTessGenLevel = 64;
+    resources.maxViewports = 16;
+    resources.maxVertexAtomicCounters = 0;
+    resources.maxTessControlAtomicCounters = 0;
+    resources.maxTessEvaluationAtomicCounters = 0;
+    resources.maxGeometryAtomicCounters = 0;
+    resources.maxFragmentAtomicCounters = 8;
+    resources.maxCombinedAtomicCounters = 8;
+    resources.maxAtomicCounterBindings = 1;
+    resources.maxVertexAtomicCounterBuffers = 0;
+    resources.maxTessControlAtomicCounterBuffers = 0;
+    resources.maxTessEvaluationAtomicCounterBuffers = 0;
+    resources.maxGeometryAtomicCounterBuffers = 0;
+    resources.maxFragmentAtomicCounterBuffers = 1;
+    resources.maxCombinedAtomicCounterBuffers = 1;
+    resources.maxAtomicCounterBufferSize = 16384;
+    resources.maxTransformFeedbackBuffers = 4;
+    resources.maxTransformFeedbackInterleavedComponents = 64;
+    resources.maxCullDistances = 8;
+    resources.maxCombinedClipAndCullDistances = 8;
+    resources.maxSamples = 4;
+    resources.limits.nonInductiveForLoops = 1;
+    resources.limits.whileLoops = 1;
+    resources.limits.doWhileLoops = 1;
+    resources.limits.generalUniformIndexing = 1;
+    resources.limits.generalAttributeMatrixVectorIndexing = 1;
+    resources.limits.generalVaryingIndexing = 1;
+    resources.limits.generalSamplerIndexing = 1;
+    resources.limits.generalVariableIndexing = 1;
+    resources.limits.generalConstantMatrixVectorIndexing = 1;
 }
 
-EShLanguage FindLanguage(const VkShaderStageFlagBits shader_type) {
-    switch (shader_type) {
+EShLanguage findLanguage(const VkShaderStageFlagBits shaderType) 
+{
+    switch (shaderType) 
+    {
         case VK_SHADER_STAGE_VERTEX_BIT:
             return EShLangVertex;
 
@@ -182,13 +188,15 @@ EShLanguage FindLanguage(const VkShaderStageFlagBits shader_type) {
 }
 #endif
 
-void initGlslang() {
+void initGlslang() 
+{
 #ifndef __ANDROID__
     glslang::InitializeProcess();
 #endif
 }
 
-void finalizeGlslang() {
+void finalizeGlslang() 
+{
 #ifndef __ANDROID__
     glslang::FinalizeProcess();
 #endif
@@ -196,11 +204,13 @@ void finalizeGlslang() {
 
 #ifdef __ANDROID__
 // Android specific helper functions for shaderc.
-struct shader_type_mapping {
-    VkShaderStageFlagBits vkshader_type;
-    shaderc_shader_kind shaderc_type;
+struct ShaderTypeMapping 
+{
+    VkShaderStageFlagBits vkShaderType;
+    shaderc_shader_kind shadercType;
 };
-static const shader_type_mapping shader_map_table[] = {
+static const ShaderTypeMapping shaderMapTable[] = 
+{
     {VK_SHADER_STAGE_VERTEX_BIT, shaderc_glsl_vertex_shader},
     {VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, shaderc_glsl_tess_control_shader},
     {VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, shaderc_glsl_tess_evaluation_shader},
@@ -208,10 +218,13 @@ static const shader_type_mapping shader_map_table[] = {
     {VK_SHADER_STAGE_FRAGMENT_BIT, shaderc_glsl_fragment_shader},
     {VK_SHADER_STAGE_COMPUTE_BIT, shaderc_glsl_compute_shader},
 };
-shaderc_shader_kind MapShadercType(VkShaderStageFlagBits vkShader) {
-    for (auto shader : shader_map_table) {
-        if (shader.vkshader_type == vkShader) {
-            return shader.shaderc_type;
+shaderc_shader_kind MapShadercType(VkShaderStageFlagBits vkShader) 
+{
+    for (auto shader : shaderMapTable) 
+    {
+        if (shader.vkShaderType == vkShader) 
+        {
+            return shader.shadercType;
         }
     }
     assert(false);
@@ -223,22 +236,24 @@ shaderc_shader_kind MapShadercType(VkShaderStageFlagBits vkShader) {
 // Compile a given string containing GLSL into SPV for use by VK
 // Return value of false means an error was encountered.
 //
-bool GLSLtoSPV(const VkShaderStageFlagBits shader_type, const char *pshader, std::vector<unsigned int> &spirv) {
+bool GLSLtoSPV(const VkShaderStageFlagBits shaderType, const char *shaderText, std::vector<unsigned int> &spirv) 
+{
 #ifndef __ANDROID__
-    EShLanguage stage = FindLanguage(shader_type);
+    EShLanguage stage = findLanguage(shaderType);
     glslang::TShader shader(stage);
     glslang::TProgram program;
     const char *shaderStrings[1];
-    TBuiltInResource Resources;
-    initResources(Resources);
+    TBuiltInResource resources;
+    initResources(resources);
 
     // Enable SPIR-V and Vulkan rules when parsing GLSL
     EShMessages messages = (EShMessages)(EShMsgSpvRules | EShMsgVulkanRules);
 
-    shaderStrings[0] = pshader;
+    shaderStrings[0] = shaderText;
     shader.setStrings(shaderStrings, 1);
 
-    if (!shader.parse(&Resources, 100, false, messages)) {
+    if (!shader.parse(&resources, 100, false, messages)) 
+    {
         puts(shader.getInfoLog());
         puts(shader.getInfoDebugLog());
         return false;  // something didn't work
@@ -250,7 +265,8 @@ bool GLSLtoSPV(const VkShaderStageFlagBits shader_type, const char *pshader, std
     // Program-level processing...
     //
 
-    if (!program.link(messages)) {
+    if (!program.link(messages)) 
+    {
         puts(shader.getInfoLog());
         puts(shader.getInfoDebugLog());
         fflush(stdout);
@@ -262,8 +278,9 @@ bool GLSLtoSPV(const VkShaderStageFlagBits shader_type, const char *pshader, std
     // On Android, use shaderc instead.
     shaderc::Compiler compiler;
     shaderc::SpvCompilationResult module =
-        compiler.CompileGlslToSpv(pshader, strlen(pshader), MapShadercType(shader_type), "shader");
-    if (module.GetCompilationStatus() != shaderc_compilation_status_success) {
+        compiler.CompileGlslToSpv(shaderText, strlen(shaderText), MapShadercType(shaderType), "shader");
+    if (module.GetCompilationStatus() != shaderc_compilation_status_success) 
+    {
         LOGE("Error: Id=%d, Msg=%s", module.GetCompilationStatus(), module.GetErrorMessage().c_str());
         return false;
     }
