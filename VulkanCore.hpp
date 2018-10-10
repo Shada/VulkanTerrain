@@ -11,6 +11,7 @@
 
 #include "WindowXcb.hpp"
 #include "VulkanShaderProgram.hpp"
+#include "VulkanSwapChain.hpp"
 
 // Number of samples needs to be the same at image creation,      
 // renderpass creation and pipeline creation.                     
@@ -32,11 +33,6 @@
 
 namespace Tobi
 {
-    typedef struct TSwapChainBuffer 
-    {
-        VkImage image;
-        VkImageView view;
-    } SwapChainBuffer;
 
     typedef struct TImageBuffer
     {
@@ -86,10 +82,6 @@ namespace Tobi
             void executeBeginCommandBuffer();
             void executeEndCommandBuffer(); 
 
-            void initSwapChain(VkImageUsageFlags usageFlags = 
-                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
-                    VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
-
 			void initDepthBuffer();                
             void initUniformBuffer();
             
@@ -118,10 +110,7 @@ namespace Tobi
 
             std::unique_ptr<VulkanShaderProgram> shaderProgram;
 
-            VkSwapchainKHR swapChain;
-            std::vector<SwapChainBuffer> swapChainBuffers;
-            uint32_t swapChainImageCount;
-            uint32_t currentBuffer;
+            std::unique_ptr<VulkanSwapChain> swapChain;
 
             std::vector<LayerProperties> instanceLayerProperties;
 
