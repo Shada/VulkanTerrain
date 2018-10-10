@@ -93,7 +93,6 @@ namespace Tobi
                     bool includeDepth, 
                     bool clear = true, 
                     VkImageLayout finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-            void initShaders(const char *vertexShaderText, const char *fragmentShaderText);
             void initFrameBuffers(bool includeDepth);
             void initVertexBuffer(const void *vertexData, uint32_t dataSize, uint32_t dataStride, bool useTexture);
             void initDescriptorPool(bool useTexture);
