@@ -8,6 +8,8 @@
 #include "VulkanCore.hpp"
 
 #include "util.hpp"
+#include "VertexShaderText.hpp"
+#include "FragmentShaderText.hpp"
 
 namespace Tobi
 {
@@ -89,34 +91,13 @@ namespace Tobi
         if(commandPool)
             vkDestroyCommandPool(window->getDevice(), commandPool, nullptr);
     }
-static const char *vertexShaderText =
-    "#version 400\n"
-    "#extension GL_ARB_separate_shader_objects : enable\n"
-    "#extension GL_ARB_shading_language_420pack : enable\n"
-    "layout (std140, binding = 0) uniform bufferVals {\n"
-    "    mat4 mvp;\n"
-    "} myBufferVals;\n"
-    "layout (location = 0) in vec4 pos;\n"
-    "layout (location = 1) in vec4 inColor;\n"
-    "layout (location = 0) out vec4 outColor;\n"
-    "void main() {\n"
-    "   outColor = inColor;\n"
-    "   gl_Position = myBufferVals.mvp * pos;\n"
-    "}\n";
 
-static const char *fragmentShaderText =
-    "#version 400\n"
-    "#extension GL_ARB_separate_shader_objects : enable\n"
-    "#extension GL_ARB_shading_language_420pack : enable\n"
-    "layout (location = 0) in vec4 color;\n"
-    "layout (location = 0) out vec4 outColor;\n"
-    "void main() {\n"
-    "   outColor = color;\n"
-    "}\n";
-struct Vertex {
+struct Vertex 
+{
     float posX, posY, posZ, posW;  // Position data
     float r, g, b, a;              // Color
 };
+
 #define XYZ1(_x_, _y_, _z_) (_x_), (_y_), (_z_), 1.f
 #define UV(_u_, _v_) (_u_), (_v_)
 static const Vertex cubeData[] = {
@@ -184,7 +165,7 @@ static const Vertex cubeData[] = {
         initUniformBuffer();
         initDescriptorAndPipelineLayouts(false);
         initRenderpass(depthPresent);
-        initShaders(vertexShaderText, fragmentShaderText);
+        initShaders(ShaderText::vertexShaderText, ShaderText::fragmentShaderText);
         initFrameBuffers(depthPresent);
         initVertexBuffer(cubeData, sizeof(cubeData), sizeof(cubeData[0]), false);
         initDescriptorPool(false);
