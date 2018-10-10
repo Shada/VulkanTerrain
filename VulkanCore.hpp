@@ -10,6 +10,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "WindowXcb.hpp"
+#include "VulkanShaderProgram.hpp"
 
 // Number of samples needs to be the same at image creation,      
 // renderpass creation and pipeline creation.                     
@@ -113,7 +114,9 @@ namespace Tobi
             VkRect2D scissor;
             VkViewport viewPort;
 
-            std::unique_ptr<WindowXcb> window;
+            std::shared_ptr<WindowXcb> window;
+
+            std::unique_ptr<VulkanShaderProgram> shaderProgram;
 
             VkSwapchainKHR swapChain;
             std::vector<SwapChainBuffer> swapChainBuffers;
@@ -128,9 +131,6 @@ namespace Tobi
 
             VkPipelineCache pipelineCache;
             VkPipeline pipeline;
-
-
-
 
             VkCommandPool commandPool;
             // TODO: possible to have several command swapChainBuffers in the future
@@ -155,7 +155,6 @@ namespace Tobi
             VkPipelineLayout pipelineLayout;
 
             VkRenderPass renderPass;
-            VkPipelineShaderStageCreateInfo shaderStages[2];
 
             VkVertexInputBindingDescription vertexInputBinding;
             VkVertexInputAttributeDescription vertexInputAttributes[2];

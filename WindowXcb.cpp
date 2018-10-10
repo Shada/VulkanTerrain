@@ -13,7 +13,9 @@ namespace Tobi
         screen(nullptr),
         atomWmDeleteWindow(nullptr),
         window(0)
-    { }
+    {
+        createWindow();
+    }
 
     WindowXcb::~WindowXcb() 
     {

@@ -9,8 +9,6 @@
 
 #include "util.hpp"
 
-#include "VertexShaderText.hpp"
-#include "FragmentShaderText.hpp"
 #include "CubeVertexData.hpp"
 
 namespace Tobi
@@ -32,8 +30,7 @@ namespace Tobi
         settings.width = 800;                                                                        
         settings.height = 800;                                                                       
                                                                                                      
-        window = std::make_unique<WindowXcb>(settings);                                   
-        window->createWindow();
+        window = std::make_shared<WindowXcb>(settings);
         
         initVulkan();
     }
@@ -53,10 +50,7 @@ namespace Tobi
             vkDestroyFramebuffer(window->getDevice(), frameBuffers[i], nullptr);
         }
         free(frameBuffers);
-        if(shaderStages[0].module)
-            vkDestroyShaderModule(window->getDevice(), shaderStages[0].module, nullptr);
-        if(shaderStages[1].module)
-            vkDestroyShaderModule(window->getDevice(), shaderStages[1].module, nullptr);
+        
 
         if(renderPass)
             vkDestroyRenderPass(window->getDevice(), renderPass, nullptr);
@@ -107,6 +101,7 @@ namespace Tobi
 
         const bool depthPresent = true;
 
+
         
         initCommandPool();
         initCommandBuffer();
@@ -115,7 +110,10 @@ namespace Tobi
         initUniformBuffer();
         initDescriptorAndPipelineLayouts(false);
         initRenderpass(depthPresent);
-        initShaders(ShaderText::vertexShaderText, ShaderText::fragmentShaderText);
+        
+        // might be earlier/later?
+        shaderProgram = std::make_unique<VulkanShaderProgram>(window);
+        
         initFrameBuffers(depthPresent);
         initVertexBuffer(cubeData, sizeof(cubeData), sizeof(cubeData[0]), false);
         initDescriptorPool(false);
@@ -845,69 +843,6 @@ namespace Tobi
     }
  
 
-    void VulkanCore::initShaders(const char *vertexShaderText, const char *fragmentShaderText)
-    { 
-        VkResult U_ASSERT_ONLY result = VK_SUCCESS;
-        bool U_ASSERT_ONLY returnValue = true;
-
-        // If no shaders were submitted, just return
-        if (!(vertexShaderText || fragmentShaderText)) 
-        {
-            std::cout << "shaders not complete" << std::endl;
-            return;
-        }
-
-        initGlslang();
-
-        VkShaderModuleCreateInfo moduleCreateInfo;
-
-        if (vertexShaderText) 
-        {
-            std::vector<unsigned int> vertexShaderSpv;
-            shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-            shaderStages[0].pNext = nullptr;
-            shaderStages[0].pSpecializationInfo = nullptr;
-            shaderStages[0].flags = 0;
-            shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-            shaderStages[0].pName = "main";
-
-            returnValue = GLSLtoSPV(VK_SHADER_STAGE_VERTEX_BIT, vertexShaderText, vertexShaderSpv);
-            assert(returnValue);
-
-            moduleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-            moduleCreateInfo.pNext = nullptr;
-            moduleCreateInfo.flags = 0;
-            moduleCreateInfo.codeSize = vertexShaderSpv.size() * sizeof(unsigned int);
-            moduleCreateInfo.pCode = vertexShaderSpv.data();
-            result = vkCreateShaderModule(window->getDevice(), &moduleCreateInfo, nullptr, &shaderStages[0].module);
-            assert(result == VK_SUCCESS);
-        }
-
-        if (fragmentShaderText) 
-        {
-            std::vector<unsigned int> fragmentShaderSpv;
-            shaderStages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-            shaderStages[1].pNext = nullptr;
-            shaderStages[1].pSpecializationInfo = nullptr;
-            shaderStages[1].flags = 0;
-            shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-            shaderStages[1].pName = "main";
-
-            returnValue = GLSLtoSPV(VK_SHADER_STAGE_FRAGMENT_BIT, fragmentShaderText, fragmentShaderSpv);
-            assert(returnValue);
-
-            moduleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-            moduleCreateInfo.pNext = nullptr;
-            moduleCreateInfo.flags = 0;
-            moduleCreateInfo.codeSize = fragmentShaderSpv.size() * sizeof(unsigned int);
-            moduleCreateInfo.pCode = fragmentShaderSpv.data();
-            result = vkCreateShaderModule(window->getDevice(), &moduleCreateInfo, nullptr, &shaderStages[1].module);
-            assert(result == VK_SUCCESS);
-        }
-
-        finalizeGlslang();
-    }
-
     void VulkanCore::initFrameBuffers(bool includeDepth)
     {
         // DEPENDS on init_depth_buffer(), init_renderpass() and
@@ -1224,7 +1159,7 @@ namespace Tobi
         pipelineCreateInfo.pDynamicState = &dynamicState;
         pipelineCreateInfo.pViewportState = &viewportStateCreateInfo;
         pipelineCreateInfo.pDepthStencilState = &depthStencilStateCreateInfo;
-        pipelineCreateInfo.pStages = shaderStages;
+        pipelineCreateInfo.pStages = shaderProgram->getShaderStages().data();
         pipelineCreateInfo.stageCount = 2;
         pipelineCreateInfo.renderPass = renderPass;
         pipelineCreateInfo.subpass = 0;
