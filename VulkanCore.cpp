@@ -12,18 +12,11 @@
 namespace Tobi
 {
     VulkanCore::VulkanCore()
-        : queueFamilyCount(0),
-          surface(nullptr),
-          device(nullptr),
-          commandPool(nullptr),
+        : commandPool(nullptr),
           commandBuffer(nullptr),
-          graphicsQueue(nullptr),
-          presentQueue(nullptr),
           swapChain(nullptr),
           currentBuffer(0),
           swapChainImageCount(0),
-          graphicsQueueFamilyIndex(0),
-          presentQueueFamilyIndex(0),
           window(nullptr),
           depthBuffer{nullptr, nullptr, nullptr},
           depthBufferFormat(VK_FORMAT_UNDEFINED),
@@ -42,67 +35,59 @@ namespace Tobi
     }
     VulkanCore::~VulkanCore()
     {
-        vkDestroyPipeline(device, pipeline, nullptr);
+        vkDestroyPipeline(window->getDevice(), pipeline, nullptr);
         
-        vkDestroyPipelineCache(device, pipelineCache, nullptr);
+        vkDestroyPipelineCache(window->getDevice(), pipelineCache, nullptr);
 
-        vkDestroyDescriptorPool(device, descriptorPool, nullptr);
+        vkDestroyDescriptorPool(window->getDevice(), descriptorPool, nullptr);
 
-        vkDestroyBuffer(device, vertexBuffer.buffer, nullptr);
-        vkFreeMemory(device, vertexBuffer.memory, nullptr);
+        vkDestroyBuffer(window->getDevice(), vertexBuffer.buffer, nullptr);
+        vkFreeMemory(window->getDevice(), vertexBuffer.memory, nullptr);
 
         for (uint32_t i = 0; i < swapChainImageCount; i++)
         {
-            vkDestroyFramebuffer(device, frameBuffers[i], nullptr);
+            vkDestroyFramebuffer(window->getDevice(), frameBuffers[i], nullptr);
         }
         free(frameBuffers);
         if(shaderStages[0].module)
-            vkDestroyShaderModule(device, shaderStages[0].module, nullptr);
+            vkDestroyShaderModule(window->getDevice(), shaderStages[0].module, nullptr);
         if(shaderStages[1].module)
-            vkDestroyShaderModule(device, shaderStages[1].module, nullptr);
+            vkDestroyShaderModule(window->getDevice(), shaderStages[1].module, nullptr);
 
         if(renderPass)
-            vkDestroyRenderPass(device, renderPass, nullptr);
+            vkDestroyRenderPass(window->getDevice(), renderPass, nullptr);
         if(pipelineLayout)
         {
             for (int i = 0; i < NUM_DESCRIPTOR_SETS; i++) 
-                vkDestroyDescriptorSetLayout(device, descriptorSetLayout[i], nullptr);
-            vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+                vkDestroyDescriptorSetLayout(window->getDevice(), descriptorSetLayout[i], nullptr);
+            vkDestroyPipelineLayout(window->getDevice(), pipelineLayout, nullptr);
         }
         if(uniformData.buffer)
         {
-            vkDestroyBuffer(device, uniformData.buffer, nullptr);
-            vkFreeMemory(device, uniformData.memory, nullptr);
+            vkDestroyBuffer(window->getDevice(), uniformData.buffer, nullptr);
+            vkFreeMemory(window->getDevice(), uniformData.memory, nullptr);
         }
         if(depthBuffer.view)
-            vkDestroyImageView(device, depthBuffer.view, nullptr);
+            vkDestroyImageView(window->getDevice(), depthBuffer.view, nullptr);
         if(depthBuffer.image)
-            vkDestroyImage(device, depthBuffer.image, nullptr);
+            vkDestroyImage(window->getDevice(), depthBuffer.image, nullptr);
         if(depthBuffer.memory)
-            vkFreeMemory(device, depthBuffer.memory, nullptr);
+            vkFreeMemory(window->getDevice(), depthBuffer.memory, nullptr);
         if(swapChain)
         {
             for(uint32_t i = 0; i < swapChainImageCount; i++)
             {
-                vkDestroyImageView(device, swapChainBuffers[i].view, nullptr);
+                vkDestroyImageView(window->getDevice(), swapChainBuffers[i].view, nullptr);
             }
-            vkDestroySwapchainKHR(device, swapChain, nullptr);
+            vkDestroySwapchainKHR(window->getDevice(), swapChain, nullptr);
         }
         if(commandBuffer)
         {
             VkCommandBuffer commandBuffers[1] = {commandBuffer};
-            vkFreeCommandBuffers(device, commandPool, 1, commandBuffers);
+            vkFreeCommandBuffers(window->getDevice(), commandPool, 1, commandBuffers);
         }
         if(commandPool)
-            vkDestroyCommandPool(device, commandPool, nullptr);
-        if(device)
-        {
-            vkDeviceWaitIdle(device);
-            vkDestroyDevice(device, nullptr);
-        }
-
-        if(surface)                                                                                  
-            vkDestroySurfaceKHR(window->getInstance(), surface, nullptr);     
+            vkDestroyCommandPool(window->getDevice(), commandPool, nullptr);
     }
 static const char *vertexShaderText =
     "#version 400\n"
@@ -191,13 +176,9 @@ static const Vertex cubeData[] = {
 
         const bool depthPresent = true;
 
-        initDeviceExtensionNames();
-        initEnumerateDevice();
-        initSwapchainExtension();
-        initDevice();
+        
         initCommandPool();
         initCommandBuffer();
-        initDeviceQueue();
         initSwapChain();
         initDepthBuffer();
         initUniformBuffer();
@@ -228,11 +209,11 @@ static const Vertex cubeData[] = {
         imageAcquiredSemaphoreCreateInfo.pNext = nullptr;
         imageAcquiredSemaphoreCreateInfo.flags = 0;
 
-        result = vkCreateSemaphore(device, &imageAcquiredSemaphoreCreateInfo, nullptr, &imageAcquiredSemaphore);
+        result = vkCreateSemaphore(window->getDevice(), &imageAcquiredSemaphoreCreateInfo, nullptr, &imageAcquiredSemaphore);
         assert(result == VK_SUCCESS);
 
         // Get the index of the next available swapchain image:
-        result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAcquiredSemaphore, VK_NULL_HANDLE,
+        result = vkAcquireNextImageKHR(window->getDevice(), swapChain, UINT64_MAX, imageAcquiredSemaphore, VK_NULL_HANDLE,
                                     &currentBuffer);
         // TODO: Deal with the VK_SUBOPTIMAL_KHR and VK_ERROR_OUT_OF_DATE_KHR
         // return codes
@@ -273,7 +254,7 @@ static const Vertex cubeData[] = {
         fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
         fenceCreateInfo.pNext = nullptr;
         fenceCreateInfo.flags = 0;
-        vkCreateFence(device, &fenceCreateInfo, nullptr, &drawFence);
+        vkCreateFence(window->getDevice(), &fenceCreateInfo, nullptr, &drawFence);
 
         VkPipelineStageFlags pipelineStageFlags = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
         VkSubmitInfo submitInfo[1] = {};
@@ -288,7 +269,7 @@ static const Vertex cubeData[] = {
         submitInfo[0].pSignalSemaphores = nullptr;
 
         /* Queue the command buffer for execution */
-        result = vkQueueSubmit(graphicsQueue, 1, submitInfo, drawFence);
+        result = vkQueueSubmit(window->getGraphicsQueue(), 1, submitInfo, drawFence);
         assert(result == VK_SUCCESS);
 
         /* Now present the image in the window */
@@ -306,18 +287,18 @@ static const Vertex cubeData[] = {
         /* Make sure command buffer is finished before presenting */
         do 
         {
-            result = vkWaitForFences(device, 1, &drawFence, VK_TRUE, FENCE_TIMEOUT);
+            result = vkWaitForFences(window->getDevice(), 1, &drawFence, VK_TRUE, FENCE_TIMEOUT);
         } while (result == VK_TIMEOUT);
 
         assert(result == VK_SUCCESS);
-        result = vkQueuePresentKHR(presentQueue, &present);
+        result = vkQueuePresentKHR(window->getPresentQueue(), &present);
         assert(result == VK_SUCCESS);
 
         waitSeconds(1);
         /* VULKAN_KEY_END */
         
-        vkDestroySemaphore(device, imageAcquiredSemaphore, nullptr);
-        vkDestroyFence(device, drawFence, nullptr);                                                               
+        vkDestroySemaphore(window->getDevice(), imageAcquiredSemaphore, nullptr);
+        vkDestroyFence(window->getDevice(), drawFence, nullptr);                                                               
 
     }
 
@@ -428,238 +409,6 @@ static const Vertex cubeData[] = {
         return result;
     }
 
-
-    void VulkanCore::initDeviceExtensionNames()
-    {
-        deviceExtensionNames.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-    }
-
-    
-//TODO: move to some utility library
-#if defined(NDEBUG) && defined(__GNUC__)
-#define U_ASSERT_ONLY __attribute__((unused))
-#else
-#define U_ASSERT_ONLY
-#endif
-
-    VkResult VulkanCore::initEnumerateDevice(uint32_t gpuCount)
-    {
-        uint32_t const U_ASSERT_ONLY requiredGpuCount = gpuCount;
-        VkResult result = vkEnumeratePhysicalDevices(window->getInstance(), &gpuCount, nullptr);
-        assert(gpuCount);
-        gpus.resize(gpuCount);
-
-        result = vkEnumeratePhysicalDevices(window->getInstance(), &gpuCount, gpus.data());
-        assert(!result && gpuCount >= requiredGpuCount);
-
-        // TODO: is this something I should do for all gpus? if I have several, I want to utilize all
-        vkGetPhysicalDeviceQueueFamilyProperties(gpus[0], &queueFamilyCount, nullptr);
-        assert(queueFamilyCount >= 1);
-
-        queueProperties.resize(queueFamilyCount);
-        vkGetPhysicalDeviceQueueFamilyProperties(
-                gpus[0], 
-                &queueFamilyCount, 
-                queueProperties.data());
-        assert(queueFamilyCount >= 1);
-
-        vkGetPhysicalDeviceMemoryProperties(gpus[0], &memoryProperties);
-        vkGetPhysicalDeviceProperties(gpus[0], &gpuProperties);
-        
-        for(auto &layerProperties : instanceLayerProperties)
-        {
-            initDeviceExtensionProperties(layerProperties);
-        }
-
-        return result;
-    }
-
-    VkResult VulkanCore::initDeviceExtensionProperties(LayerProperties &layerProperties)
-    {
-        VkResult result = VK_SUCCESS;
-        
-        auto layerName = layerProperties.properties.layerName;
-        
-        do
-        {
-            VkExtensionProperties *deviceExtensions;
-            uint32_t deviceExtensionCount;
-
-            result = vkEnumerateDeviceExtensionProperties(
-                    gpus[0], 
-                    layerName, 
-                    &deviceExtensionCount,
-                    nullptr);
-
-            if(result)
-            {
-                return result;
-            }
-
-            if(deviceExtensionCount == 0)
-            {
-                return VK_SUCCESS;
-            }
-
-            layerProperties.deviceExtensions.resize(deviceExtensionCount);
-            deviceExtensions = layerProperties.deviceExtensions.data();
-            result = vkEnumerateDeviceExtensionProperties(
-                    gpus[0], 
-                    layerName,
-                    &deviceExtensionCount,
-                    deviceExtensions);                    
-        }
-        while(result == VK_INCOMPLETE);
-
-        return result;
-    }
-
-    void VulkanCore::initSwapchainExtension()
-    {
-        VkResult U_ASSERT_ONLY result = VK_SUCCESS;
-
-#ifdef _WIN32
-        VkWin32SurfaceCreateInfoKHR surfaceCreateInfo = {};
-        surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-        surfaceCreateInfo.pNext = nullptr;
-        surfaceCreateInfo.hinstance = window->getConnection();
-        surfaceCreateInfo.hwnd = window->getWindow();
-        result = vkCreateWin32SurfaceKHR(window->getInstance(), &surfaceCreateInfo, nullptr, &surface);
-#elif defined(__ANDROID__)
-        // this is not yet supported
-        /*
-        GET_INSTANCE_PROC_ADDR(window->getInstance(), CreateAndroidSurfaceKHR);
-
-        VkAndroidSurfaceCreateInfoKHR surfaceCreateInfo = {};
-        surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR;
-        surfaceCreateInfo.pNext = nullptr;
-        surfaceCreateInfo.flags = 0;
-        surfaceCreateInfo.window = AndroidGetApplicationWindow();
-        result = fpCreateAndroidSurfaceKHR(window->getInstance(), &surfaceCreateInfo, nullptr, &surface);
-        */
-#elif defined(VK_USE_PLATFOR_IOS_MVK)
-        VkIOSSurfaceInfoMVK surfaceCreateInfo = {};
-        surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_IOS_CREATE_INFO_MVK;
-        surfaceCreateInfo.pNext = nullptr;
-        surfaceCreateInfo.flags = 0;
-        surfaceCreateInfo.pView = window->getWindow();
-        result = vkCreateIOSSurfaceMVK(window->getInstance(), &surfaceCreateInfo, nullptr, &surface);
-#elif defined(VK_USE_PLATFORM_MACOS_MVK)
-        VkMacOSSurfaceCreateInfo surfaceCreateInfo = {};
-        surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_MACOS_STRUCTURE_CREATE_INFO_MVK;
-        surfaceCreateInfo.pNext = nulptr;
-        surfaceCreateInfo.flags - 0;
-        surfaceCreateInfo.pView = window->getWindow();
-#elif defined(VK_USE_PLATFORM_WAYLAND)
-        VkWaylandSurfaceCreateInfoKHR surfaceCreateInfo = {};
-        surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_SURFACE_CREATE_INFO_KHR;
-        surfaceCreateInfo.pNext = nullptr;
-        surfaceCreateInfo.display = window->getDisplay();
-        surfaceCreateInfo.surface = window->getWindow();
-        result = vkCreateWaylandSurfaceKHR(window->getInstance(), &surfaceCreateInfo, nullptr, &surface);
-#else
-        VkXcbSurfaceCreateInfoKHR surfaceCreateInfo = {};
-        surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR;
-        surfaceCreateInfo.pNext = nullptr;
-        surfaceCreateInfo.connection = window->getConnection();
-        surfaceCreateInfo.window = window->getWindow();
-        result = vkCreateXcbSurfaceKHR(window->getInstance(), &surfaceCreateInfo, nullptr, &surface);
-#endif
-        assert(result == VK_SUCCESS);
-        
-        VkBool32 *pSupportsPresent = (VkBool32 *)malloc(queueFamilyCount * sizeof(VkBool32));
-        for(uint32_t i = 0; i < queueFamilyCount; i++)
-        {
-            vkGetPhysicalDeviceSurfaceSupportKHR(gpus[0], i, surface, &pSupportsPresent[i]);
-        }
-
-        graphicsQueueFamilyIndex = UINT32_MAX;
-        presentQueueFamilyIndex = UINT32_MAX;
-        for(uint32_t i = 0; i < queueFamilyCount; ++i)
-        {
-            if((queueProperties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0)
-            {
-                if(graphicsQueueFamilyIndex == UINT32_MAX) 
-                    graphicsQueueFamilyIndex = i;
-
-                if(pSupportsPresent[i] == VK_TRUE)
-                {
-                    graphicsQueueFamilyIndex = i;
-                    presentQueueFamilyIndex = i;
-                    break;
-                }
-            }
-        }
-
-        if(presentQueueFamilyIndex == UINT32_MAX)
-        {
-            for(size_t i = 0; i < queueFamilyCount; ++i)
-            {
-                if(pSupportsPresent[i] == VK_TRUE)
-                {
-                    presentQueueFamilyIndex = i;
-                    break;
-                }
-            }
-        }
-        free(pSupportsPresent);
-        
-
-        if(graphicsQueueFamilyIndex == UINT32_MAX || presentQueueFamilyIndex == UINT32_MAX)
-        {
-            std::cout << "Could not find a queue for both graphics and present" << std::endl;
-            exit(-1);
-        }
-
-        uint32_t formatCount;
-        result = vkGetPhysicalDeviceSurfaceFormatsKHR(gpus[0], surface, &formatCount, nullptr);
-        assert(result == VK_SUCCESS);
-        VkSurfaceFormatKHR *surfaceFormats = (VkSurfaceFormatKHR *)malloc(formatCount * sizeof(VkSurfaceFormatKHR));
-        result = vkGetPhysicalDeviceSurfaceFormatsKHR(gpus[0], surface, &formatCount, surfaceFormats);
-        assert(result == VK_SUCCESS);
-
-        if(formatCount == 1 && surfaceFormats[0].format == VK_FORMAT_UNDEFINED)
-        {
-            format = VK_FORMAT_B8G8R8A8_UNORM;
-        }
-        else
-        {
-            assert(formatCount >= 1);
-            format = surfaceFormats[0].format;
-        }
-
-        free(surfaceFormats);
-    }
-
-    VkResult VulkanCore::initDevice()
-    {
-        VkResult result = VK_SUCCESS;
-        
-        float queuePriorities[1] = {0.0};
-        VkDeviceQueueCreateInfo deviceQueueCreateInfo = {};
-        deviceQueueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        deviceQueueCreateInfo.pNext = nullptr;
-        deviceQueueCreateInfo.queueCount = 1;
-        deviceQueueCreateInfo.pQueuePriorities = queuePriorities;
-        deviceQueueCreateInfo.queueFamilyIndex = graphicsQueueFamilyIndex;
-
-        VkDeviceCreateInfo deviceCreateInfo = {};
-        deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-        deviceCreateInfo.pNext = nullptr;
-        deviceCreateInfo.queueCreateInfoCount = 1;
-        deviceCreateInfo.pQueueCreateInfos = &deviceQueueCreateInfo;
-        deviceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensionNames.size());
-        deviceCreateInfo.ppEnabledExtensionNames = deviceCreateInfo.enabledExtensionCount 
-            ? deviceExtensionNames.data()
-            : nullptr;
-        deviceCreateInfo.pEnabledFeatures = nullptr;
-
-        result = vkCreateDevice(gpus[0], &deviceCreateInfo, nullptr, &device);
-        assert(result == VK_SUCCESS);
-
-        return result;
-    }
-
     void VulkanCore::initCommandPool()
     {
         VkResult U_ASSERT_ONLY result = VK_SUCCESS;
@@ -667,10 +416,10 @@ static const Vertex cubeData[] = {
         VkCommandPoolCreateInfo commandPoolCreateInfo = {};
         commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
         commandPoolCreateInfo.pNext = nullptr;
-        commandPoolCreateInfo.queueFamilyIndex = graphicsQueueFamilyIndex;
+        commandPoolCreateInfo.queueFamilyIndex = window->getGraphicsQueueIndex();
         commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 
-        result = vkCreateCommandPool(device, &commandPoolCreateInfo, nullptr, &commandPool);
+        result = vkCreateCommandPool(window->getDevice(), &commandPoolCreateInfo, nullptr, &commandPool);
         assert(result == VK_SUCCESS);
     }
 
@@ -684,7 +433,7 @@ static const Vertex cubeData[] = {
         commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
         commandBufferAllocateInfo.commandBufferCount = 1;
 
-        result = vkAllocateCommandBuffers(device, &commandBufferAllocateInfo, &commandBuffer);
+        result = vkAllocateCommandBuffers(window->getDevice(), &commandBufferAllocateInfo, &commandBuffer);
         assert(result == VK_SUCCESS);
     }
 
@@ -710,35 +459,21 @@ static const Vertex cubeData[] = {
         assert(result == VK_SUCCESS);
     }
 
-    void VulkanCore::initDeviceQueue() 
-    {   /* DEPENDS on init_swapchain_extension() */
-
-        vkGetDeviceQueue(device, graphicsQueueFamilyIndex, 0, &graphicsQueue);
-        if (graphicsQueueFamilyIndex == presentQueueFamilyIndex) 
-        {
-            presentQueue = graphicsQueue;
-        } 
-        else 
-        {
-            vkGetDeviceQueue(device, presentQueueFamilyIndex, 0, &presentQueue);
-        }
-    }
-
     void VulkanCore::initSwapChain(VkImageUsageFlags usageFlags) 
     {   /* DEPENDS on commandBuffer and queue initialized */
 
         VkResult U_ASSERT_ONLY result = VK_SUCCESS;
         VkSurfaceCapabilitiesKHR surfaceCapabilities;
 
-        result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(gpus[0], surface, &surfaceCapabilities);
+        result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(window->getPhysicalDevice(), window->getSurface(), &surfaceCapabilities);
         assert(result == VK_SUCCESS);
 
         uint32_t presentModeCount;
-        result = vkGetPhysicalDeviceSurfacePresentModesKHR(gpus[0], surface, &presentModeCount, nullptr);
+        result = vkGetPhysicalDeviceSurfacePresentModesKHR(window->getPhysicalDevice(), window->getSurface(), &presentModeCount, nullptr);
         assert(result == VK_SUCCESS);
         VkPresentModeKHR *presentModes = (VkPresentModeKHR *)malloc(presentModeCount * sizeof(VkPresentModeKHR));
         assert(presentModes);
-        result = vkGetPhysicalDeviceSurfacePresentModesKHR(gpus[0], surface, &presentModeCount, presentModes);
+        result = vkGetPhysicalDeviceSurfacePresentModesKHR(window->getPhysicalDevice(), window->getSurface(), &presentModeCount, presentModes);
         assert(result == VK_SUCCESS);
 
         VkExtent2D swapChainExtent;
@@ -815,9 +550,9 @@ static const Vertex cubeData[] = {
         VkSwapchainCreateInfoKHR swapChainCreateInfo = {};
         swapChainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
         swapChainCreateInfo.pNext = nullptr;
-        swapChainCreateInfo.surface = surface;
+        swapChainCreateInfo.surface = window->getSurface();
         swapChainCreateInfo.minImageCount = desiredNumberOfSwapChainImages;
-        swapChainCreateInfo.imageFormat = format;
+        swapChainCreateInfo.imageFormat = window->getSurfaceFormat();
         swapChainCreateInfo.imageExtent.width = swapChainExtent.width;
         swapChainCreateInfo.imageExtent.height = swapChainExtent.height;
         swapChainCreateInfo.preTransform = preTransform;
@@ -835,8 +570,8 @@ static const Vertex cubeData[] = {
         swapChainCreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
         swapChainCreateInfo.queueFamilyIndexCount = 0;
         swapChainCreateInfo.pQueueFamilyIndices = nullptr;
-        uint32_t queueFamilyIndices[2] = {(uint32_t)graphicsQueueFamilyIndex, (uint32_t)presentQueueFamilyIndex};
-        if (graphicsQueueFamilyIndex != presentQueueFamilyIndex) 
+        uint32_t queueFamilyIndices[2] = { window->getGraphicsQueueIndex(), window->getPresentQueueIndex() };
+        if (window->getGraphicsQueueIndex() != window->getPresentQueueIndex()) 
         {
             // If the graphics and present queues are from different queue families,
             // we either have to explicitly transfer ownership of images between the
@@ -847,15 +582,15 @@ static const Vertex cubeData[] = {
             swapChainCreateInfo.pQueueFamilyIndices = queueFamilyIndices;
         }
 
-        result = vkCreateSwapchainKHR(device, &swapChainCreateInfo, nullptr, &swapChain);
+        result = vkCreateSwapchainKHR(window->getDevice(), &swapChainCreateInfo, nullptr, &swapChain);
         assert(result == VK_SUCCESS);
 
-        result = vkGetSwapchainImagesKHR(device, swapChain, &swapChainImageCount, nullptr);
+        result = vkGetSwapchainImagesKHR(window->getDevice(), swapChain, &swapChainImageCount, nullptr);
         assert(result == VK_SUCCESS);
 
         VkImage *swapChainImages = (VkImage *)malloc(swapChainImageCount * sizeof(VkImage));
         assert(swapChainImages);
-        result = vkGetSwapchainImagesKHR(device, swapChain, &swapChainImageCount, swapChainImages);
+        result = vkGetSwapchainImagesKHR(window->getDevice(), swapChain, &swapChainImageCount, swapChainImages);
         assert(result == VK_SUCCESS);
 
         for (uint32_t i = 0; i < swapChainImageCount; i++) 
@@ -865,7 +600,7 @@ static const Vertex cubeData[] = {
             VkImageViewCreateInfo colorImageViewCreateInfo = {};
             colorImageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
             colorImageViewCreateInfo.pNext = nullptr;
-            colorImageViewCreateInfo.format = format;
+            colorImageViewCreateInfo.format = window->getSurfaceFormat();
             colorImageViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_R;
             colorImageViewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_G;
             colorImageViewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_B;
@@ -882,7 +617,7 @@ static const Vertex cubeData[] = {
 
             colorImageViewCreateInfo.image = swapChainBuffer.image;
 
-            result = vkCreateImageView(device, &colorImageViewCreateInfo, nullptr, &swapChainBuffer.view);
+            result = vkCreateImageView(window->getDevice(), &colorImageViewCreateInfo, nullptr, &swapChainBuffer.view);
             swapChainBuffers.push_back(swapChainBuffer);
             assert(result == VK_SUCCESS);
         }
@@ -913,7 +648,7 @@ static const Vertex cubeData[] = {
 
         const VkFormat depthFormat = depthBufferFormat;
         VkFormatProperties formatProperties;
-        vkGetPhysicalDeviceFormatProperties(gpus[0], depthFormat, &formatProperties);
+        vkGetPhysicalDeviceFormatProperties(window->getPhysicalDevice(), depthFormat, &formatProperties);
         if (formatProperties.linearTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) 
         {
             imageCreateInfo.tiling = VK_IMAGE_TILING_LINEAR;
@@ -977,51 +712,29 @@ static const Vertex cubeData[] = {
         VkMemoryRequirements memoryRequirements;
 
         // Create image 
-        result = vkCreateImage(device, &imageCreateInfo, nullptr, &depthBuffer.image);
+        result = vkCreateImage(window->getDevice(), &imageCreateInfo, nullptr, &depthBuffer.image);
         assert(result == VK_SUCCESS);
 
-        vkGetImageMemoryRequirements(device, depthBuffer.image, &memoryRequirements);
+        vkGetImageMemoryRequirements(window->getDevice(), depthBuffer.image, &memoryRequirements);
 
         memoryAllocationInfo.allocationSize = memoryRequirements.size;
         // Use the memory properties to determine the type of memory required 
         pass =
-            memoryTypeFromProperties(memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &memoryAllocationInfo.memoryTypeIndex);
+            window->memoryTypeFromProperties(memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &memoryAllocationInfo.memoryTypeIndex);
         assert(pass);
 
         // Allocate memory 
-        result = vkAllocateMemory(device, &memoryAllocationInfo, nullptr, &depthBuffer.memory);
+        result = vkAllocateMemory(window->getDevice(), &memoryAllocationInfo, nullptr, &depthBuffer.memory);
         assert(result == VK_SUCCESS);
 
         // Bind memory 
-        result = vkBindImageMemory(device, depthBuffer.image, depthBuffer.memory, 0);
+        result = vkBindImageMemory(window->getDevice(), depthBuffer.image, depthBuffer.memory, 0);
         assert(result == VK_SUCCESS);
 
         // Create image view 
         imageViewCreateInfo.image = depthBuffer.image;
-        result = vkCreateImageView(device, &imageViewCreateInfo, nullptr, &depthBuffer.view);
+        result = vkCreateImageView(window->getDevice(), &imageViewCreateInfo, nullptr, &depthBuffer.view);
         assert(result == VK_SUCCESS);
-    }
-
-    bool VulkanCore::memoryTypeFromProperties(uint32_t typeBits,
-                                 VkFlags requirementsMask,
-                                 uint32_t *typeIndex)
-    {
-        // Search memtypes to find first index with those properties
-        for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++) 
-        {
-            if ((typeBits & 1) == 1) 
-            {
-                // Type is available, does it match user properties?
-                if ((memoryProperties.memoryTypes[i].propertyFlags & requirementsMask) == requirementsMask) 
-                {
-                    *typeIndex = i;
-                    return true;
-                }
-            }
-            typeBits >>= 1;
-        }
-        // No memory types matched, return failure
-        return false;
     }
     
     // TODO: this is stuff for the camera. the camera should be refactored into a separate class
@@ -1055,11 +768,11 @@ static const Vertex cubeData[] = {
         bufferCreateInfo.pQueueFamilyIndices = nullptr;
         bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
         bufferCreateInfo.flags = 0;
-        result = vkCreateBuffer(device, &bufferCreateInfo, nullptr, &uniformData.buffer);
+        result = vkCreateBuffer(window->getDevice(), &bufferCreateInfo, nullptr, &uniformData.buffer);
         assert(result == VK_SUCCESS);
 
         VkMemoryRequirements memoryRequirements;
-        vkGetBufferMemoryRequirements(device, uniformData.buffer, &memoryRequirements);
+        vkGetBufferMemoryRequirements(window->getDevice(), uniformData.buffer, &memoryRequirements);
 
         VkMemoryAllocateInfo memoryAllocationInfo = {};
         memoryAllocationInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -1067,23 +780,23 @@ static const Vertex cubeData[] = {
         memoryAllocationInfo.memoryTypeIndex = 0;
 
         memoryAllocationInfo.allocationSize = memoryRequirements.size;
-        pass = memoryTypeFromProperties(memoryRequirements.memoryTypeBits,
-                                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                        &memoryAllocationInfo.memoryTypeIndex);
+        pass = window->memoryTypeFromProperties(memoryRequirements.memoryTypeBits,
+                                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                                                &memoryAllocationInfo.memoryTypeIndex);
         assert(pass && "No mappable, coherent memory");
 
-        result = vkAllocateMemory(device, &memoryAllocationInfo, nullptr, &(uniformData.memory));
+        result = vkAllocateMemory(window->getDevice(), &memoryAllocationInfo, nullptr, &(uniformData.memory));
         assert(result == VK_SUCCESS);
 
         uint8_t *pData;
-        result = vkMapMemory(device, uniformData.memory, 0, memoryRequirements.size, 0, (void **)&pData);
+        result = vkMapMemory(window->getDevice(), uniformData.memory, 0, memoryRequirements.size, 0, (void **)&pData);
         assert(result == VK_SUCCESS);
 
         memcpy(pData, &modelViewProjectionMatrix, sizeof(modelViewProjectionMatrix));
 
-        vkUnmapMemory(device, uniformData.memory);
+        vkUnmapMemory(window->getDevice(), uniformData.memory);
 
-        result = vkBindBufferMemory(device, uniformData.buffer, uniformData.memory, 0);
+        result = vkBindBufferMemory(window->getDevice(), uniformData.buffer, uniformData.memory, 0);
         assert(result == VK_SUCCESS);
 
         uniformData.bufferInfo.buffer = uniformData.buffer;
@@ -1121,7 +834,7 @@ static const Vertex cubeData[] = {
         VkResult U_ASSERT_ONLY result = VK_SUCCESS;
 
         descriptorSetLayout.resize(NUM_DESCRIPTOR_SETS);
-        result = vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCreateInfo, nullptr, descriptorSetLayout.data());
+        result = vkCreateDescriptorSetLayout(window->getDevice(), &descriptorSetLayoutCreateInfo, nullptr, descriptorSetLayout.data());
         assert(result == VK_SUCCESS);
 
         // Now use the descriptor layout to create a pipelineCreateInfo layout
@@ -1133,7 +846,7 @@ static const Vertex cubeData[] = {
         pipelineLayoutCreateInfo.setLayoutCount = NUM_DESCRIPTOR_SETS;
         pipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayout.data();
 
-        result = vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout);
+        result = vkCreatePipelineLayout(window->getDevice(), &pipelineLayoutCreateInfo, nullptr, &pipelineLayout);
         assert(result == VK_SUCCESS);
     }
 
@@ -1143,7 +856,7 @@ static const Vertex cubeData[] = {
         VkResult U_ASSERT_ONLY result;
         // Need imageViewAttachments for render target and depth buffer
         VkAttachmentDescription imageViewAttachments[2];
-        imageViewAttachments[0].format = format;
+        imageViewAttachments[0].format = window->getSurfaceFormat();
         imageViewAttachments[0].samples = NUM_SAMPLES;
         imageViewAttachments[0].loadOp = clear ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
         imageViewAttachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -1196,7 +909,7 @@ static const Vertex cubeData[] = {
         renderPassCreateInfo.dependencyCount = 0;
         renderPassCreateInfo.pDependencies = nullptr;
 
-        result = vkCreateRenderPass(device, &renderPassCreateInfo, nullptr, &renderPass);
+        result = vkCreateRenderPass(window->getDevice(), &renderPassCreateInfo, nullptr, &renderPass);
         assert(result == VK_SUCCESS);
     }
  
@@ -1235,7 +948,7 @@ static const Vertex cubeData[] = {
             moduleCreateInfo.flags = 0;
             moduleCreateInfo.codeSize = vertexShaderSpv.size() * sizeof(unsigned int);
             moduleCreateInfo.pCode = vertexShaderSpv.data();
-            result = vkCreateShaderModule(device, &moduleCreateInfo, nullptr, &shaderStages[0].module);
+            result = vkCreateShaderModule(window->getDevice(), &moduleCreateInfo, nullptr, &shaderStages[0].module);
             assert(result == VK_SUCCESS);
         }
 
@@ -1257,7 +970,7 @@ static const Vertex cubeData[] = {
             moduleCreateInfo.flags = 0;
             moduleCreateInfo.codeSize = fragmentShaderSpv.size() * sizeof(unsigned int);
             moduleCreateInfo.pCode = fragmentShaderSpv.data();
-            result = vkCreateShaderModule(device, &moduleCreateInfo, nullptr, &shaderStages[1].module);
+            result = vkCreateShaderModule(window->getDevice(), &moduleCreateInfo, nullptr, &shaderStages[1].module);
             assert(result == VK_SUCCESS);
         }
 
@@ -1288,7 +1001,7 @@ static const Vertex cubeData[] = {
         for (uint32_t i = 0; i < swapChainImageCount; i++) 
         {
             imageViewAttachments[0] = swapChainBuffers[i].view;
-            result = vkCreateFramebuffer(device, &frameBufferCreateInfo, nullptr, &frameBuffers[i]);
+            result = vkCreateFramebuffer(window->getDevice(), &frameBufferCreateInfo, nullptr, &frameBuffers[i]);
             assert(result == VK_SUCCESS);
         }
     }
@@ -1306,11 +1019,11 @@ static const Vertex cubeData[] = {
         bufferCreateInfo.pQueueFamilyIndices = nullptr;
         bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
         bufferCreateInfo.flags = 0;
-        result = vkCreateBuffer(device, &bufferCreateInfo, nullptr, &vertexBuffer.buffer);
+        result = vkCreateBuffer(window->getDevice(), &bufferCreateInfo, nullptr, &vertexBuffer.buffer);
         assert(result == VK_SUCCESS);
 
         VkMemoryRequirements memoryRequirements;
-        vkGetBufferMemoryRequirements(device, vertexBuffer.buffer, &memoryRequirements);
+        vkGetBufferMemoryRequirements(window->getDevice(), vertexBuffer.buffer, &memoryRequirements);
 
         VkMemoryAllocateInfo memoryAllocationInfo = {};
         memoryAllocationInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -1318,25 +1031,25 @@ static const Vertex cubeData[] = {
         memoryAllocationInfo.memoryTypeIndex = 0;
 
         memoryAllocationInfo.allocationSize = memoryRequirements.size;
-        pass = memoryTypeFromProperties(memoryRequirements.memoryTypeBits,
-                                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                        &memoryAllocationInfo.memoryTypeIndex);
+        pass = window->memoryTypeFromProperties(memoryRequirements.memoryTypeBits,
+                                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                                                &memoryAllocationInfo.memoryTypeIndex);
         assert(pass && "No mappable, coherent memory");
 
-        result = vkAllocateMemory(device, &memoryAllocationInfo, nullptr, &(vertexBuffer.memory));
+        result = vkAllocateMemory(window->getDevice(), &memoryAllocationInfo, nullptr, &(vertexBuffer.memory));
         assert(result == VK_SUCCESS);
         vertexBuffer.bufferInfo.range = memoryRequirements.size;
         vertexBuffer.bufferInfo.offset = 0;
 
         uint8_t *pData;
-        result = vkMapMemory(device, vertexBuffer.memory, 0, memoryRequirements.size, 0, (void **)&pData);
+        result = vkMapMemory(window->getDevice(), vertexBuffer.memory, 0, memoryRequirements.size, 0, (void **)&pData);
         assert(result == VK_SUCCESS);
 
         memcpy(pData, vertexData, dataSize);
 
-        vkUnmapMemory(device, vertexBuffer.memory);
+        vkUnmapMemory(window->getDevice(), vertexBuffer.memory);
 
-        result = vkBindBufferMemory(device, vertexBuffer.buffer, vertexBuffer.memory, 0);
+        result = vkBindBufferMemory(window->getDevice(), vertexBuffer.buffer, vertexBuffer.memory, 0);
         assert(result == VK_SUCCESS);
 
         vertexInputBinding.binding = 0;
@@ -1374,7 +1087,7 @@ static const Vertex cubeData[] = {
         descriptorPoolCreateInfo.poolSizeCount = useTexture ? 2 : 1;
         descriptorPoolCreateInfo.pPoolSizes = typeCount;
 
-        result = vkCreateDescriptorPool(device, &descriptorPoolCreateInfo, nullptr, &descriptorPool);
+        result = vkCreateDescriptorPool(window->getDevice(), &descriptorPoolCreateInfo, nullptr, &descriptorPool);
         assert(result == VK_SUCCESS);
     }
     void VulkanCore::initDescriptorSet(bool useTexture)
@@ -1391,7 +1104,7 @@ static const Vertex cubeData[] = {
         descriptorsetAllocationInfo[0].pSetLayouts = descriptorSetLayout.data();
 
         descriptorSets.resize(NUM_DESCRIPTOR_SETS);
-        result = vkAllocateDescriptorSets(device, descriptorsetAllocationInfo, descriptorSets.data());
+        result = vkAllocateDescriptorSets(window->getDevice(), descriptorsetAllocationInfo, descriptorSets.data());
         assert(result == VK_SUCCESS);
 
         VkWriteDescriptorSet writes[2];
@@ -1418,7 +1131,7 @@ static const Vertex cubeData[] = {
             writes[1].dstArrayElement = 0;
         }
 
-        vkUpdateDescriptorSets(device, useTexture ? 2 : 1, writes, 0, nullptr);
+        vkUpdateDescriptorSets(window->getDevice(), useTexture ? 2 : 1, writes, 0, nullptr);
     }
     void VulkanCore::initPipelineCache()
     {
@@ -1430,7 +1143,7 @@ static const Vertex cubeData[] = {
         pipelineCacheCreateInfo.initialDataSize = 0;
         pipelineCacheCreateInfo.pInitialData = nullptr;
         pipelineCacheCreateInfo.flags = 0;
-        result = vkCreatePipelineCache(device, &pipelineCacheCreateInfo, nullptr, &pipelineCache);
+        result = vkCreatePipelineCache(window->getDevice(), &pipelineCacheCreateInfo, nullptr, &pipelineCache);
         assert(result == VK_SUCCESS);
     }
     void VulkanCore::initPipeline(VkBool32 includeDepth, VkBool32 includeVertexInput)
@@ -1585,7 +1298,7 @@ static const Vertex cubeData[] = {
         pipelineCreateInfo.renderPass = renderPass;
         pipelineCreateInfo.subpass = 0;
 
-        result = vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipeline);
+        result = vkCreateGraphicsPipelines(window->getDevice(), pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipeline);
         assert(result == VK_SUCCESS);
     }
 }

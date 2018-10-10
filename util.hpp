@@ -28,6 +28,12 @@
 #include "vulkan/vk_sdk_platform.h"
 #endif
 
+#if defined(NDEBUG) && defined(__GNUC__)
+#define U_ASSERT_ONLY __attribute__((unused))
+#else
+#define U_ASSERT_ONLY
+#endif
+
 #include <vulkan/vulkan.h>
 
 

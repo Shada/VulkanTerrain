@@ -29,13 +29,6 @@
 
 namespace Tobi
 {
-    typedef struct 
-    {
-        VkLayerProperties properties;
-        std::vector<VkExtensionProperties> instanceExtensions;
-        std::vector<VkExtensionProperties> deviceExtensions;
-    } LayerProperties;
-
     typedef struct TSwapChainBuffer 
     {
         VkImage image;
@@ -83,22 +76,12 @@ namespace Tobi
             VkResult initGlobalLayerProperties();
             VkResult initGlobalExtensionProperties(LayerProperties &layerProperties);
 
-            void initDeviceExtensionNames();
-           
-            VkResult initDeviceExtensionProperties(LayerProperties &layerProperties);
-
-            VkResult initDevice();
-            VkResult initEnumerateDevice(uint32_t gpu_count = 1);
-
-            void initSwapchainExtension();
            
             void initCommandPool();
             void initCommandBuffer();
 
             void executeBeginCommandBuffer();
             void executeEndCommandBuffer(); 
-
-            void initDeviceQueue();
 
             void initSwapChain(VkImageUsageFlags usageFlags = 
                     VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
@@ -107,9 +90,6 @@ namespace Tobi
 			void initDepthBuffer();                
             void initUniformBuffer();
             
-			bool memoryTypeFromProperties(uint32_t typeBits,
-                                          	 VkFlags requirements_mask,
-                                 			 uint32_t *typeIndex);
 			
             void initDescriptorAndPipelineLayouts(
                     bool useTexture,
@@ -139,10 +119,7 @@ namespace Tobi
             uint32_t currentBuffer;
 
             std::vector<LayerProperties> instanceLayerProperties;
-            std::vector<const char *> deviceExtensionNames;
 
-            VkDevice device;
-            VkSurfaceKHR surface;
 
             VkDescriptorPool descriptorPool;
             std::vector<VkDescriptorSet> descriptorSets;
@@ -150,23 +127,12 @@ namespace Tobi
             VkPipelineCache pipelineCache;
             VkPipeline pipeline;
 
-            std::vector<VkPhysicalDevice> gpus;
-            uint32_t queueFamilyCount;
-            std::vector<VkQueueFamilyProperties> queueProperties;
-            VkPhysicalDeviceMemoryProperties memoryProperties;
-            VkPhysicalDeviceProperties gpuProperties;
 
-            uint32_t graphicsQueueFamilyIndex;
-            uint32_t presentQueueFamilyIndex;
 
-            VkFormat format;
 
             VkCommandPool commandPool;
             // TODO: possible to have several command swapChainBuffers in the future
             VkCommandBuffer commandBuffer;
-
-            VkQueue presentQueue;
-            VkQueue graphicsQueue;
 
 			ImageBuffer depthBuffer;
 			VkFormat depthBufferFormat;
