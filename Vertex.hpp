@@ -9,4 +9,4 @@ namespace Tobi
         float r, g, b, a;              // Color
     };
 
-}
+}  // namespace Tobi

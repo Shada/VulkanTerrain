@@ -1,3 +1,5 @@
+#pragma once 
+
 namespace Tobi
 {
     namespace ShaderText
@@ -17,4 +19,4 @@ namespace Tobi
             "   gl_Position = myBufferVals.mvp * pos;\n"
             "}\n";
     }
-}
+}  // namespace Tobi

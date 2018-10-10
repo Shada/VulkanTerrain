@@ -1232,4 +1232,4 @@ namespace Tobi
         result = vkCreateGraphicsPipelines(window->getDevice(), pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipeline);
         assert(result == VK_SUCCESS);
     }
-}
+}  // namspace Tobi

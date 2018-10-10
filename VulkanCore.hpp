@@ -1,10 +1,12 @@
+#pragma once
+
 #include <unistd.h>
-#include "vulkan/vk_sdk_platform.h"
+#include <vulkan/vk_sdk_platform.h>
 #include <vulkan/vulkan.h>
 #include <vector>
 #include <memory>
 #define GLM_FORCE_RADIANS
-#include "glm/glm.hpp"
+#include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "WindowXcb.hpp"
@@ -160,4 +162,4 @@ namespace Tobi
             VertexBuffer vertexBuffer;
     };
 
-}
+}  // namespace Tobi
