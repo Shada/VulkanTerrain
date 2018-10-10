@@ -12,10 +12,8 @@
 #include "WindowXcb.hpp"
 #include "VulkanShaderProgram.hpp"
 #include "VulkanSwapChain.hpp"
+#include "VulkanDepthBuffer.hpp"
 
-// Number of samples needs to be the same at image creation,      
-// renderpass creation and pipeline creation.                     
-#define NUM_SAMPLES VK_SAMPLE_COUNT_1_BIT
 
 // Number of descriptor sets needs to be the same at alloc,       
 // pipeline layout creation, and descriptor set layout creation   
@@ -34,12 +32,6 @@
 namespace Tobi
 {
 
-    typedef struct TImageBuffer
-    {
-        VkImage image;
-        VkDeviceMemory memory;
-        VkImageView view;
-    } ImageBuffer;
 
 	typedef struct TUniformData
 	{
@@ -81,8 +73,7 @@ namespace Tobi
 
             void executeBeginCommandBuffer();
             void executeEndCommandBuffer(); 
-
-			void initDepthBuffer();                
+           
             void initUniformBuffer();
             
 			
@@ -111,6 +102,8 @@ namespace Tobi
 
             std::unique_ptr<VulkanSwapChain> swapChain;
 
+            std::unique_ptr<VulkanDepthBuffer> depthBuffer;
+
             std::vector<LayerProperties> instanceLayerProperties;
 
 
@@ -123,9 +116,6 @@ namespace Tobi
             VkCommandPool commandPool;
             // TODO: possible to have several command swapChainBuffers in the future
             VkCommandBuffer commandBuffer;
-
-			ImageBuffer depthBuffer;
-			VkFormat depthBufferFormat;
 
             VkFramebuffer *frameBuffers;
 
