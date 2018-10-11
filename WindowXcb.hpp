@@ -10,112 +10,110 @@
 
 namespace Tobi
 {
-    typedef struct TLayerProperties
-    {
-        VkLayerProperties properties;
-        std::vector<VkExtensionProperties> instanceExtensions;
-        std::vector<VkExtensionProperties> deviceExtensions;
-    } LayerProperties;
+typedef struct TLayerProperties
+{
+    VkLayerProperties properties;
+    std::vector<VkExtensionProperties> instanceExtensions;
+    std::vector<VkExtensionProperties> deviceExtensions;
+} LayerProperties;
 
-    typedef struct TGpu
-    {
-        VkPhysicalDevice physicalDevice;
-        VkPhysicalDeviceMemoryProperties memoryProperties;
-        VkPhysicalDeviceProperties properties;
-    } Gpu;
+typedef struct TGpu
+{
+    VkPhysicalDevice physicalDevice;
+    VkPhysicalDeviceMemoryProperties memoryProperties;
+    VkPhysicalDeviceProperties properties;
+} Gpu;
 
-    class WindowXcb
-    {
-        public:
-            WindowXcb(WindowSettings windowSettings);
-            WindowXcb(const WindowXcb&) = delete;
-            WindowXcb(WindowXcb&&) = default;
-            WindowXcb& operator=(const WindowXcb&) & = delete;
-            WindowXcb& operator=(WindowXcb&&) & = default;
-            ~WindowXcb();
+class WindowXcb
+{
+  public:
+    WindowXcb(WindowSettings windowSettings);
+    WindowXcb(const WindowXcb &) = delete;
+    WindowXcb(WindowXcb &&) = default;
+    WindowXcb &operator=(const WindowXcb &) & = delete;
+    WindowXcb &operator=(WindowXcb &&) & = default;
+    ~WindowXcb();
 
-            void createWindow();
-            
-            bool memoryTypeFromProperties(uint32_t typeBits, VkFlags requirementsMask, uint32_t *typeIndex);
+    void createWindow();
 
-            xcb_connection_t *getConnection() { return connection; }
-            const xcb_window_t &getWindow() { return window; }
-            
-            const uint32_t &getWidth() { return windowSettings.width; }
-            const uint32_t &getHeight() { return windowSettings.height; };
+    bool memoryTypeFromProperties(uint32_t typeBits, VkFlags requirementsMask, uint32_t *typeIndex);
 
-            const VkInstance &getInstance() { return instance; }
+    xcb_connection_t *getConnection() { return connection; }
+    const xcb_window_t &getWindow() { return window; }
 
-            const VkPhysicalDevice &getPhysicalDevice() { return gpus[0].physicalDevice; }
+    const uint32_t &getWidth() { return windowSettings.width; }
+    const uint32_t &getHeight() { return windowSettings.height; };
 
-            const VkDevice &getDevice() { return device; }
+    const VkInstance &getInstance() { return instance; }
 
-            const VkSurfaceKHR &getSurface() { return surface; }
-            const VkFormat &getSurfaceFormat() { return surfaceFormat; }
+    const VkPhysicalDevice &getPhysicalDevice() { return gpus[0].physicalDevice; }
 
-            const uint32_t &getGraphicsQueueIndex() { return graphicsQueueFamilyIndex; }
-            const uint32_t &getPresentQueueIndex() { return presentQueueFamilyIndex; }
+    const VkDevice &getDevice() { return device; }
 
-            const VkQueue &getGraphicsQueue() { return graphicsQueue; }
-            const VkQueue &getPresentQueue() { return presentQueue; }
+    const VkSurfaceKHR &getSurface() { return surface; }
+    const VkFormat &getSurfaceFormat() { return surfaceFormat; }
 
-        private:
+    const uint32_t &getGraphicsQueueIndex() { return graphicsQueueFamilyIndex; }
+    const uint32_t &getPresentQueueIndex() { return presentQueueFamilyIndex; }
 
-            void initConnection();
-            void initWindow();
+    const VkQueue &getGraphicsQueue() { return graphicsQueue; }
+    const VkQueue &getPresentQueue() { return presentQueue; }
 
-            void initInstanceExtensionNames();
-            VkResult initDeviceExtensionProperties(LayerProperties &layerProperties);
-            void initDeviceExtensionNames();
-            
-            // Add to applicationShortName "Window" settings, and rename WindowSettings to ApplicationBaseSettings or better
-            void initInstance(char const *const applicationShortName);
+  private:
+    void initConnection();
+    void initWindow();
 
-            VkResult initEnumerateDevice(uint32_t gpu_count = 1);
+    void initInstanceExtensionNames();
+    VkResult initDeviceExtensionProperties(LayerProperties &layerProperties);
+    void initDeviceExtensionNames();
 
-            void initSurface();
-            void initDeviceQueueFamilies();
+    // Add to applicationShortName "Window" settings, and rename WindowSettings to ApplicationBaseSettings or better
+    void initInstance(char const *const applicationShortName);
 
-            VkResult initDevice();
+    VkResult initEnumerateDevice(uint32_t gpu_count = 1);
 
-            void initDeviceQueues();
-            
-            // settings
-            WindowSettings windowSettings;
+    void initSurface();
+    void initDeviceQueueFamilies();
 
-            // xcb window
-            xcb_connection_t *connection;
-            xcb_screen_t *screen;
-            xcb_intern_atom_reply_t *atomWmDeleteWindow;
-            xcb_window_t window;
+    VkResult initDevice();
 
-            // extensions and layers
-            std::vector<const char *> instanceExtensionNames;
-            std::vector<const char *> instanceLayerNames;
-            std::vector<LayerProperties> instanceLayerProperties;
-            std::vector<const char *> deviceExtensionNames;
+    void initDeviceQueues();
 
-            // instance
-            VkInstance instance;
+    // settings
+    WindowSettings windowSettings;
 
-            // physical devices. Currently only support 1 (the first) device, but have prepared for multi gpu
-            // Next should select the best device, and later support many devices. 
-            std::vector<Gpu> gpus;
+    // xcb window
+    xcb_connection_t *connection;
+    xcb_screen_t *screen;
+    xcb_intern_atom_reply_t *atomWmDeleteWindow;
+    xcb_window_t window;
 
-            // logical device
-            VkDevice device;
+    // extensions and layers
+    std::vector<const char *> instanceExtensionNames;
+    std::vector<const char *> instanceLayerNames;
+    std::vector<LayerProperties> instanceLayerProperties;
+    std::vector<const char *> deviceExtensionNames;
 
-            // surface
-            VkSurfaceKHR surface;
-            VkFormat surfaceFormat;
+    // instance
+    VkInstance instance;
 
-            // queues
-            uint32_t queueFamilyCount;
-            std::vector<VkQueueFamilyProperties> queueProperties;
-            uint32_t graphicsQueueFamilyIndex;
-            uint32_t presentQueueFamilyIndex;
-            VkQueue graphicsQueue;
-            VkQueue presentQueue;
-    };
-}  // namespace Tobi
+    // physical devices. Currently only support 1 (the first) device, but have prepared for multi gpu
+    // Next should select the best device, and later support many devices.
+    std::vector<Gpu> gpus;
 
+    // logical device
+    VkDevice device;
+
+    // surface
+    VkSurfaceKHR surface;
+    VkFormat surfaceFormat;
+
+    // queues
+    uint32_t queueFamilyCount;
+    std::vector<VkQueueFamilyProperties> queueProperties;
+    uint32_t graphicsQueueFamilyIndex;
+    uint32_t presentQueueFamilyIndex;
+    VkQueue graphicsQueue;
+    VkQueue presentQueue;
+};
+} // namespace Tobi

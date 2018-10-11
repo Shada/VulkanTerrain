@@ -6,13 +6,15 @@
 
 namespace
 {
-    void startProgram()
-    {
-        auto vulkanCore = std::make_unique<Tobi::VulkanCore>();
-        
-        std::cout << "this is just for the breakpoint" << std::endl;
-    }
+
+void startProgram()
+{
+    auto vulkanCore = std::make_unique<Tobi::VulkanCore>();
+
+    std::cout << "this is just for the breakpoint" << std::endl;
 }
+
+} // namespace
 
 int main()
 {
@@ -20,7 +22,7 @@ int main()
     {
         startProgram();
     }
-    catch(std::exception e)
+    catch (std::exception e)
     {
         std::cout << "Exception was caught: " << e.what() << std::endl;
     }

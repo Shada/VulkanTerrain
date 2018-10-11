@@ -11,4 +11,4 @@ typedef struct TWindowSettings
     uint32_t height;
 } WindowSettings;
 
-}  // namespace Tobi
+} // namespace Tobi

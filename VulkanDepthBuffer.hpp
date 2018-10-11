@@ -7,28 +7,28 @@
 
 namespace Tobi
 {
-    class VulkanDepthBuffer
-    {
-    public:
-        VulkanDepthBuffer(std::shared_ptr<WindowXcb> window);
-        VulkanDepthBuffer(const VulkanDepthBuffer&) = delete;
-        VulkanDepthBuffer(VulkanDepthBuffer&&) = default;
-        VulkanDepthBuffer& operator=(const VulkanDepthBuffer&) & = delete;
-        VulkanDepthBuffer& operator=(VulkanDepthBuffer&&) & = default;
-        ~VulkanDepthBuffer();
+class VulkanDepthBuffer
+{
+  public:
+    VulkanDepthBuffer(std::shared_ptr<WindowXcb> window);
+    VulkanDepthBuffer(const VulkanDepthBuffer &) = delete;
+    VulkanDepthBuffer(VulkanDepthBuffer &&) = default;
+    VulkanDepthBuffer &operator=(const VulkanDepthBuffer &) & = delete;
+    VulkanDepthBuffer &operator=(VulkanDepthBuffer &&) & = default;
+    ~VulkanDepthBuffer();
 
-        const VkImageView &getImageView() { return imageView; }
+    const VkImageView &getImageView() { return imageView; }
 
-        const VkFormat &getFormat() { return format; }
+    const VkFormat &getFormat() { return format; }
 
-    private:
-        void initDepthBuffer();
+  private:
+    void initDepthBuffer();
 
-        std::shared_ptr<WindowXcb> window;
+    std::shared_ptr<WindowXcb> window;
 
-        VkImage image;
-        VkDeviceMemory memory;
-        VkImageView imageView;
-        VkFormat format;
-    };
-}
+    VkImage image;
+    VkDeviceMemory memory;
+    VkImageView imageView;
+    VkFormat format;
+};
+} // namespace Tobi

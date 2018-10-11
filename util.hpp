@@ -36,8 +36,8 @@
 #define U_ASSERT_ONLY
 #endif
 
-// Number of samples needs to be the same at image creation,      
-// renderpass creation and pipeline creation.                     
+// Number of samples needs to be the same at image creation,
+// renderpass creation and pipeline creation.
 #define NUM_SAMPLES VK_SAMPLE_COUNT_1_BIT
 
 #include <vulkan/vulkan.h>
@@ -45,10 +45,10 @@
 namespace Tobi
 {
 
-    bool GLSLtoSPV(const VkShaderStageFlagBits shader_type, const char *pshader, std::vector<unsigned int> &spirv);
-    void initGlslang();
-    void finalizeGlslang();
+bool GLSLtoSPV(const VkShaderStageFlagBits shader_type, const char *pshader, std::vector<unsigned int> &spirv);
+void initGlslang();
+void finalizeGlslang();
 
-    void waitSeconds(int seconds);
+void waitSeconds(int seconds);
 
-}  // namespace Tobi
+} // namespace Tobi

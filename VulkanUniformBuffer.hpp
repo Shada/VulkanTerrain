@@ -10,27 +10,28 @@
 namespace Tobi
 {
 
-    class VulkanUniformBuffer
-    {
-    public:
-        VulkanUniformBuffer(std::shared_ptr<WindowXcb> window, void* data, uint32_t dataSize);
-        VulkanUniformBuffer(const VulkanUniformBuffer&) = delete;
-        VulkanUniformBuffer(VulkanUniformBuffer&&) = default;
-        VulkanUniformBuffer& operator=(const VulkanUniformBuffer&) & = delete;
-        VulkanUniformBuffer& operator=(VulkanUniformBuffer&&) & = default;
-        ~VulkanUniformBuffer();
+class VulkanUniformBuffer
+{
+  public:
+    VulkanUniformBuffer(std::shared_ptr<WindowXcb> window, void *data, uint32_t dataSize);
+    VulkanUniformBuffer(const VulkanUniformBuffer &) = delete;
+    VulkanUniformBuffer(VulkanUniformBuffer &&) = default;
+    VulkanUniformBuffer &operator=(const VulkanUniformBuffer &) & = delete;
+    VulkanUniformBuffer &operator=(VulkanUniformBuffer &&) & = default;
+    ~VulkanUniformBuffer();
 
-        const VkDescriptorBufferInfo &getBufferInfo() { return bufferInfo; }
-    private:
-        void initUniformBuffer();
+    const VkDescriptorBufferInfo &getBufferInfo() { return bufferInfo; }
 
-        std::shared_ptr<WindowXcb> window;
-        void* data;
-        uint32_t dataSize;
+  private:
+    void initUniformBuffer();
 
-		VkBuffer buffer;
-        VkDeviceMemory memory;
-        VkDescriptorBufferInfo bufferInfo;
-    };
+    std::shared_ptr<WindowXcb> window;
+    void *data;
+    uint32_t dataSize;
 
-}  // namespace Tobi
+    VkBuffer buffer;
+    VkDeviceMemory memory;
+    VkDescriptorBufferInfo bufferInfo;
+};
+
+} // namespace Tobi
