@@ -2,8 +2,6 @@
 #include <stdlib.h>
 #include <cassert>
 #include <cstring>
-#include <cstring>
-#include <cstring>
 
 #include "VulkanCore.hpp"
 
