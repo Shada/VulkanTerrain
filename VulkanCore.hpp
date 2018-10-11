@@ -18,6 +18,7 @@
 #include "Command/VulkanCommandBuffer.hpp"
 #include "VulkanDescriptorPool.hpp"
 #include "VulkanRenderPass.hpp"
+#include "Buffers/VulkanFrameBuffers.hpp"
 
 // Number of descriptor sets needs to be the same at alloc,
 // pipeline layout creation, and descriptor set layout creation
@@ -65,7 +66,6 @@ class VulkanCore
     void initDescriptorAndPipelineLayouts(
         bool useTexture,
         VkDescriptorSetLayoutCreateFlags descriptorSetLayoutCreateFlags = 0);
-    void initFrameBuffers(bool includeDepth);
     void initVertexBuffer(const void *vertexData, uint32_t dataSize, uint32_t dataStride, bool useTexture);
     void initDescriptorSet(bool useTexture);
     void initPipelineCache();
@@ -80,7 +80,7 @@ class VulkanCore
 
     std::unique_ptr<VulkanShaderProgram> shaderProgram;
 
-    std::unique_ptr<VulkanSwapChain> swapChain;
+    std::shared_ptr<VulkanSwapChain> swapChain;
 
     std::shared_ptr<VulkanDepthBuffer> depthBuffer;
 
@@ -92,7 +92,9 @@ class VulkanCore
 
     std::unique_ptr<VulkanDescriptorPool> descriptorPool;
 
-    std::unique_ptr<VulkanRenderPass> renderPass;
+    std::shared_ptr<VulkanRenderPass> renderPass;
+
+    std::unique_ptr<VulkanFrameBuffers> frameBuffers;
 
     std::vector<LayerProperties> instanceLayerProperties;
 
@@ -100,8 +102,6 @@ class VulkanCore
 
     VkPipelineCache pipelineCache;
     VkPipeline pipeline;
-
-    VkFramebuffer *frameBuffers;
 
     TextureData textureData;
 

@@ -40,12 +40,6 @@ VulkanCore::~VulkanCore()
     vkDestroyBuffer(window->getDevice(), vertexBuffer.buffer, nullptr);
     vkFreeMemory(window->getDevice(), vertexBuffer.memory, nullptr);
 
-    for (uint32_t i = 0; i < swapChain->getSwapChainImageCount(); i++)
-    {
-        vkDestroyFramebuffer(window->getDevice(), frameBuffers[i], nullptr);
-    }
-    free(frameBuffers);
-
     if (pipelineLayout)
     {
         for (int i = 0; i < NUM_DESCRIPTOR_SETS; i++)
@@ -81,7 +75,7 @@ void VulkanCore::initVulkan()
 
     commandBuffer = std::make_unique<VulkanCommandBuffer>(window, commandPool);
 
-    swapChain = std::make_unique<VulkanSwapChain>(window);
+    swapChain = std::make_shared<VulkanSwapChain>(window);
 
     depthBuffer = std::make_shared<VulkanDepthBuffer>(window);
 
@@ -93,12 +87,18 @@ void VulkanCore::initVulkan()
 
     initDescriptorAndPipelineLayouts(false);
 
-    renderPass = std::make_unique<VulkanRenderPass>(window, depthBuffer, depthPresent);
+    renderPass = std::make_shared<VulkanRenderPass>(window, depthBuffer, depthPresent);
 
     // might be earlier/later?
     shaderProgram = std::make_unique<VulkanShaderProgram>(window);
 
-    initFrameBuffers(depthPresent);
+    frameBuffers = std::make_unique<VulkanFrameBuffers>(
+        window,
+        depthBuffer,
+        renderPass,
+        swapChain,
+        depthPresent);
+
     initVertexBuffer(cubeData, sizeof(cubeData), sizeof(cubeData[0]), false);
 
     descriptorPool = std::make_unique<VulkanDescriptorPool>(window, false);
@@ -138,7 +138,7 @@ void VulkanCore::initVulkan()
     renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassBeginInfo.pNext = nullptr;
     renderPassBeginInfo.renderPass = renderPass->getRenderPass();
-    renderPassBeginInfo.framebuffer = frameBuffers[swapChain->getCurrentBuffer()];
+    renderPassBeginInfo.framebuffer = frameBuffers->getCurrentFrameBuffer();
     renderPassBeginInfo.renderArea.offset.x = 0;
     renderPassBeginInfo.renderArea.offset.y = 0;
     renderPassBeginInfo.renderArea.extent.width = window->getWidth();
@@ -390,34 +390,6 @@ void VulkanCore::initDescriptorAndPipelineLayouts(
     assert(result == VK_SUCCESS);
 }
 
-void VulkanCore::initFrameBuffers(bool includeDepth)
-{
-    // DEPENDS on init_depth_buffer(), init_renderpass() and
-    // init_swapchain_extension()
-
-    VkResult U_ASSERT_ONLY result;
-    VkImageView imageViewAttachments[2];
-    imageViewAttachments[1] = depthBuffer->getImageView();
-
-    VkFramebufferCreateInfo frameBufferCreateInfo = {};
-    frameBufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-    frameBufferCreateInfo.pNext = nullptr;
-    frameBufferCreateInfo.renderPass = renderPass->getRenderPass();
-    frameBufferCreateInfo.attachmentCount = includeDepth ? 2 : 1;
-    frameBufferCreateInfo.pAttachments = imageViewAttachments;
-    frameBufferCreateInfo.width = window->getWidth();
-    frameBufferCreateInfo.height = window->getHeight();
-    frameBufferCreateInfo.layers = 1;
-
-    frameBuffers = (VkFramebuffer *)malloc(swapChain->getSwapChainImageCount() * sizeof(VkFramebuffer));
-
-    for (uint32_t i = 0; i < swapChain->getSwapChainImageCount(); i++)
-    {
-        imageViewAttachments[0] = swapChain->getSwapChainBuffer(i).view;
-        result = vkCreateFramebuffer(window->getDevice(), &frameBufferCreateInfo, nullptr, &frameBuffers[i]);
-        assert(result == VK_SUCCESS);
-    }
-}
 void VulkanCore::initVertexBuffer(const void *vertexData, uint32_t dataSize, uint32_t dataStride, bool useTexture)
 {
     VkResult U_ASSERT_ONLY result;
