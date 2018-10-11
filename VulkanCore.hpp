@@ -14,6 +14,7 @@
 #include "VulkanSwapChain.hpp"
 #include "VulkanDepthBuffer.hpp"
 #include "VulkanUniformBuffer.hpp"
+#include "VulkanCommandPool.hpp"
 
 
 // Number of descriptor sets needs to be the same at alloc,       
@@ -97,6 +98,8 @@ namespace Tobi
 
             std::unique_ptr<VulkanUniformBuffer> uniformBuffer;
 
+            std::unique_ptr<VulkanCommandPool> commandPool;
+
             std::vector<LayerProperties> instanceLayerProperties;
 
 
@@ -106,8 +109,7 @@ namespace Tobi
             VkPipelineCache pipelineCache;
             VkPipeline pipeline;
 
-            VkCommandPool commandPool;
-            // TODO: possible to have several command swapChainBuffers in the future
+            // TODO: possible to have several command buffers in the future
             VkCommandBuffer commandBuffer;
 
             VkFramebuffer *frameBuffers;

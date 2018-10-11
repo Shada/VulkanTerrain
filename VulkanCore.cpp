@@ -61,10 +61,8 @@ namespace Tobi
         if(commandBuffer)
         {
             VkCommandBuffer commandBuffers[1] = {commandBuffer};
-            vkFreeCommandBuffers(window->getDevice(), commandPool, 1, commandBuffers);
+            vkFreeCommandBuffers(window->getDevice(), commandPool->getCommandPool(), 1, commandBuffers);
         }
-        if(commandPool)
-            vkDestroyCommandPool(window->getDevice(), commandPool, nullptr);
     }
 
 
@@ -80,9 +78,8 @@ namespace Tobi
 
         const bool depthPresent = true;
 
+        commandPool = std::make_unique<VulkanCommandPool>(window);
 
-        
-        initCommandPool();
         initCommandBuffer();
         
         swapChain = std::make_unique<VulkanSwapChain>(window);
@@ -345,27 +342,13 @@ namespace Tobi
         return result;
     }
 
-    void VulkanCore::initCommandPool()
-    {
-        VkResult U_ASSERT_ONLY result = VK_SUCCESS;
-        
-        VkCommandPoolCreateInfo commandPoolCreateInfo = {};
-        commandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        commandPoolCreateInfo.pNext = nullptr;
-        commandPoolCreateInfo.queueFamilyIndex = window->getGraphicsQueueIndex();
-        commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-
-        result = vkCreateCommandPool(window->getDevice(), &commandPoolCreateInfo, nullptr, &commandPool);
-        assert(result == VK_SUCCESS);
-    }
-
     void VulkanCore::initCommandBuffer()
     {
         VkResult U_ASSERT_ONLY result = VK_SUCCESS; 
         VkCommandBufferAllocateInfo commandBufferAllocateInfo = {};
         commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
         commandBufferAllocateInfo.pNext = nullptr;
-        commandBufferAllocateInfo.commandPool = commandPool;
+        commandBufferAllocateInfo.commandPool = commandPool->getCommandPool();
         commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
         commandBufferAllocateInfo.commandBufferCount = 1;
 
