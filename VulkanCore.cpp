@@ -89,7 +89,6 @@ void VulkanCore::initVulkan()
 
     renderPass = std::make_shared<VulkanRenderPass>(window, depthBuffer, depthPresent);
 
-    // might be earlier/later?
     shaderProgram = std::make_unique<VulkanShaderProgram>(window);
 
     frameBuffers = std::make_unique<VulkanFrameBuffers>(
