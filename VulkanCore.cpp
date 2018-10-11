@@ -46,8 +46,6 @@ VulkanCore::~VulkanCore()
     }
     free(frameBuffers);
 
-    if (renderPass)
-        vkDestroyRenderPass(window->getDevice(), renderPass, nullptr);
     if (pipelineLayout)
     {
         for (int i = 0; i < NUM_DESCRIPTOR_SETS; i++)
@@ -85,7 +83,7 @@ void VulkanCore::initVulkan()
 
     swapChain = std::make_unique<VulkanSwapChain>(window);
 
-    depthBuffer = std::make_unique<VulkanDepthBuffer>(window);
+    depthBuffer = std::make_shared<VulkanDepthBuffer>(window);
 
     initCameraMatrices();
     uniformBuffer = std::make_unique<VulkanUniformBuffer>(
@@ -94,7 +92,8 @@ void VulkanCore::initVulkan()
         sizeof(modelViewProjectionMatrix));
 
     initDescriptorAndPipelineLayouts(false);
-    initRenderpass(depthPresent);
+
+    renderPass = std::make_unique<VulkanRenderPass>(window, depthBuffer, depthPresent);
 
     // might be earlier/later?
     shaderProgram = std::make_unique<VulkanShaderProgram>(window);
@@ -138,7 +137,7 @@ void VulkanCore::initVulkan()
     VkRenderPassBeginInfo renderPassBeginInfo;
     renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassBeginInfo.pNext = nullptr;
-    renderPassBeginInfo.renderPass = renderPass;
+    renderPassBeginInfo.renderPass = renderPass->getRenderPass();
     renderPassBeginInfo.framebuffer = frameBuffers[swapChain->getCurrentBuffer()];
     renderPassBeginInfo.renderArea.offset.x = 0;
     renderPassBeginInfo.renderArea.offset.y = 0;
@@ -391,69 +390,6 @@ void VulkanCore::initDescriptorAndPipelineLayouts(
     assert(result == VK_SUCCESS);
 }
 
-void VulkanCore::initRenderpass(bool includeDepth, bool clear, VkImageLayout finalLayout)
-{ // DEPENDS on init_swap_chain() and init_depth_buffer()
-
-    VkResult U_ASSERT_ONLY result;
-    // Need imageViewAttachments for render target and depth buffer
-    VkAttachmentDescription imageViewAttachments[2];
-    imageViewAttachments[0].format = window->getSurfaceFormat();
-    imageViewAttachments[0].samples = NUM_SAMPLES;
-    imageViewAttachments[0].loadOp = clear ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
-    imageViewAttachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    imageViewAttachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    imageViewAttachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    imageViewAttachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    imageViewAttachments[0].finalLayout = finalLayout;
-    imageViewAttachments[0].flags = 0;
-
-    if (includeDepth)
-    {
-        imageViewAttachments[1].format = depthBuffer->getFormat();
-        imageViewAttachments[1].samples = NUM_SAMPLES;
-        imageViewAttachments[1].loadOp = clear ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
-        imageViewAttachments[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        imageViewAttachments[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
-        imageViewAttachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
-        imageViewAttachments[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        imageViewAttachments[1].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-        imageViewAttachments[1].flags = 0;
-    }
-
-    VkAttachmentReference colorAttachmentReference = {};
-    colorAttachmentReference.attachment = 0;
-    colorAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-    VkAttachmentReference depthAttachmentReference = {};
-    depthAttachmentReference.attachment = 1;
-    depthAttachmentReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-    VkSubpassDescription subpass = {};
-    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpass.flags = 0;
-    subpass.inputAttachmentCount = 0;
-    subpass.pInputAttachments = nullptr;
-    subpass.colorAttachmentCount = 1;
-    subpass.pColorAttachments = &colorAttachmentReference;
-    subpass.pResolveAttachments = nullptr;
-    subpass.pDepthStencilAttachment = includeDepth ? &depthAttachmentReference : nullptr;
-    subpass.preserveAttachmentCount = 0;
-    subpass.pPreserveAttachments = nullptr;
-
-    VkRenderPassCreateInfo renderPassCreateInfo = {};
-    renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    renderPassCreateInfo.pNext = nullptr;
-    renderPassCreateInfo.attachmentCount = includeDepth ? 2 : 1;
-    renderPassCreateInfo.pAttachments = imageViewAttachments;
-    renderPassCreateInfo.subpassCount = 1;
-    renderPassCreateInfo.pSubpasses = &subpass;
-    renderPassCreateInfo.dependencyCount = 0;
-    renderPassCreateInfo.pDependencies = nullptr;
-
-    result = vkCreateRenderPass(window->getDevice(), &renderPassCreateInfo, nullptr, &renderPass);
-    assert(result == VK_SUCCESS);
-}
-
 void VulkanCore::initFrameBuffers(bool includeDepth)
 {
     // DEPENDS on init_depth_buffer(), init_renderpass() and
@@ -466,7 +402,7 @@ void VulkanCore::initFrameBuffers(bool includeDepth)
     VkFramebufferCreateInfo frameBufferCreateInfo = {};
     frameBufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
     frameBufferCreateInfo.pNext = nullptr;
-    frameBufferCreateInfo.renderPass = renderPass;
+    frameBufferCreateInfo.renderPass = renderPass->getRenderPass();
     frameBufferCreateInfo.attachmentCount = includeDepth ? 2 : 1;
     frameBufferCreateInfo.pAttachments = imageViewAttachments;
     frameBufferCreateInfo.width = window->getWidth();
@@ -747,7 +683,7 @@ void VulkanCore::initPipeline(VkBool32 includeDepth, VkBool32 includeVertexInput
     pipelineCreateInfo.pDepthStencilState = &depthStencilStateCreateInfo;
     pipelineCreateInfo.pStages = shaderProgram->getShaderStages().data();
     pipelineCreateInfo.stageCount = 2;
-    pipelineCreateInfo.renderPass = renderPass;
+    pipelineCreateInfo.renderPass = renderPass->getRenderPass();
     pipelineCreateInfo.subpass = 0;
 
     result = vkCreateGraphicsPipelines(window->getDevice(), pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipeline);

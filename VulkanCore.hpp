@@ -17,6 +17,7 @@
 #include "Command/VulkanCommandPool.hpp"
 #include "Command/VulkanCommandBuffer.hpp"
 #include "VulkanDescriptorPool.hpp"
+#include "VulkanRenderPass.hpp"
 
 // Number of descriptor sets needs to be the same at alloc,
 // pipeline layout creation, and descriptor set layout creation
@@ -64,10 +65,6 @@ class VulkanCore
     void initDescriptorAndPipelineLayouts(
         bool useTexture,
         VkDescriptorSetLayoutCreateFlags descriptorSetLayoutCreateFlags = 0);
-    void initRenderpass(
-        bool includeDepth,
-        bool clear = true,
-        VkImageLayout finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
     void initFrameBuffers(bool includeDepth);
     void initVertexBuffer(const void *vertexData, uint32_t dataSize, uint32_t dataStride, bool useTexture);
     void initDescriptorSet(bool useTexture);
@@ -85,7 +82,7 @@ class VulkanCore
 
     std::unique_ptr<VulkanSwapChain> swapChain;
 
-    std::unique_ptr<VulkanDepthBuffer> depthBuffer;
+    std::shared_ptr<VulkanDepthBuffer> depthBuffer;
 
     std::unique_ptr<VulkanUniformBuffer> uniformBuffer;
 
@@ -94,6 +91,8 @@ class VulkanCore
     std::unique_ptr<VulkanCommandBuffer> commandBuffer;
 
     std::unique_ptr<VulkanDescriptorPool> descriptorPool;
+
+    std::unique_ptr<VulkanRenderPass> renderPass;
 
     std::vector<LayerProperties> instanceLayerProperties;
 
@@ -114,8 +113,6 @@ class VulkanCore
 
     std::vector<VkDescriptorSetLayout> descriptorSetLayout;
     VkPipelineLayout pipelineLayout;
-
-    VkRenderPass renderPass;
 
     VkVertexInputBindingDescription vertexInputBinding;
     VkVertexInputAttributeDescription vertexInputAttributes[2];
