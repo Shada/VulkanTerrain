@@ -20,7 +20,7 @@ namespace Tobi
           depthBuffer(nullptr),
           window(nullptr),
           shaderProgram(nullptr),
-          uniformData{nullptr, nullptr, nullptr},
+          uniformBuffer(nullptr),
           pipelineLayout(nullptr),
           renderPass(nullptr)
     {
@@ -58,11 +58,6 @@ namespace Tobi
                 vkDestroyDescriptorSetLayout(window->getDevice(), descriptorSetLayout[i], nullptr);
             vkDestroyPipelineLayout(window->getDevice(), pipelineLayout, nullptr);
         }
-        if(uniformData.buffer)
-        {
-            vkDestroyBuffer(window->getDevice(), uniformData.buffer, nullptr);
-            vkFreeMemory(window->getDevice(), uniformData.memory, nullptr);
-        }
         if(commandBuffer)
         {
             VkCommandBuffer commandBuffers[1] = {commandBuffer};
@@ -94,7 +89,12 @@ namespace Tobi
 
         depthBuffer = std::make_unique<VulkanDepthBuffer>(window);
 
-        initUniformBuffer();
+        initCameraMatrices();
+        uniformBuffer = std::make_unique<VulkanUniformBuffer>(
+            window, 
+            (void*)&modelViewProjectionMatrix, 
+            sizeof(modelViewProjectionMatrix));
+
         initDescriptorAndPipelineLayouts(false);
         initRenderpass(depthPresent);
         
@@ -217,6 +217,25 @@ namespace Tobi
         vkDestroySemaphore(window->getDevice(), imageAcquiredSemaphore, nullptr);
         vkDestroyFence(window->getDevice(), drawFence, nullptr);                                                               
 
+    }
+
+    void VulkanCore::initCameraMatrices()
+    {
+        float fov = glm::radians(45.0f);
+        if (window->getWidth() > window->getHeight()) 
+        {
+            fov *= static_cast<float>(window->getHeight()) / static_cast<float>(window->getWidth());
+        }
+        projectionMatrix = glm::perspective(fov, static_cast<float>(window->getWidth()) / static_cast<float>(window->getHeight()), 0.1f, 100.0f);
+        viewMatrix = glm::lookAt(glm::vec3(-5, 3, -10),  // Camera is at (-5,3,-10), in World Space
+                                 glm::vec3(0, 0, 0),     // and looks at the origin
+                                 glm::vec3(0, -1, 0)     // Head is up (set to 0,-1,0 to look upside-down)
+                                 );
+        modelMatrix = glm::mat4(1.0f);
+        // Vulkan clip space has inverted Y and half Z.
+        clipMatrix = glm::mat4(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.5f, 0.0f, 0.0f, 0.0f, 0.5f, 1.0f);
+
+        modelViewProjectionMatrix = clipMatrix * projectionMatrix * viewMatrix * modelMatrix;
     }
 
     void VulkanCore::initViewPorts()
@@ -376,72 +395,6 @@ namespace Tobi
         assert(result == VK_SUCCESS);
     }
     
-    // TODO: this is stuff for the camera. the camera should be refactored into a separate class
-    void VulkanCore::initUniformBuffer()
-    {
-        VkResult U_ASSERT_ONLY result = VK_SUCCESS;
-        bool U_ASSERT_ONLY pass = true;
-        float fov = glm::radians(45.0f);
-        if (window->getWidth() > window->getHeight()) 
-        {
-            fov *= static_cast<float>(window->getHeight()) / static_cast<float>(window->getWidth());
-        }
-        projectionMatrix = glm::perspective(fov, static_cast<float>(window->getWidth()) / static_cast<float>(window->getHeight()), 0.1f, 100.0f);
-        viewMatrix = glm::lookAt(glm::vec3(-5, 3, -10),  // Camera is at (-5,3,-10), in World Space
-                                 glm::vec3(0, 0, 0),     // and looks at the origin
-                                 glm::vec3(0, -1, 0)     // Head is up (set to 0,-1,0 to look upside-down)
-                                 );
-        modelMatrix = glm::mat4(1.0f);
-        // Vulkan clip space has inverted Y and half Z.
-        clipMatrix = glm::mat4(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.5f, 0.0f, 0.0f, 0.0f, 0.5f, 1.0f);
-
-        modelViewProjectionMatrix = clipMatrix * projectionMatrix * viewMatrix * modelMatrix;
-
-        /* VULKAN_KEY_START */
-        VkBufferCreateInfo bufferCreateInfo = {};
-        bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-        bufferCreateInfo.pNext = nullptr;
-        bufferCreateInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-        bufferCreateInfo.size = sizeof(modelViewProjectionMatrix);
-        bufferCreateInfo.queueFamilyIndexCount = 0;
-        bufferCreateInfo.pQueueFamilyIndices = nullptr;
-        bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-        bufferCreateInfo.flags = 0;
-        result = vkCreateBuffer(window->getDevice(), &bufferCreateInfo, nullptr, &uniformData.buffer);
-        assert(result == VK_SUCCESS);
-
-        VkMemoryRequirements memoryRequirements;
-        vkGetBufferMemoryRequirements(window->getDevice(), uniformData.buffer, &memoryRequirements);
-
-        VkMemoryAllocateInfo memoryAllocationInfo = {};
-        memoryAllocationInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-        memoryAllocationInfo.pNext = nullptr;
-        memoryAllocationInfo.memoryTypeIndex = 0;
-
-        memoryAllocationInfo.allocationSize = memoryRequirements.size;
-        pass = window->memoryTypeFromProperties(memoryRequirements.memoryTypeBits,
-                                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                                &memoryAllocationInfo.memoryTypeIndex);
-        assert(pass && "No mappable, coherent memory");
-
-        result = vkAllocateMemory(window->getDevice(), &memoryAllocationInfo, nullptr, &(uniformData.memory));
-        assert(result == VK_SUCCESS);
-
-        uint8_t *pData;
-        result = vkMapMemory(window->getDevice(), uniformData.memory, 0, memoryRequirements.size, 0, (void **)&pData);
-        assert(result == VK_SUCCESS);
-
-        memcpy(pData, &modelViewProjectionMatrix, sizeof(modelViewProjectionMatrix));
-
-        vkUnmapMemory(window->getDevice(), uniformData.memory);
-
-        result = vkBindBufferMemory(window->getDevice(), uniformData.buffer, uniformData.memory, 0);
-        assert(result == VK_SUCCESS);
-
-        uniformData.bufferInfo.buffer = uniformData.buffer;
-        uniformData.bufferInfo.offset = 0;
-        uniformData.bufferInfo.range = sizeof(modelViewProjectionMatrix);
-    }
     void VulkanCore::initDescriptorAndPipelineLayouts(
         bool useTexture,
         VkDescriptorSetLayoutCreateFlags descriptorSetLayoutCreateFlags)
@@ -691,7 +644,7 @@ namespace Tobi
         writes[0].dstSet = descriptorSets[0];
         writes[0].descriptorCount = 1;
         writes[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        writes[0].pBufferInfo = &uniformData.bufferInfo;
+        writes[0].pBufferInfo = &uniformBuffer->getBufferInfo();
         writes[0].dstArrayElement = 0;
         writes[0].dstBinding = 0;
 

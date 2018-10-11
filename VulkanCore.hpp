@@ -13,6 +13,7 @@
 #include "VulkanShaderProgram.hpp"
 #include "VulkanSwapChain.hpp"
 #include "VulkanDepthBuffer.hpp"
+#include "VulkanUniformBuffer.hpp"
 
 
 // Number of descriptor sets needs to be the same at alloc,       
@@ -31,15 +32,6 @@
 
 namespace Tobi
 {
-
-
-	typedef struct TUniformData
-	{
-		VkBuffer buffer;
-        VkDeviceMemory memory;
-        VkDescriptorBufferInfo bufferInfo;
-    } UniformData;
-
     typedef struct TVertexBuffer
     {
         VkBuffer buffer;
@@ -73,9 +65,8 @@ namespace Tobi
 
             void executeBeginCommandBuffer();
             void executeEndCommandBuffer(); 
-           
-            void initUniformBuffer();
-            
+
+            void initCameraMatrices();
 			
             void initDescriptorAndPipelineLayouts(
                     bool useTexture,
@@ -104,6 +95,8 @@ namespace Tobi
 
             std::unique_ptr<VulkanDepthBuffer> depthBuffer;
 
+            std::unique_ptr<VulkanUniformBuffer> uniformBuffer;
+
             std::vector<LayerProperties> instanceLayerProperties;
 
 
@@ -118,8 +111,6 @@ namespace Tobi
             VkCommandBuffer commandBuffer;
 
             VkFramebuffer *frameBuffers;
-
-			UniformData uniformData;
 
             TextureData textureData;
 
