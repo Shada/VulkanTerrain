@@ -57,11 +57,6 @@ VulkanCore::~VulkanCore()
             vkDestroyDescriptorSetLayout(window->getDevice(), descriptorSetLayout[i], nullptr);
         vkDestroyPipelineLayout(window->getDevice(), pipelineLayout, nullptr);
     }
-    if (commandBuffer)
-    {
-        VkCommandBuffer commandBuffers[1] = {commandBuffer};
-        vkFreeCommandBuffers(window->getDevice(), commandPool->getCommandPool(), 1, commandBuffers);
-    }
 }
 
 void VulkanCore::initVulkan()
@@ -76,9 +71,9 @@ void VulkanCore::initVulkan()
 
     const bool depthPresent = true;
 
-    commandPool = std::make_unique<VulkanCommandPool>(window);
+    commandPool = std::make_shared<VulkanCommandPool>(window);
 
-    initCommandBuffer();
+    commandBuffer = std::make_unique<VulkanCommandBuffer>(window, commandPool);
 
     swapChain = std::make_unique<VulkanSwapChain>(window);
 
@@ -142,24 +137,26 @@ void VulkanCore::initVulkan()
     renderPassBeginInfo.clearValueCount = 2;
     renderPassBeginInfo.pClearValues = clearValues;
 
-    executeBeginCommandBuffer();
+    commandBuffer->executeBeginCommandBuffer();
 
-    vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBeginRenderPass(commandBuffer->getCommandBuffer(), &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, NUM_DESCRIPTOR_SETS,
+    vkCmdBindPipeline(commandBuffer->getCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+    vkCmdBindDescriptorSets(commandBuffer->getCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, NUM_DESCRIPTOR_SETS,
                             descriptorSets.data(), 0, nullptr);
 
     const VkDeviceSize offsets[1] = {0};
-    vkCmdBindVertexBuffers(commandBuffer, 0, 1, &vertexBuffer.buffer, offsets);
+    vkCmdBindVertexBuffers(commandBuffer->getCommandBuffer(), 0, 1, &vertexBuffer.buffer, offsets);
 
     initViewPorts();
     initScissors();
 
-    vkCmdDraw(commandBuffer, 12 * 3, 1, 0, 0);
-    vkCmdEndRenderPass(commandBuffer);
-    result = vkEndCommandBuffer(commandBuffer);
-    const VkCommandBuffer commandBuffers[] = {commandBuffer};
+    vkCmdDraw(commandBuffer->getCommandBuffer(), 12 * 3, 1, 0, 0);
+    vkCmdEndRenderPass(commandBuffer->getCommandBuffer());
+
+    commandBuffer->executeEndCommandBuffer();
+
+    const VkCommandBuffer commandBuffers[] = {commandBuffer->getCommandBuffer()};
     VkFenceCreateInfo fenceCreateInfo;
     VkFence drawFence;
     fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
@@ -243,7 +240,7 @@ void VulkanCore::initViewPorts()
     viewPort.maxDepth = (float)1.0f;
     viewPort.x = 0;
     viewPort.y = 0;
-    vkCmdSetViewport(commandBuffer, 0, NUM_VIEWPORTS, &viewPort);
+    vkCmdSetViewport(commandBuffer->getCommandBuffer(), 0, NUM_VIEWPORTS, &viewPort);
 #endif
 }
 void VulkanCore::initScissors()
@@ -256,7 +253,7 @@ void VulkanCore::initScissors()
     scissor.extent.height = window->getHeight();
     scissor.offset.x = 0;
     scissor.offset.y = 0;
-    vkCmdSetScissor(commandBuffer, 0, NUM_SCISSORS, &scissor);
+    vkCmdSetScissor(commandBuffer->getCommandBuffer(), 0, NUM_SCISSORS, &scissor);
 #endif
 }
 
@@ -335,42 +332,6 @@ VkResult VulkanCore::initGlobalExtensionProperties(LayerProperties &layerPropert
     } while (result == VK_INCOMPLETE);
 
     return result;
-}
-
-void VulkanCore::initCommandBuffer()
-{
-    VkResult U_ASSERT_ONLY result = VK_SUCCESS;
-    VkCommandBufferAllocateInfo commandBufferAllocateInfo = {};
-    commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    commandBufferAllocateInfo.pNext = nullptr;
-    commandBufferAllocateInfo.commandPool = commandPool->getCommandPool();
-    commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    commandBufferAllocateInfo.commandBufferCount = 1;
-
-    result = vkAllocateCommandBuffers(window->getDevice(), &commandBufferAllocateInfo, &commandBuffer);
-    assert(result == VK_SUCCESS);
-}
-
-void VulkanCore::executeBeginCommandBuffer()
-{
-    VkResult U_ASSERT_ONLY result = VK_SUCCESS;
-
-    VkCommandBufferBeginInfo commandBufferBeginInfo = {};
-    commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    commandBufferBeginInfo.pNext = nullptr;
-    commandBufferBeginInfo.flags = 0;
-    commandBufferBeginInfo.pInheritanceInfo = nullptr;
-
-    result = vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo);
-    assert(result == VK_SUCCESS);
-}
-
-void VulkanCore::executeEndCommandBuffer()
-{
-    VkResult U_ASSERT_ONLY result = VK_SUCCESS;
-
-    result = vkEndCommandBuffer(commandBuffer);
-    assert(result == VK_SUCCESS);
 }
 
 void VulkanCore::initDescriptorAndPipelineLayouts(

@@ -15,6 +15,7 @@
 #include "VulkanDepthBuffer.hpp"
 #include "VulkanUniformBuffer.hpp"
 #include "VulkanCommandPool.hpp"
+#include "VulkanCommandBuffer.hpp"
 
 // Number of descriptor sets needs to be the same at alloc,
 // pipeline layout creation, and descriptor set layout creation
@@ -57,12 +58,6 @@ class VulkanCore
     VkResult initGlobalLayerProperties();
     VkResult initGlobalExtensionProperties(LayerProperties &layerProperties);
 
-    void initCommandPool();
-    void initCommandBuffer();
-
-    void executeBeginCommandBuffer();
-    void executeEndCommandBuffer();
-
     void initCameraMatrices();
 
     void initDescriptorAndPipelineLayouts(
@@ -94,7 +89,9 @@ class VulkanCore
 
     std::unique_ptr<VulkanUniformBuffer> uniformBuffer;
 
-    std::unique_ptr<VulkanCommandPool> commandPool;
+    std::shared_ptr<VulkanCommandPool> commandPool;
+
+    std::unique_ptr<VulkanCommandBuffer> commandBuffer;
 
     std::vector<LayerProperties> instanceLayerProperties;
 
@@ -103,9 +100,6 @@ class VulkanCore
 
     VkPipelineCache pipelineCache;
     VkPipeline pipeline;
-
-    // TODO: possible to have several command buffers in the future
-    VkCommandBuffer commandBuffer;
 
     VkFramebuffer *frameBuffers;
 
