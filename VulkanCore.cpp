@@ -38,8 +38,6 @@ VulkanCore::~VulkanCore()
 
     vkDestroyPipelineCache(window->getDevice(), pipelineCache, nullptr);
 
-    vkDestroyDescriptorPool(window->getDevice(), descriptorPool, nullptr);
-
     vkDestroyBuffer(window->getDevice(), vertexBuffer.buffer, nullptr);
     vkFreeMemory(window->getDevice(), vertexBuffer.memory, nullptr);
 
@@ -93,7 +91,9 @@ void VulkanCore::initVulkan()
 
     initFrameBuffers(depthPresent);
     initVertexBuffer(cubeData, sizeof(cubeData), sizeof(cubeData[0]), false);
-    initDescriptorPool(false);
+
+    descriptorPool = std::make_unique<VulkanDescriptorPool>(window, false);
+
     initDescriptorSet(false);
     initPipelineCache();
     initPipeline(depthPresent);
@@ -532,31 +532,6 @@ void VulkanCore::initVertexBuffer(const void *vertexData, uint32_t dataSize, uin
     vertexInputAttributes[1].format = useTexture ? VK_FORMAT_R32G32_SFLOAT : VK_FORMAT_R32G32B32A32_SFLOAT;
     vertexInputAttributes[1].offset = 16;
 }
-void VulkanCore::initDescriptorPool(bool useTexture)
-{
-    // DEPENDS on init_uniform_buffer() and
-    // init_descriptor_and_pipeline_layouts()
-
-    VkResult U_ASSERT_ONLY result;
-    VkDescriptorPoolSize typeCount[2];
-    typeCount[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    typeCount[0].descriptorCount = 1;
-    if (useTexture)
-    {
-        typeCount[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        typeCount[1].descriptorCount = 1;
-    }
-
-    VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = {};
-    descriptorPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    descriptorPoolCreateInfo.pNext = nullptr;
-    descriptorPoolCreateInfo.maxSets = 1;
-    descriptorPoolCreateInfo.poolSizeCount = useTexture ? 2 : 1;
-    descriptorPoolCreateInfo.pPoolSizes = typeCount;
-
-    result = vkCreateDescriptorPool(window->getDevice(), &descriptorPoolCreateInfo, nullptr, &descriptorPool);
-    assert(result == VK_SUCCESS);
-}
 void VulkanCore::initDescriptorSet(bool useTexture)
 {
     // DEPENDS on init_descriptor_pool()
@@ -566,7 +541,7 @@ void VulkanCore::initDescriptorSet(bool useTexture)
     VkDescriptorSetAllocateInfo descriptorsetAllocationInfo[1];
     descriptorsetAllocationInfo[0].sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     descriptorsetAllocationInfo[0].pNext = nullptr;
-    descriptorsetAllocationInfo[0].descriptorPool = descriptorPool;
+    descriptorsetAllocationInfo[0].descriptorPool = descriptorPool->getDescriptorPool();
     descriptorsetAllocationInfo[0].descriptorSetCount = NUM_DESCRIPTOR_SETS;
     descriptorsetAllocationInfo[0].pSetLayouts = descriptorSetLayout.data();
 

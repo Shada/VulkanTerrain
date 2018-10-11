@@ -16,6 +16,7 @@
 #include "VulkanUniformBuffer.hpp"
 #include "VulkanCommandPool.hpp"
 #include "VulkanCommandBuffer.hpp"
+#include "VulkanDescriptorPool.hpp"
 
 // Number of descriptor sets needs to be the same at alloc,
 // pipeline layout creation, and descriptor set layout creation
@@ -69,7 +70,6 @@ class VulkanCore
         VkImageLayout finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
     void initFrameBuffers(bool includeDepth);
     void initVertexBuffer(const void *vertexData, uint32_t dataSize, uint32_t dataStride, bool useTexture);
-    void initDescriptorPool(bool useTexture);
     void initDescriptorSet(bool useTexture);
     void initPipelineCache();
     void initPipeline(VkBool32 includeDepth, VkBool32 includeVertexInput = VK_TRUE);
@@ -93,9 +93,10 @@ class VulkanCore
 
     std::unique_ptr<VulkanCommandBuffer> commandBuffer;
 
+    std::unique_ptr<VulkanDescriptorPool> descriptorPool;
+
     std::vector<LayerProperties> instanceLayerProperties;
 
-    VkDescriptorPool descriptorPool;
     std::vector<VkDescriptorSet> descriptorSets;
 
     VkPipelineCache pipelineCache;
