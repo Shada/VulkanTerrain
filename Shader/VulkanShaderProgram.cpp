@@ -2,7 +2,10 @@
 
 #include "VertexShaderText.hpp"
 #include "FragmentShaderText.hpp"
-#include "util.hpp"
+
+#include "AssertTypeDefine.hpp"
+#include "glslanghelper.hpp"
+#include <iostream>
 
 namespace Tobi
 {

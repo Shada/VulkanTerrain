@@ -10,12 +10,12 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "WindowXcb.hpp"
-#include "VulkanShaderProgram.hpp"
+#include "Shader/VulkanShaderProgram.hpp"
 #include "VulkanSwapChain.hpp"
-#include "VulkanDepthBuffer.hpp"
-#include "VulkanUniformBuffer.hpp"
-#include "VulkanCommandPool.hpp"
-#include "VulkanCommandBuffer.hpp"
+#include "Buffers/VulkanDepthBuffer.hpp"
+#include "Buffers/VulkanUniformBuffer.hpp"
+#include "Command/VulkanCommandPool.hpp"
+#include "Command/VulkanCommandBuffer.hpp"
 #include "VulkanDescriptorPool.hpp"
 
 // Number of descriptor sets needs to be the same at alloc,

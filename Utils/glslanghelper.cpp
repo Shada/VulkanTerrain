@@ -1,4 +1,4 @@
-#include "util.hpp"
+#include "glslanghelper.hpp"
 
 #ifdef __ANDROID__
 // Android specific include files.
@@ -19,16 +19,6 @@ static android_app *Android_application = nullptr;
 
 namespace Tobi
 {
-void waitSeconds(int seconds)
-{
-#ifdef WIN32
-    Sleep(seconds * 1000);
-#elif defined(__ANDROID__)
-    sleep(seconds);
-#else
-    sleep(seconds);
-#endif
-}
 
 #if (defined(VK_USE_PLATFORM_IOS_MVK) || defined(VK_USE_PLATFORM_MACOS_MVK))
 

@@ -7,7 +7,8 @@
 
 #include "VulkanCore.hpp"
 
-#include "util.hpp"
+#include "Utils/util.hpp"
+#include "Utils/AssertTypeDefine.hpp"
 
 #include "CubeVertexData.hpp"
 
@@ -55,6 +56,17 @@ VulkanCore::~VulkanCore()
             vkDestroyDescriptorSetLayout(window->getDevice(), descriptorSetLayout[i], nullptr);
         vkDestroyPipelineLayout(window->getDevice(), pipelineLayout, nullptr);
     }
+}
+
+void waitSeconds(int seconds)
+{
+#ifdef WIN32
+    Sleep(seconds * 1000);
+#elif defined(__ANDROID__)
+    sleep(seconds);
+#else
+    sleep(seconds);
+#endif
 }
 
 void VulkanCore::initVulkan()

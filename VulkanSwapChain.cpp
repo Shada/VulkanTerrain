@@ -1,5 +1,7 @@
 #include "VulkanSwapChain.hpp"
 
+#include "Utils/AssertTypeDefine.hpp"
+
 namespace Tobi
 {
 
