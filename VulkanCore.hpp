@@ -19,16 +19,11 @@
 #include "Buffers/VulkanVertexBuffer.hpp"
 #include "Camera.hpp"
 #include "Pipeline/VulkanPipelineCache.hpp"
+#include "Pipeline/VulkanPipeline.hpp"
 
 // Number of descriptor sets needs to be the same at alloc,
 // pipeline layout creation, and descriptor set layout creation
 #define NUM_DESCRIPTOR_SETS 1
-
-// Number of viewports and number of scissors have to be the same
-// at pipeline creation and in any call to set them dynamically
-// They also have to be the same as each other
-#define NUM_VIEWPORTS 1
-#define NUM_SCISSORS NUM_VIEWPORTS
 
 // Amount of time, in nanoseconds, to wait for a command buffer to complete
 #define FENCE_TIMEOUT 100000000
@@ -59,7 +54,6 @@ class VulkanCore
         bool useTexture,
         VkDescriptorSetLayoutCreateFlags descriptorSetLayoutCreateFlags = 0);
     void initDescriptorSet(bool useTexture);
-    void initPipeline(VkBool32 includeDepth, VkBool32 includeVertexInput = VK_TRUE);
     void initScissors();
     void initViewPorts();
 
@@ -68,7 +62,7 @@ class VulkanCore
 
     std::shared_ptr<WindowXcb> window;
 
-    std::unique_ptr<VulkanShaderProgram> shaderProgram;
+    std::shared_ptr<VulkanShaderProgram> shaderProgram;
 
     std::shared_ptr<VulkanSwapChain> swapChain;
 
@@ -86,17 +80,16 @@ class VulkanCore
 
     std::unique_ptr<VulkanFrameBuffers> frameBuffers;
 
-    std::unique_ptr<VulkanVertexBuffer> vertexBuffer;
+    std::shared_ptr<VulkanVertexBuffer> vertexBuffer;
 
     std::unique_ptr<Camera> camera;
 
-    std::unique_ptr<VulkanPipelineCache> pipelineCache;
+    std::shared_ptr<VulkanPipelineCache> pipelineCache;
+    std::unique_ptr<VulkanPipeline> pipeline;
 
     std::vector<LayerProperties> instanceLayerProperties;
 
     std::vector<VkDescriptorSet> descriptorSets;
-
-    VkPipeline pipeline;
 
     TextureData textureData;
 
