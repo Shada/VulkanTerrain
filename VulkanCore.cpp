@@ -32,6 +32,8 @@ VulkanCore::VulkanCore()
 
     window = std::make_shared<WindowXcb>(settings);
 
+    camera = std::make_unique<Camera>(settings);
+
     initVulkan();
 }
 VulkanCore::~VulkanCore()
@@ -74,8 +76,6 @@ void VulkanCore::initVulkan()
     swapChain = std::make_shared<VulkanSwapChain>(window);
 
     depthBuffer = std::make_shared<VulkanDepthBuffer>(window);
-
-    camera = std::make_unique<Camera>(window);
 
     uniformBuffer = std::make_unique<VulkanUniformBuffer>(
         window,
