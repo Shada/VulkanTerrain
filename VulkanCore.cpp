@@ -36,8 +36,6 @@ VulkanCore::~VulkanCore()
 {
     vkDestroyPipeline(window->getDevice(), pipeline, nullptr);
 
-    vkDestroyPipelineCache(window->getDevice(), pipelineCache, nullptr);
-
     if (pipelineLayout)
     {
         for (int i = 0; i < NUM_DESCRIPTOR_SETS; i++)
@@ -102,7 +100,9 @@ void VulkanCore::initVulkan()
     descriptorPool = std::make_unique<VulkanDescriptorPool>(window, false);
 
     initDescriptorSet(false);
-    initPipelineCache();
+
+    pipelineCache = std::make_unique<VulkanPipelineCache>(window);
+
     initPipeline(depthPresent);
 
     // VULKAN_KEY_START
@@ -411,19 +411,7 @@ void VulkanCore::initDescriptorSet(bool useTexture)
 
     vkUpdateDescriptorSets(window->getDevice(), useTexture ? 2 : 1, writes, 0, nullptr);
 }
-void VulkanCore::initPipelineCache()
-{
-    VkResult U_ASSERT_ONLY result;
 
-    VkPipelineCacheCreateInfo pipelineCacheCreateInfo;
-    pipelineCacheCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
-    pipelineCacheCreateInfo.pNext = nullptr;
-    pipelineCacheCreateInfo.initialDataSize = 0;
-    pipelineCacheCreateInfo.pInitialData = nullptr;
-    pipelineCacheCreateInfo.flags = 0;
-    result = vkCreatePipelineCache(window->getDevice(), &pipelineCacheCreateInfo, nullptr, &pipelineCache);
-    assert(result == VK_SUCCESS);
-}
 void VulkanCore::initPipeline(VkBool32 includeDepth, VkBool32 includeVertexInput)
 {
     VkResult U_ASSERT_ONLY result;
@@ -576,7 +564,7 @@ void VulkanCore::initPipeline(VkBool32 includeDepth, VkBool32 includeVertexInput
     pipelineCreateInfo.renderPass = renderPass->getRenderPass();
     pipelineCreateInfo.subpass = 0;
 
-    result = vkCreateGraphicsPipelines(window->getDevice(), pipelineCache, 1, &pipelineCreateInfo, nullptr, &pipeline);
+    result = vkCreateGraphicsPipelines(window->getDevice(), pipelineCache->getPipelineCache(), 1, &pipelineCreateInfo, nullptr, &pipeline);
     assert(result == VK_SUCCESS);
 }
 } // namespace Tobi

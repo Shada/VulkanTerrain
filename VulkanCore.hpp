@@ -18,6 +18,7 @@
 #include "Buffers/VulkanFrameBuffers.hpp"
 #include "Buffers/VulkanVertexBuffer.hpp"
 #include "Camera.hpp"
+#include "Pipeline/VulkanPipelineCache.hpp"
 
 // Number of descriptor sets needs to be the same at alloc,
 // pipeline layout creation, and descriptor set layout creation
@@ -58,7 +59,6 @@ class VulkanCore
         bool useTexture,
         VkDescriptorSetLayoutCreateFlags descriptorSetLayoutCreateFlags = 0);
     void initDescriptorSet(bool useTexture);
-    void initPipelineCache();
     void initPipeline(VkBool32 includeDepth, VkBool32 includeVertexInput = VK_TRUE);
     void initScissors();
     void initViewPorts();
@@ -90,11 +90,12 @@ class VulkanCore
 
     std::unique_ptr<Camera> camera;
 
+    std::unique_ptr<VulkanPipelineCache> pipelineCache;
+
     std::vector<LayerProperties> instanceLayerProperties;
 
     std::vector<VkDescriptorSet> descriptorSets;
 
-    VkPipelineCache pipelineCache;
     VkPipeline pipeline;
 
     TextureData textureData;
