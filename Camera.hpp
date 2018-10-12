@@ -27,6 +27,10 @@ class Camera
 
     std::shared_ptr<WindowXcb> window;
 
+    glm::vec3 position;
+    glm::vec3 lookAt;
+    glm::vec3 up;
+
     glm::mat4 projectionMatrix;
     glm::mat4 viewMatrix;
     glm::mat4 modelMatrix;

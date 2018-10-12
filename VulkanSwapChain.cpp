@@ -26,6 +26,20 @@ VulkanSwapChain::~VulkanSwapChain()
     }
 }
 
+void VulkanSwapChain::aquireNextImage(VkSemaphore &imageAcquiredSemaphore)
+{
+    VkResult result = vkAcquireNextImageKHR(
+        window->getDevice(),
+        swapChain,
+        UINT64_MAX,
+        imageAcquiredSemaphore,
+        VK_NULL_HANDLE,
+        &currentBuffer);
+    // TODO: Deal with the VK_SUBOPTIMAL_KHR and VK_ERROR_OUT_OF_DATE_KHR (recreate Swapchain)
+
+    assert(result == VK_SUCCESS);
+}
+
 void VulkanSwapChain::initSwapChain(VkImageUsageFlags usageFlags)
 { /* DEPENDS on commandBuffer and queue initialized */
 

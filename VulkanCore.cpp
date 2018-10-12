@@ -131,13 +131,7 @@ void VulkanCore::initVulkan()
     result = vkCreateSemaphore(window->getDevice(), &imageAcquiredSemaphoreCreateInfo, nullptr, &imageAcquiredSemaphore);
     assert(result == VK_SUCCESS);
 
-    // Get the index of the next available swapchain image:
-    // TODO: move to swapchain class
-    result = vkAcquireNextImageKHR(window->getDevice(), swapChain->getSwapChain(), UINT64_MAX, imageAcquiredSemaphore, VK_NULL_HANDLE,
-                                   &swapChain->getCurrentBuffer());
-    // TODO: Deal with the VK_SUBOPTIMAL_KHR and VK_ERROR_OUT_OF_DATE_KHR
-    // return codes
-    assert(result == VK_SUCCESS);
+    swapChain->aquireNextImage(imageAcquiredSemaphore);
 
     VkRenderPassBeginInfo renderPassBeginInfo;
     renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -221,6 +215,20 @@ void VulkanCore::initVulkan()
 
     vkDestroySemaphore(window->getDevice(), imageAcquiredSemaphore, nullptr);
     vkDestroyFence(window->getDevice(), drawFence, nullptr);
+}
+
+void drawFrame()
+{
+    // 1. aquire next swapchain
+    // and handle VK_SUBOPTIMAL_KHR and VK_ERROR_OUT_OF_DATE_KHR (basically recreate swapchain)
+
+    // 2. construct command buffers
+    // some command buffers might be prerecorded, for things that rarely changes
+
+    // 3. submit command buffers to queue
+    // and wait for semaphores / fences
+
+    // 4. present result
 }
 
 void VulkanCore::initViewPorts()

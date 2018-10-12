@@ -4,7 +4,11 @@ namespace Tobi
 {
 
 Camera::Camera(std::shared_ptr<WindowXcb> window)
-    : window(window)
+    : window(window),
+      position(glm::vec3(-5, 3, -10)),
+      lookAt(glm::vec3(0, 0, 0)),
+      up(glm::vec3(0, -1, 0))
+
 {
     initCamera();
 }
@@ -18,9 +22,9 @@ void Camera::initCamera()
     }
     projectionMatrix = glm::perspective(fov, static_cast<float>(window->getWidth()) / static_cast<float>(window->getHeight()), 0.1f, 100.0f);
 
-    viewMatrix = glm::lookAt(glm::vec3(-5, 3, -10), // Camera is at (-5,3,-10), in World Space
-                             glm::vec3(0, 0, 0),    // and looks at the origin
-                             glm::vec3(0, -1, 0)    // Head is up (set to 0,-1,0 to look upside-down)
+    viewMatrix = glm::lookAt(position, // Camera is at (-5,3,-10), in World Space
+                             lookAt,   // and looks at the origin
+                             up        // Head is up (set to 0,-1,0 to look upside-down)
     );
     modelMatrix = glm::mat4(1.0f);
 
