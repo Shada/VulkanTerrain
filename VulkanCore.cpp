@@ -21,7 +21,8 @@ VulkanCore::VulkanCore()
       shaderProgram(nullptr),
       uniformBuffer(nullptr),
       pipelineLayout(nullptr),
-      renderPass(nullptr)
+      renderPass(nullptr),
+      vertexBuffer(nullptr)
 {
     WindowSettings settings;
     settings.width = 800;
@@ -36,9 +37,6 @@ VulkanCore::~VulkanCore()
     vkDestroyPipeline(window->getDevice(), pipeline, nullptr);
 
     vkDestroyPipelineCache(window->getDevice(), pipelineCache, nullptr);
-
-    vkDestroyBuffer(window->getDevice(), vertexBuffer.buffer, nullptr);
-    vkFreeMemory(window->getDevice(), vertexBuffer.memory, nullptr);
 
     if (pipelineLayout)
     {
@@ -98,7 +96,7 @@ void VulkanCore::initVulkan()
         swapChain,
         depthPresent);
 
-    initVertexBuffer(cubeData, sizeof(cubeData), sizeof(cubeData[0]), false);
+    vertexBuffer = std::make_unique<VulkanVertexBuffer>(window, cubeData, sizeof(cubeData), sizeof(cubeData[0]), false);
 
     descriptorPool = std::make_unique<VulkanDescriptorPool>(window, false);
 
@@ -154,7 +152,7 @@ void VulkanCore::initVulkan()
                             descriptorSets.data(), 0, nullptr);
 
     const VkDeviceSize offsets[1] = {0};
-    vkCmdBindVertexBuffers(commandBuffer->getCommandBuffer(), 0, 1, &vertexBuffer.buffer, offsets);
+    vkCmdBindVertexBuffers(commandBuffer->getCommandBuffer(), 0, 1, &vertexBuffer->getBuffer(), offsets);
 
     initViewPorts();
     initScissors();
@@ -388,67 +386,6 @@ void VulkanCore::initDescriptorAndPipelineLayouts(
     result = vkCreatePipelineLayout(window->getDevice(), &pipelineLayoutCreateInfo, nullptr, &pipelineLayout);
     assert(result == VK_SUCCESS);
 }
-
-void VulkanCore::initVertexBuffer(const void *vertexData, uint32_t dataSize, uint32_t dataStride, bool useTexture)
-{
-    VkResult U_ASSERT_ONLY result;
-    bool U_ASSERT_ONLY pass;
-
-    VkBufferCreateInfo bufferCreateInfo = {};
-    bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    bufferCreateInfo.pNext = nullptr;
-    bufferCreateInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-    bufferCreateInfo.size = dataSize;
-    bufferCreateInfo.queueFamilyIndexCount = 0;
-    bufferCreateInfo.pQueueFamilyIndices = nullptr;
-    bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    bufferCreateInfo.flags = 0;
-    result = vkCreateBuffer(window->getDevice(), &bufferCreateInfo, nullptr, &vertexBuffer.buffer);
-    assert(result == VK_SUCCESS);
-
-    VkMemoryRequirements memoryRequirements;
-    vkGetBufferMemoryRequirements(window->getDevice(), vertexBuffer.buffer, &memoryRequirements);
-
-    VkMemoryAllocateInfo memoryAllocationInfo = {};
-    memoryAllocationInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    memoryAllocationInfo.pNext = nullptr;
-    memoryAllocationInfo.memoryTypeIndex = 0;
-
-    memoryAllocationInfo.allocationSize = memoryRequirements.size;
-    pass = window->memoryTypeFromProperties(memoryRequirements.memoryTypeBits,
-                                            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                            &memoryAllocationInfo.memoryTypeIndex);
-    assert(pass && "No mappable, coherent memory");
-
-    result = vkAllocateMemory(window->getDevice(), &memoryAllocationInfo, nullptr, &(vertexBuffer.memory));
-    assert(result == VK_SUCCESS);
-    vertexBuffer.bufferInfo.range = memoryRequirements.size;
-    vertexBuffer.bufferInfo.offset = 0;
-
-    uint8_t *pData;
-    result = vkMapMemory(window->getDevice(), vertexBuffer.memory, 0, memoryRequirements.size, 0, (void **)&pData);
-    assert(result == VK_SUCCESS);
-
-    memcpy(pData, vertexData, dataSize);
-
-    vkUnmapMemory(window->getDevice(), vertexBuffer.memory);
-
-    result = vkBindBufferMemory(window->getDevice(), vertexBuffer.buffer, vertexBuffer.memory, 0);
-    assert(result == VK_SUCCESS);
-
-    vertexInputBinding.binding = 0;
-    vertexInputBinding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-    vertexInputBinding.stride = dataStride;
-
-    vertexInputAttributes[0].binding = 0;
-    vertexInputAttributes[0].location = 0;
-    vertexInputAttributes[0].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-    vertexInputAttributes[0].offset = 0;
-    vertexInputAttributes[1].binding = 0;
-    vertexInputAttributes[1].location = 1;
-    vertexInputAttributes[1].format = useTexture ? VK_FORMAT_R32G32_SFLOAT : VK_FORMAT_R32G32B32A32_SFLOAT;
-    vertexInputAttributes[1].offset = 16;
-}
 void VulkanCore::initDescriptorSet(bool useTexture)
 {
     // DEPENDS on init_descriptor_pool()
@@ -525,9 +462,9 @@ void VulkanCore::initPipeline(VkBool32 includeDepth, VkBool32 includeVertexInput
         vertexInputStateCreateInfo.pNext = nullptr;
         vertexInputStateCreateInfo.flags = 0;
         vertexInputStateCreateInfo.vertexBindingDescriptionCount = 1;
-        vertexInputStateCreateInfo.pVertexBindingDescriptions = &vertexInputBinding;
+        vertexInputStateCreateInfo.pVertexBindingDescriptions = &vertexBuffer->getVertexInputBinding();
         vertexInputStateCreateInfo.vertexAttributeDescriptionCount = 2;
-        vertexInputStateCreateInfo.pVertexAttributeDescriptions = vertexInputAttributes;
+        vertexInputStateCreateInfo.pVertexAttributeDescriptions = vertexBuffer->getVertexInputAttributeDescription();
     }
     VkPipelineInputAssemblyStateCreateInfo inpitAssemblyStateCreateInfo;
     inpitAssemblyStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;

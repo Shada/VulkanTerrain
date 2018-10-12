@@ -19,6 +19,7 @@
 #include "VulkanDescriptorPool.hpp"
 #include "VulkanRenderPass.hpp"
 #include "Buffers/VulkanFrameBuffers.hpp"
+#include "Buffers/VulkanVertexBuffer.hpp"
 
 // Number of descriptor sets needs to be the same at alloc,
 // pipeline layout creation, and descriptor set layout creation
@@ -35,12 +36,6 @@
 
 namespace Tobi
 {
-typedef struct TVertexBuffer
-{
-    VkBuffer buffer;
-    VkDeviceMemory memory;
-    VkDescriptorBufferInfo bufferInfo;
-} VertexBuffer;
 typedef struct TTextureData
 {
     VkDescriptorImageInfo imageInfo;
@@ -66,7 +61,6 @@ class VulkanCore
     void initDescriptorAndPipelineLayouts(
         bool useTexture,
         VkDescriptorSetLayoutCreateFlags descriptorSetLayoutCreateFlags = 0);
-    void initVertexBuffer(const void *vertexData, uint32_t dataSize, uint32_t dataStride, bool useTexture);
     void initDescriptorSet(bool useTexture);
     void initPipelineCache();
     void initPipeline(VkBool32 includeDepth, VkBool32 includeVertexInput = VK_TRUE);
@@ -96,6 +90,8 @@ class VulkanCore
 
     std::unique_ptr<VulkanFrameBuffers> frameBuffers;
 
+    std::unique_ptr<VulkanVertexBuffer> vertexBuffer;
+
     std::vector<LayerProperties> instanceLayerProperties;
 
     std::vector<VkDescriptorSet> descriptorSets;
@@ -113,10 +109,6 @@ class VulkanCore
 
     std::vector<VkDescriptorSetLayout> descriptorSetLayout;
     VkPipelineLayout pipelineLayout;
-
-    VkVertexInputBindingDescription vertexInputBinding;
-    VkVertexInputAttributeDescription vertexInputAttributes[2];
-    VertexBuffer vertexBuffer;
 };
 
 } // namespace Tobi
