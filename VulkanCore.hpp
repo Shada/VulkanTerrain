@@ -5,9 +5,6 @@
 #include <vulkan/vulkan.h>
 #include <vector>
 #include <memory>
-#define GLM_FORCE_RADIANS
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 
 #include "WindowXcb.hpp"
 #include "Shader/VulkanShaderProgram.hpp"
@@ -20,6 +17,7 @@
 #include "VulkanRenderPass.hpp"
 #include "Buffers/VulkanFrameBuffers.hpp"
 #include "Buffers/VulkanVertexBuffer.hpp"
+#include "Camera.hpp"
 
 // Number of descriptor sets needs to be the same at alloc,
 // pipeline layout creation, and descriptor set layout creation
@@ -56,8 +54,6 @@ class VulkanCore
     VkResult initGlobalLayerProperties();
     VkResult initGlobalExtensionProperties(LayerProperties &layerProperties);
 
-    void initCameraMatrices();
-
     void initDescriptorAndPipelineLayouts(
         bool useTexture,
         VkDescriptorSetLayoutCreateFlags descriptorSetLayoutCreateFlags = 0);
@@ -92,6 +88,8 @@ class VulkanCore
 
     std::unique_ptr<VulkanVertexBuffer> vertexBuffer;
 
+    std::unique_ptr<Camera> camera;
+
     std::vector<LayerProperties> instanceLayerProperties;
 
     std::vector<VkDescriptorSet> descriptorSets;
@@ -100,12 +98,6 @@ class VulkanCore
     VkPipeline pipeline;
 
     TextureData textureData;
-
-    glm::mat4 projectionMatrix;
-    glm::mat4 viewMatrix;
-    glm::mat4 modelMatrix;
-    glm::mat4 clipMatrix;
-    glm::mat4 modelViewProjectionMatrix;
 
     std::vector<VkDescriptorSetLayout> descriptorSetLayout;
     VkPipelineLayout pipelineLayout;
