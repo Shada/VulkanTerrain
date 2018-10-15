@@ -23,7 +23,7 @@ class Game
 
     void onKey(Key key)
     {
-        if (key == Key::KEY_SHUTDOWN)
+        if (key == Key::KEY_SHUTDOWN || key == Key::KEY_ESC)
         {
             std::cout << "I wanna shoutdown now" << std::endl;
         }

@@ -29,6 +29,7 @@ VulkanCore::VulkanCore()
     WindowSettings settings;
     settings.width = 800;
     settings.height = 800;
+    settings.applicationName = "TobiApp";
 
     window = std::make_shared<WindowXcb>(settings);
 
@@ -215,6 +216,11 @@ void VulkanCore::initVulkan()
 
     vkDestroySemaphore(window->getDevice(), imageAcquiredSemaphore, nullptr);
     vkDestroyFence(window->getDevice(), drawFence, nullptr);
+
+    while (window->isRunning())
+    {
+        window->pollEvents();
+    }
 }
 
 void drawFrame()

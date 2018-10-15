@@ -15,7 +15,8 @@ WindowXcb::WindowXcb(WindowSettings windowSettings)
       screen(nullptr),
       atomWmDeleteWindow(XCB_ATOM_NONE),
       atomWmProtocol(XCB_ATOM_NONE),
-      window(0)
+      window(XCB_WINDOW_NONE),
+      running(true)
 {
     createWindow();
 }
@@ -43,6 +44,21 @@ WindowXcb::~WindowXcb()
 
     if (game)
         delete (game);
+}
+
+void WindowXcb::pollEvents()
+{
+    while (true)
+    {
+        xcb_generic_event_t *event = xcb_poll_for_event(connection);
+        if (!event)
+        {
+            break;
+        }
+
+        handleEvent(event);
+        free(event);
+    }
 }
 
 void WindowXcb::handleEvent(const xcb_generic_event_t *event)
@@ -83,14 +99,17 @@ void WindowXcb::handleEvent(const xcb_generic_event_t *event)
             break;
         }
 
-        game->onKey(key); // send GameOnKeyEvent, so that game can react accordingly. Should window have pointer to game?
+        game->onKey(Game::KEY_ESC); // send GameOnKeyEvent, so that game can react accordingly. Should window have pointer to game?
     }
     break;
     case XCB_CLIENT_MESSAGE:
     {
         const xcb_client_message_event_t *message = reinterpret_cast<const xcb_client_message_event_t *>(event);
         if (message->type == atomWmProtocol && message->data.data32[0] == atomWmDeleteWindow)
+        {
             game->onKey(Game::KEY_SHUTDOWN);
+            running = false;
+        }
     }
     break;
     default:
@@ -108,7 +127,7 @@ void WindowXcb::createWindow()
 
     initInstanceExtensionNames();
     initDeviceExtensionNames();
-    initInstance("TobiApp");
+    initInstance();
     initEnumerateDevice();
 
     initSurface();
@@ -170,7 +189,7 @@ void WindowXcb::initWindow()
 
     uint32_t valueList[32];
     valueList[0] = screen->black_pixel;
-    valueList[1] = XCB_EVENT_MASK_KEY_RELEASE | XCB_EVENT_MASK_EXPOSURE;
+    valueList[1] = XCB_EVENT_MASK_KEY_RELEASE | XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_KEY_PRESS;
 
     xcb_create_window(
         connection,
@@ -187,20 +206,34 @@ void WindowXcb::initWindow()
         valueMask,
         valueList);
 
+    auto utf8StringCookie = intern_atom_cookie(connection, "UTF8_STRING");
+    auto wmNameCookie = intern_atom_cookie(connection, "WM_NAME");
     auto protocolCookie = intern_atom_cookie(connection, "WM_PROTOCOLS");
-
-    atomWmProtocol = intern_atom(connection, protocolCookie);
-
     auto deleteCookie = intern_atom_cookie(connection, "WM_DELETE_WINDOW");
 
+    auto utf8String = intern_atom(connection, utf8StringCookie);
+    auto wmName = intern_atom(connection, wmNameCookie);
+    atomWmProtocol = intern_atom(connection, protocolCookie);
     atomWmDeleteWindow = intern_atom(connection, deleteCookie);
 
+    // set WINDOW title
+    xcb_change_property(
+        connection,
+        XCB_PROP_MODE_REPLACE,
+        window,
+        wmName,
+        utf8String,
+        8,
+        windowSettings.applicationName.size(),
+        windowSettings.applicationName.c_str());
+
+    // advertise WM_DELETE_WINDOW
     xcb_change_property(
         connection,
         XCB_PROP_MODE_REPLACE,
         window,
         atomWmProtocol,
-        4,
+        XCB_ATOM_ATOM,
         32,
         1,
         &atomWmDeleteWindow);
@@ -215,15 +248,15 @@ void WindowXcb::initWindow()
         coords);
     xcb_flush(connection);
 
-    xcb_generic_event_t *e;
-    while ((e = xcb_wait_for_event(connection)))
+    xcb_generic_event_t *event;
+    while ((event = xcb_wait_for_event(connection)))
     {
-        if ((e->response_type & ~0x80) == XCB_EXPOSE)
+        if ((event->response_type & ~0x80) == XCB_EXPOSE)
         {
             break;
         }
     }
-    free(e);
+    free(event);
 }
 
 void WindowXcb::initInstanceExtensionNames()
@@ -289,14 +322,14 @@ void WindowXcb::initDeviceExtensionNames()
     deviceExtensionNames.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 }
 
-void WindowXcb::initInstance(char const *const applicationShortName)
+void WindowXcb::initInstance()
 {
     VkApplicationInfo applicationInfo = {};
     applicationInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     applicationInfo.pNext = nullptr;
-    applicationInfo.pApplicationName = applicationShortName;
+    applicationInfo.pApplicationName = windowSettings.applicationName.c_str();
     applicationInfo.applicationVersion = 1;
-    applicationInfo.pEngineName = applicationShortName;
+    applicationInfo.pEngineName = windowSettings.applicationName.c_str();
     applicationInfo.engineVersion = 1;
     applicationInfo.apiVersion = VK_API_VERSION_1_0;
 

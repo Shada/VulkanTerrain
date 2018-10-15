@@ -36,6 +36,7 @@ class WindowXcb
     WindowXcb &operator=(WindowXcb &&) & = default;
     ~WindowXcb();
 
+    void pollEvents();
     void handleEvent(const xcb_generic_event_t *event);
 
     bool memoryTypeFromProperties(uint32_t typeBits, VkFlags requirementsMask, uint32_t *typeIndex);
@@ -61,6 +62,8 @@ class WindowXcb
     const VkQueue &getGraphicsQueue() { return graphicsQueue; }
     const VkQueue &getPresentQueue() { return presentQueue; }
 
+    const bool &isRunning() { return running; }
+
   private:
     void createWindow();
 
@@ -72,7 +75,7 @@ class WindowXcb
     void initDeviceExtensionNames();
 
     // Add to applicationShortName "Window" settings, and rename WindowSettings to ApplicationBaseSettings or better
-    void initInstance(char const *const applicationShortName);
+    void initInstance();
 
     VkResult initEnumerateDevice(uint32_t gpu_count = 1);
 
@@ -122,5 +125,7 @@ class WindowXcb
     uint32_t presentQueueFamilyIndex;
     VkQueue graphicsQueue;
     VkQueue presentQueue;
+
+    bool running;
 };
 } // namespace Tobi
