@@ -4,14 +4,17 @@
 #include "WindowXcb.hpp"
 
 #include "Utils/AssertTypeDefine.hpp"
+#include "Game.hpp"
 
 namespace Tobi
 {
 WindowXcb::WindowXcb(WindowSettings windowSettings)
-    : windowSettings(windowSettings),
+    : game(new Game()),
+      windowSettings(windowSettings),
       connection(nullptr),
       screen(nullptr),
-      atomWmDeleteWindow(nullptr),
+      atomWmDeleteWindow(XCB_ATOM_NONE),
+      atomWmProtocol(XCB_ATOM_NONE),
       window(0)
 {
     createWindow();
@@ -37,7 +40,62 @@ WindowXcb::~WindowXcb()
 
     xcb_destroy_window(connection, window);
     xcb_disconnect(connection);
-    free(atomWmDeleteWindow);
+
+    if (game)
+        delete (game);
+}
+
+void WindowXcb::handleEvent(const xcb_generic_event_t *event)
+{
+    switch (event->response_type & 0x7f)
+    {
+    case XCB_CONFIGURE_NOTIFY: // resize window event! Need to recreate swapchain and stuff (send RecreateSwapchainEvent ?) can window have pointer to swapchain?
+    {
+        const xcb_configure_notify_event_t *notify = reinterpret_cast<const xcb_configure_notify_event_t *>(event);
+        game->resizeSwapChain(notify->width, notify->height);
+    }
+    break;
+    case XCB_KEY_PRESS:
+    {
+        const xcb_key_press_event_t *keyPress = reinterpret_cast<const xcb_key_press_event_t *>(event);
+        Game::Key key;
+
+        // TODO translate xcb_keycode_t
+        switch (keyPress->detail)
+        {
+        case 9:
+            key = Game::KEY_ESC;
+            break;
+        case 111:
+            key = Game::KEY_UP;
+            break;
+        case 116:
+            key = Game::KEY_DOWN;
+            break;
+        case 65:
+            key = Game::KEY_SPACE;
+            break;
+        case 41:
+            key = Game::KEY_F;
+            break;
+        default:
+            key = Game::KEY_UNKNOWN;
+            break;
+        }
+
+        game->onKey(key); // send GameOnKeyEvent, so that game can react accordingly. Should window have pointer to game?
+    }
+    break;
+    case XCB_CLIENT_MESSAGE:
+    {
+        const xcb_client_message_event_t *message = reinterpret_cast<const xcb_client_message_event_t *>(event);
+        if (message->type == atomWmProtocol && message->data.data32[0] == atomWmDeleteWindow)
+            game->onKey(Game::KEY_SHUTDOWN);
+    }
+    break;
+    default:
+        break;
+    }
 }
 
 void WindowXcb::createWindow()
@@ -80,6 +138,28 @@ void WindowXcb::initConnection()
     screen = setupIterator.data;
 }
 
+namespace
+{
+
+xcb_intern_atom_cookie_t intern_atom_cookie(xcb_connection_t *connection, const std::string &atomName)
+{
+    return xcb_intern_atom(connection, false, atomName.size(), atomName.c_str());
+}
+
+xcb_atom_t intern_atom(xcb_connection_t *connection, xcb_intern_atom_cookie_t cookie)
+{
+    xcb_atom_t atom = XCB_ATOM_NONE;
+    xcb_intern_atom_reply_t *reply = xcb_intern_atom_reply(connection, cookie, nullptr);
+    if (reply)
+    {
+        atom = reply->atom;
+        free(reply);
+    }
+
+    return atom;
+}
+
+} // namespace
 void WindowXcb::initWindow()
 {
     assert(connection != nullptr);
@@ -107,36 +187,23 @@ void WindowXcb::initWindow()
         valueMask,
         valueList);
 
-    auto protocolCookie = xcb_intern_atom(
-        connection,
-        1,
-        12,
-        "WM_PROTOCOLS");
-    auto reply = xcb_intern_atom_reply(
-        connection,
-        protocolCookie,
-        0);
-    auto deleteCookie = xcb_intern_atom(
-        connection,
-        0,
-        16,
-        "WM_DELETE_WINDOW");
+    auto protocolCookie = intern_atom_cookie(connection, "WM_PROTOCOLS");
 
-    atomWmDeleteWindow = xcb_intern_atom_reply(
-        connection,
-        deleteCookie,
-        0);
+    atomWmProtocol = intern_atom(connection, protocolCookie);
+
+    auto deleteCookie = intern_atom_cookie(connection, "WM_DELETE_WINDOW");
+
+    atomWmDeleteWindow = intern_atom(connection, deleteCookie);
 
     xcb_change_property(
         connection,
         XCB_PROP_MODE_REPLACE,
         window,
-        (*reply).atom,
+        atomWmProtocol,
         4,
         32,
         1,
-        &(*atomWmDeleteWindow).atom);
-    free(reply);
+        &atomWmDeleteWindow);
 
     xcb_map_window(connection, window);
 

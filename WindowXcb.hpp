@@ -10,6 +10,8 @@
 
 namespace Tobi
 {
+
+class Game;
 typedef struct TLayerProperties
 {
     VkLayerProperties properties;
@@ -34,7 +36,7 @@ class WindowXcb
     WindowXcb &operator=(WindowXcb &&) & = default;
     ~WindowXcb();
 
-    void createWindow();
+    void handleEvent(const xcb_generic_event_t *event);
 
     bool memoryTypeFromProperties(uint32_t typeBits, VkFlags requirementsMask, uint32_t *typeIndex);
 
@@ -60,6 +62,8 @@ class WindowXcb
     const VkQueue &getPresentQueue() { return presentQueue; }
 
   private:
+    void createWindow();
+
     void initConnection();
     void initWindow();
 
@@ -82,10 +86,13 @@ class WindowXcb
     // settings
     WindowSettings windowSettings;
 
+    Game *game;
+
     // xcb window
     xcb_connection_t *connection;
     xcb_screen_t *screen;
-    xcb_intern_atom_reply_t *atomWmDeleteWindow;
+    xcb_atom_t atomWmProtocol;
+    xcb_atom_t atomWmDeleteWindow;
     xcb_window_t window;
 
     // extensions and layers
