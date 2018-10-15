@@ -8,6 +8,8 @@
 
 #include "WindowSettings.hpp"
 
+#include "EventDispatcher.hpp"
+
 namespace Tobi
 {
 
@@ -83,13 +85,13 @@ class WindowXcb
     void initDeviceQueueFamilies();
 
     VkResult initDevice();
-
+    void setUpEvents();
     void initDeviceQueues();
 
     // settings
     WindowSettings windowSettings;
 
-    Game *game;
+    std::unique_ptr<Game> game;
 
     // xcb window
     xcb_connection_t *connection;

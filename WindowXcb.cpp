@@ -9,7 +9,7 @@
 namespace Tobi
 {
 WindowXcb::WindowXcb(WindowSettings windowSettings)
-    : game(new Game()),
+    : game(std::make_unique<Game>()),
       windowSettings(windowSettings),
       connection(nullptr),
       screen(nullptr),
@@ -18,7 +18,26 @@ WindowXcb::WindowXcb(WindowSettings windowSettings)
       window(XCB_WINDOW_NONE),
       running(true)
 {
+    setUpEvents();
     createWindow();
+}
+
+void WindowXcb::setUpEvents()
+{
+    ResizeWindowDispatcher dispatcher;
+
+    auto event1 = ResizeWindowEvent(1, 2);
+    auto event2 = ResizeWindowEvent(3, 4);
+
+    std::shared_ptr<Consumer> consumer(new Consumer());
+
+    dispatcher.Dispatcher<ResizeWindowEvent>::Reg(consumer);
+
+    dispatcher.Dispatcher<ResizeWindowEvent>::Dispatch(event1);
+
+    dispatcher.Dispatcher<ResizeWindowEvent>::Unreg(consumer);
+
+    dispatcher.Dispatcher<ResizeWindowEvent>::Dispatch(event2);
 }
 
 WindowXcb::~WindowXcb()
@@ -41,9 +60,6 @@ WindowXcb::~WindowXcb()
 
     xcb_destroy_window(connection, window);
     xcb_disconnect(connection);
-
-    if (game)
-        delete (game);
 }
 
 void WindowXcb::pollEvents()
