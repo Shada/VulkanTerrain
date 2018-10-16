@@ -7,7 +7,6 @@
 #include <xcb/xcb.h>
 
 #include "WindowSettings.hpp"
-
 #include "EventDispatcher.hpp"
 
 namespace Tobi
@@ -31,7 +30,7 @@ typedef struct TGpu
 class WindowXcb
 {
   public:
-    WindowXcb(WindowSettings windowSettings);
+    WindowXcb(WindowSettings windowSettings, std::shared_ptr<ResizeWindowDispatcher> resizeWindowDispatcher);
     WindowXcb(const WindowXcb &) = delete;
     WindowXcb(WindowXcb &&) = default;
     WindowXcb &operator=(const WindowXcb &) & = delete;
@@ -85,13 +84,15 @@ class WindowXcb
     void initDeviceQueueFamilies();
 
     VkResult initDevice();
-    void setUpEvents();
+
     void initDeviceQueues();
 
     // settings
     WindowSettings windowSettings;
 
     std::unique_ptr<Game> game;
+
+    std::shared_ptr<ResizeWindowDispatcher> resizeWindowDispatcher;
 
     // xcb window
     xcb_connection_t *connection;

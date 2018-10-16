@@ -12,31 +12,34 @@
 
 namespace Tobi
 {
-VulkanCore::VulkanCore()
-    : commandPool(nullptr),
-      commandBuffer(nullptr),
-      swapChain(nullptr),
-      depthBuffer(nullptr),
-      window(nullptr),
+WindowSettings settings{800, 800, "TobiApp"};
+
+VulkanCore::VulkanCore() // TODO: do the make_shared here (in correct order).
+    : resizeWindowDispatcher(std::make_shared<ResizeWindowDispatcher>()),
+      window(std::make_shared<WindowXcb>(settings, resizeWindowDispatcher)),
+      camera(std::make_unique<Camera>(settings)),
+      commandPool(std::make_shared<VulkanCommandPool>(window)),
+      commandBuffer(std::make_unique<VulkanCommandBuffer>(window, commandPool)),
+      swapChain(std::make_shared<VulkanSwapChain>(window)),
+      depthBuffer(std::make_shared<VulkanDepthBuffer>(window)),
+      uniformBuffer(std::make_unique<VulkanUniformBuffer>(
+          window,
+          (void *)&camera->getModelViewProjectionMatrix(),
+          sizeof(camera->getModelViewProjectionMatrix()))),
       shaderProgram(nullptr),
-      uniformBuffer(nullptr),
       pipelineLayout(nullptr),
       renderPass(nullptr),
       vertexBuffer(nullptr),
       pipelineCache(nullptr),
       pipeline(nullptr)
 {
-    WindowSettings settings;
-    settings.width = 800;
-    settings.height = 800;
-    settings.applicationName = "TobiApp";
-
-    window = std::make_shared<WindowXcb>(settings);
-
-    camera = std::make_unique<Camera>(settings);
+    resizeWindowDispatcher->Reg(swapChain);
 
     initVulkan();
+
+    resizeWindowDispatcher->Unreg(swapChain);
 }
+
 VulkanCore::~VulkanCore()
 {
     if (pipelineLayout)
@@ -60,6 +63,7 @@ void waitSeconds(int seconds)
 
 void VulkanCore::initVulkan()
 {
+    // TODO: this should be moved to where the properties are applied (not currently in use)
     auto result = initGlobalLayerProperties();
     if (result != VK_SUCCESS)
     {
@@ -70,19 +74,7 @@ void VulkanCore::initVulkan()
 
     const bool depthPresent = true;
 
-    commandPool = std::make_shared<VulkanCommandPool>(window);
-
-    commandBuffer = std::make_unique<VulkanCommandBuffer>(window, commandPool);
-
-    swapChain = std::make_shared<VulkanSwapChain>(window);
-
-    depthBuffer = std::make_shared<VulkanDepthBuffer>(window);
-
-    uniformBuffer = std::make_unique<VulkanUniformBuffer>(
-        window,
-        (void *)&camera->getModelViewProjectionMatrix(),
-        sizeof(camera->getModelViewProjectionMatrix()));
-
+    // TODO: move descriptors/layouts to appropriate class
     initDescriptorAndPipelineLayouts(false);
 
     renderPass = std::make_shared<VulkanRenderPass>(window, depthBuffer, depthPresent);

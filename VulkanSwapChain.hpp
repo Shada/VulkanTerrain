@@ -14,6 +14,7 @@ typedef struct TSwapChainBuffer
 } SwapChainBuffer;
 
 class VulkanSwapChain
+    : public Dispatcher<ResizeWindowEvent>::Listener
 {
   public:
     VulkanSwapChain(std::shared_ptr<WindowXcb> window);
@@ -30,6 +31,12 @@ class VulkanSwapChain
     const std::vector<SwapChainBuffer> &getSwapChainBuffers() { return swapChainBuffers; }
     const SwapChainBuffer &getSwapChainBuffer(uint32_t index) { return swapChainBuffers[index]; }
     const uint32_t &getSwapChainImageCount() { return swapChainImageCount; }
+
+    virtual void onEvent(ResizeWindowEvent &event, Dispatcher<ResizeWindowEvent> &sender)
+    {
+        // recreate swapchain here.
+        std::cout << "SwapChain: onEvent ResizeWindowEvent " << event.width << "x" << event.height << std::endl;
+    }
 
   private:
     void initSwapChain(VkImageUsageFlags usageFlags =

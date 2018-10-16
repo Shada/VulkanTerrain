@@ -1,7 +1,12 @@
+#pragma once
+
 #include <memory>
 #include <vector>
 #include <iostream>
 #include <algorithm>
+
+namespace Tobi
+{
 
 template <typename Event>
 class Dispatcher
@@ -62,3 +67,5 @@ class Consumer : public Dispatcher<ResizeWindowEvent>::Listener
         std::cout << "onEvent ResizeWindowEvent " << event.width << "x" << event.height << std::endl;
     }
 };
+
+} // namespace Tobi

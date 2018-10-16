@@ -8,7 +8,7 @@
 
 namespace Tobi
 {
-WindowXcb::WindowXcb(WindowSettings windowSettings)
+WindowXcb::WindowXcb(WindowSettings windowSettings, std::shared_ptr<ResizeWindowDispatcher> resizeWindowDispatcher)
     : game(std::make_unique<Game>()),
       windowSettings(windowSettings),
       connection(nullptr),
@@ -16,28 +16,10 @@ WindowXcb::WindowXcb(WindowSettings windowSettings)
       atomWmDeleteWindow(XCB_ATOM_NONE),
       atomWmProtocol(XCB_ATOM_NONE),
       window(XCB_WINDOW_NONE),
-      running(true)
+      running(true),
+      resizeWindowDispatcher(resizeWindowDispatcher)
 {
-    setUpEvents();
     createWindow();
-}
-
-void WindowXcb::setUpEvents()
-{
-    ResizeWindowDispatcher dispatcher;
-
-    auto event1 = ResizeWindowEvent(1, 2);
-    auto event2 = ResizeWindowEvent(3, 4);
-
-    std::shared_ptr<Consumer> consumer(new Consumer());
-
-    dispatcher.Dispatcher<ResizeWindowEvent>::Reg(consumer);
-
-    dispatcher.Dispatcher<ResizeWindowEvent>::Dispatch(event1);
-
-    dispatcher.Dispatcher<ResizeWindowEvent>::Unreg(consumer);
-
-    dispatcher.Dispatcher<ResizeWindowEvent>::Dispatch(event2);
 }
 
 WindowXcb::~WindowXcb()
@@ -85,6 +67,9 @@ void WindowXcb::handleEvent(const xcb_generic_event_t *event)
     {
         const xcb_configure_notify_event_t *notify = reinterpret_cast<const xcb_configure_notify_event_t *>(event);
         game->resizeSwapChain(notify->width, notify->height);
+
+        auto event = ResizeWindowEvent(notify->width, notify->height);
+        resizeWindowDispatcher->Dispatch(event);
     }
     break;
     case XCB_KEY_PRESS:
@@ -205,7 +190,7 @@ void WindowXcb::initWindow()
 
     uint32_t valueList[32];
     valueList[0] = screen->black_pixel;
-    valueList[1] = XCB_EVENT_MASK_KEY_RELEASE | XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_KEY_PRESS;
+    valueList[1] = XCB_EVENT_MASK_KEY_RELEASE | XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_STRUCTURE_NOTIFY;
 
     xcb_create_window(
         connection,

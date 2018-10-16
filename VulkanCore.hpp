@@ -21,6 +21,8 @@
 #include "Pipeline/VulkanPipelineCache.hpp"
 #include "Pipeline/VulkanPipeline.hpp"
 
+#include "EventDispatcher.hpp"
+
 // Number of descriptor sets needs to be the same at alloc,
 // pipeline layout creation, and descriptor set layout creation
 #define NUM_DESCRIPTOR_SETS 1
@@ -59,6 +61,8 @@ class VulkanCore
 
     VkRect2D scissor;
     VkViewport viewPort;
+
+    std::shared_ptr<ResizeWindowDispatcher> resizeWindowDispatcher;
 
     std::shared_ptr<WindowXcb> window;
 
