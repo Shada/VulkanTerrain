@@ -52,6 +52,8 @@ class VulkanCore
     void initScissors();
     void initViewPorts();
 
+    void drawFrame();
+
     std::vector<LayerProperties> instanceLayerProperties;
 
     TextureData textureData;
@@ -78,7 +80,7 @@ class VulkanCore
 
     std::shared_ptr<VulkanVertexBuffer> vertexBuffer;
 
-    std::unique_ptr<VulkanFrameBuffers> frameBuffers;
+    std::shared_ptr<VulkanFrameBuffers> frameBuffers;
 
     std::shared_ptr<VulkanPipelineCache> pipelineCache;
     std::unique_ptr<VulkanPipeline> pipeline;

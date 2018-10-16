@@ -3,6 +3,7 @@
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <memory>
 
 #include "WindowSettings.hpp"
 
@@ -12,7 +13,7 @@ namespace Tobi
 class Camera
 {
   public:
-    Camera(WindowSettings windowSettings);
+    Camera(std::shared_ptr<WindowSettings> windowSettings);
     Camera(const Camera &) = delete;
     Camera(Camera &&) = default;
     Camera &operator=(const Camera &) & = delete;
@@ -27,7 +28,7 @@ class Camera
   private:
     void initCamera();
 
-    WindowSettings windowSettings;
+    std::shared_ptr<WindowSettings> windowSettings;
 
     glm::vec3 position;
     glm::vec3 lookAt;

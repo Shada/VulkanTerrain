@@ -4,6 +4,7 @@
 #include <vulkan/vulkan.hpp>
 
 #include "WindowXcb.hpp"
+#include "EventDispatcher.hpp"
 
 namespace Tobi
 {
@@ -36,6 +37,7 @@ class VulkanSwapChain
     {
         // recreate swapchain here.
         std::cout << "SwapChain: onEvent ResizeWindowEvent " << event.width << "x" << event.height << std::endl;
+        //resizeSwapChain();
     }
 
   private:
@@ -43,12 +45,17 @@ class VulkanSwapChain
                            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
                            VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 
+    void resizeSwapChain();
+
     std::shared_ptr<WindowXcb> window;
 
     VkSwapchainKHR swapChain;
     std::vector<SwapChainBuffer> swapChainBuffers;
     uint32_t swapChainImageCount;
     uint32_t currentBuffer;
+    VkSurfaceCapabilitiesKHR surfaceCapabilities;
+    VkCompositeAlphaFlagBitsKHR compositeAlpha;
+    VkPresentModeKHR swapChainPresentMode;
 };
 
 } // namespace Tobi

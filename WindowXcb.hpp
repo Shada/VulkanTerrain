@@ -30,7 +30,7 @@ typedef struct TGpu
 class WindowXcb
 {
   public:
-    WindowXcb(WindowSettings windowSettings, std::shared_ptr<ResizeWindowDispatcher> resizeWindowDispatcher);
+    WindowXcb(std::shared_ptr<WindowSettings> windowSettings, std::shared_ptr<ResizeWindowDispatcher> resizeWindowDispatcher);
     WindowXcb(const WindowXcb &) = delete;
     WindowXcb(WindowXcb &&) = default;
     WindowXcb &operator=(const WindowXcb &) & = delete;
@@ -40,13 +40,15 @@ class WindowXcb
     void pollEvents();
     void handleEvent(const xcb_generic_event_t *event);
 
+    void waitForDeviceIdle();
+
     bool memoryTypeFromProperties(uint32_t typeBits, VkFlags requirementsMask, uint32_t *typeIndex);
 
     xcb_connection_t *getConnection() { return connection; }
     const xcb_window_t &getWindow() { return window; }
 
-    const uint32_t &getWidth() { return windowSettings.width; }
-    const uint32_t &getHeight() { return windowSettings.height; };
+    const uint32_t &getWidth() { return windowSettings->width; }
+    const uint32_t &getHeight() { return windowSettings->height; };
 
     const VkInstance &getInstance() { return instance; }
 
@@ -88,7 +90,7 @@ class WindowXcb
     void initDeviceQueues();
 
     // settings
-    WindowSettings windowSettings;
+    std::shared_ptr<WindowSettings> windowSettings;
 
     std::unique_ptr<Game> game;
 
@@ -120,6 +122,8 @@ class WindowXcb
     // surface
     VkSurfaceKHR surface;
     VkFormat surfaceFormat;
+
+    VkExtent2D extent;
 
     // queues
     uint32_t queueFamilyCount;

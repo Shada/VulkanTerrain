@@ -8,7 +8,7 @@
 
 namespace Tobi
 {
-WindowXcb::WindowXcb(WindowSettings windowSettings, std::shared_ptr<ResizeWindowDispatcher> resizeWindowDispatcher)
+WindowXcb::WindowXcb(std::shared_ptr<WindowSettings> windowSettings, std::shared_ptr<ResizeWindowDispatcher> resizeWindowDispatcher)
     : game(std::make_unique<Game>()),
       windowSettings(windowSettings),
       connection(nullptr),
@@ -65,8 +65,12 @@ void WindowXcb::handleEvent(const xcb_generic_event_t *event)
     {
     case XCB_CONFIGURE_NOTIFY: // resize window event! Need to recreate swapchain and stuff (send RecreateSwapchainEvent ?) can window have pointer to swapchain?
     {
+        
         const xcb_configure_notify_event_t *notify = reinterpret_cast<const xcb_configure_notify_event_t *>(event);
         game->resizeSwapChain(notify->width, notify->height);
+
+        windowSettings->width = notify->width;
+        windowSettings->height = notify->height;
 
         auto event = ResizeWindowEvent(notify->width, notify->height);
         resizeWindowDispatcher->Dispatch(event);
@@ -118,10 +122,15 @@ void WindowXcb::handleEvent(const xcb_generic_event_t *event)
     }
 }
 
+void WindowXcb::waitForDeviceIdle()
+{
+    vkDeviceWaitIdle(device);
+}
+
 void WindowXcb::createWindow()
 {
-    assert(windowSettings.width > 0);
-    assert(windowSettings.height > 0);
+    assert(windowSettings->width > 0);
+    assert(windowSettings->height > 0);
 
     initConnection();
     initWindow();
@@ -199,8 +208,8 @@ void WindowXcb::initWindow()
         screen->root,
         0,
         0,
-        windowSettings.width,
-        windowSettings.height,
+        windowSettings->width,
+        windowSettings->height,
         0,
         XCB_WINDOW_CLASS_INPUT_OUTPUT,
         screen->root_visual,
@@ -225,8 +234,8 @@ void WindowXcb::initWindow()
         wmName,
         utf8String,
         8,
-        windowSettings.applicationName.size(),
-        windowSettings.applicationName.c_str());
+        windowSettings->applicationName.size(),
+        windowSettings->applicationName.c_str());
 
     // advertise WM_DELETE_WINDOW
     xcb_change_property(
@@ -328,9 +337,9 @@ void WindowXcb::initInstance()
     VkApplicationInfo applicationInfo = {};
     applicationInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     applicationInfo.pNext = nullptr;
-    applicationInfo.pApplicationName = windowSettings.applicationName.c_str();
+    applicationInfo.pApplicationName = windowSettings->applicationName.c_str();
     applicationInfo.applicationVersion = 1;
-    applicationInfo.pEngineName = windowSettings.applicationName.c_str();
+    applicationInfo.pEngineName = windowSettings->applicationName.c_str();
     applicationInfo.engineVersion = 1;
     applicationInfo.apiVersion = VK_API_VERSION_1_0;
 

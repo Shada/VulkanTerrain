@@ -44,7 +44,6 @@ void VulkanSwapChain::initSwapChain(VkImageUsageFlags usageFlags)
 { /* DEPENDS on commandBuffer and queue initialized */
 
     auto U_ASSERT_ONLY result = VK_SUCCESS;
-    VkSurfaceCapabilitiesKHR surfaceCapabilities;
 
     result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(window->getPhysicalDevice(), window->getSurface(), &surfaceCapabilities);
     assert(result == VK_SUCCESS);
@@ -91,7 +90,7 @@ void VulkanSwapChain::initSwapChain(VkImageUsageFlags usageFlags)
 
     // The FIFO present mode is guaranteed by the spec to be supported
     // Also note that current Android driver only supports FIFO
-    auto swapChainPresentMode = VK_PRESENT_MODE_FIFO_KHR;
+    swapChainPresentMode = VK_PRESENT_MODE_FIFO_KHR;
 
     // Determine the number of VkImage's to use in the swap chain.
     // We need to acquire only 1 presentable image at at time.
@@ -111,7 +110,7 @@ void VulkanSwapChain::initSwapChain(VkImageUsageFlags usageFlags)
     }
 
     // Find a supported composite alpha mode - one of these is guaranteed to be set
-    VkCompositeAlphaFlagBitsKHR compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+    compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
     VkCompositeAlphaFlagBitsKHR compositeAlphaFlags[4] =
         {
             VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
@@ -212,4 +211,92 @@ void VulkanSwapChain::initSwapChain(VkImageUsageFlags usageFlags)
         free(presentModes);
     }
 }
+
+void VulkanSwapChain::resizeSwapChain()
+{
+    VkSwapchainCreateInfoKHR swapChainCreateInfo = {};
+    swapChainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+    swapChainCreateInfo.pNext = nullptr;
+    swapChainCreateInfo.surface = window->getSurface();
+    swapChainCreateInfo.minImageCount = swapChainImageCount;
+    swapChainCreateInfo.imageFormat = window->getSurfaceFormat();
+    swapChainCreateInfo.imageColorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
+    swapChainCreateInfo.imageExtent.width = window->getWidth();
+    swapChainCreateInfo.imageExtent.height = window->getWidth();
+    swapChainCreateInfo.imageArrayLayers = 1;
+    swapChainCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+    std::vector<uint32_t> queueFamilies(1, window->getGraphicsQueueIndex());
+    if (window->getGraphicsQueueIndex() != window->getPresentQueueIndex())
+    {
+        queueFamilies.push_back(window->getPresentQueueIndex());
+
+        swapChainCreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+        swapChainCreateInfo.queueFamilyIndexCount = static_cast<uint32_t>(queueFamilies.size());
+        swapChainCreateInfo.pQueueFamilyIndices = queueFamilies.data();
+    }
+    else
+    {
+        swapChainCreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    }
+
+    swapChainCreateInfo.preTransform = surfaceCapabilities.currentTransform;
+    swapChainCreateInfo.compositeAlpha = compositeAlpha;
+    swapChainCreateInfo.presentMode = swapChainPresentMode;
+    swapChainCreateInfo.clipped = true;
+    swapChainCreateInfo.oldSwapchain = swapChain;
+
+    auto result = vkCreateSwapchainKHR(window->getDevice(), &swapChainCreateInfo, nullptr, &swapChain);
+    assert(result == VK_SUCCESS);
+
+    for (auto swapChainBuffer : swapChainBuffers)
+        vkDestroyImageView(window->getDevice(), swapChainBuffer.view, nullptr);
+    swapChainBuffers.clear();
+
+    if (swapChainCreateInfo.oldSwapchain != VK_NULL_HANDLE)
+    {
+        window->waitForDeviceIdle();
+        vkDestroySwapchainKHR(window->getDevice(), swapChainCreateInfo.oldSwapchain, nullptr);
+    }
+
+    result = vkGetSwapchainImagesKHR(window->getDevice(), swapChain, &swapChainImageCount, nullptr);
+    assert(result == VK_SUCCESS);
+
+    VkImage *swapChainImages = (VkImage *)malloc(swapChainImageCount * sizeof(VkImage));
+    assert(swapChainImages);
+
+    result = vkGetSwapchainImagesKHR(window->getDevice(), swapChain, &swapChainImageCount, swapChainImages);
+    assert(result == VK_SUCCESS);
+    for (uint32_t i = 0; i < swapChainImageCount; i++)
+    {
+        SwapChainBuffer swapChainBuffer;
+
+        VkImageViewCreateInfo colorImageViewCreateInfo = {};
+        colorImageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        colorImageViewCreateInfo.pNext = nullptr;
+        colorImageViewCreateInfo.format = window->getSurfaceFormat();
+        colorImageViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_R;
+        colorImageViewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_G;
+        colorImageViewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_B;
+        colorImageViewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_A;
+        colorImageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        colorImageViewCreateInfo.subresourceRange.baseMipLevel = 0;
+        colorImageViewCreateInfo.subresourceRange.levelCount = 1;
+        colorImageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
+        colorImageViewCreateInfo.subresourceRange.layerCount = 1;
+        colorImageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        colorImageViewCreateInfo.flags = 0;
+
+        swapChainBuffer.image = swapChainImages[i];
+
+        colorImageViewCreateInfo.image = swapChainBuffer.image;
+
+        result = vkCreateImageView(window->getDevice(), &colorImageViewCreateInfo, nullptr, &swapChainBuffer.view);
+        swapChainBuffers.push_back(swapChainBuffer);
+        assert(result == VK_SUCCESS);
+    }
+    free(swapChainImages);
+    currentBuffer = 0;
+}
+
 } // namespace Tobi

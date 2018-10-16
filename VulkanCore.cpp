@@ -12,11 +12,11 @@
 
 namespace Tobi
 {
-WindowSettings settings{800, 800, "TobiApp"};
+std::shared_ptr<WindowSettings> settings = std::make_shared<WindowSettings>(800, 800, "TobiApp");
 
 const bool depthPresent = true;
 
-VulkanCore::VulkanCore() // TODO: do the make_shared here (in correct order).
+VulkanCore::VulkanCore()
     : resizeWindowDispatcher(std::make_shared<ResizeWindowDispatcher>()),
       window(std::make_shared<WindowXcb>(settings, resizeWindowDispatcher)),
       camera(std::make_unique<Camera>(settings)),
@@ -30,7 +30,7 @@ VulkanCore::VulkanCore() // TODO: do the make_shared here (in correct order).
           sizeof(camera->getModelViewProjectionMatrix()))),
       renderPass(std::make_shared<VulkanRenderPass>(window, depthBuffer, depthPresent)),
       shaderProgram(std::make_shared<VulkanShaderProgram>(window)),
-      frameBuffers(std::make_unique<VulkanFrameBuffers>(
+      frameBuffers(std::make_shared<VulkanFrameBuffers>(
           window,
           depthBuffer,
           renderPass,
@@ -55,10 +55,12 @@ VulkanCore::VulkanCore() // TODO: do the make_shared here (in correct order).
       descriptorSets(std::vector<VkDescriptorSet>())
 {
     resizeWindowDispatcher->Reg(swapChain);
+    resizeWindowDispatcher->Reg(frameBuffers);
 
     initVulkan();
 
     resizeWindowDispatcher->Unreg(swapChain);
+    resizeWindowDispatcher->Unreg(frameBuffers);
 }
 
 void waitSeconds(int seconds)
@@ -85,6 +87,16 @@ void VulkanCore::initVulkan()
 
     initDescriptorSet(false);
 
+    while (window->isRunning())
+    {
+        window->pollEvents();
+        drawFrame();
+    }
+}
+
+void VulkanCore::drawFrame()
+{
+    auto result = VK_SUCCESS;
     // VULKAN_KEY_START
 
     VkClearValue clearValues[2];
@@ -183,30 +195,8 @@ void VulkanCore::initVulkan()
     result = vkQueuePresentKHR(window->getPresentQueue(), &present);
     assert(result == VK_SUCCESS);
 
-    waitSeconds(1);
-    /* VULKAN_KEY_END */
-
     vkDestroySemaphore(window->getDevice(), imageAcquiredSemaphore, nullptr);
     vkDestroyFence(window->getDevice(), drawFence, nullptr);
-
-    while (window->isRunning())
-    {
-        window->pollEvents();
-    }
-}
-
-void drawFrame()
-{
-    // 1. aquire next swapchain
-    // and handle VK_SUBOPTIMAL_KHR and VK_ERROR_OUT_OF_DATE_KHR (basically recreate swapchain)
-
-    // 2. construct command buffers
-    // some command buffers might be prerecorded, for things that rarely changes
-
-    // 3. submit command buffers to queue
-    // and wait for semaphores / fences
-
-    // 4. present result
 }
 
 void VulkanCore::initViewPorts()
