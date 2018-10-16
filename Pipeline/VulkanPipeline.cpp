@@ -11,7 +11,7 @@ VulkanPipeline::VulkanPipeline(
     std::shared_ptr<VulkanRenderPass> renderPass,
     std::shared_ptr<VulkanShaderProgram> shaderProgram,
     std::shared_ptr<VulkanVertexBuffer> vertexBuffer,
-    VkPipelineLayout &pipelineLayout,
+    VkBool32 useTexture,
     VkBool32 includeDepth,
     VkBool32 includeVertexInput)
     : window(window),
@@ -19,17 +19,72 @@ VulkanPipeline::VulkanPipeline(
       renderPass(renderPass),
       shaderProgram(shaderProgram),
       vertexBuffer(vertexBuffer),
-      pipelineLayout(pipelineLayout),
+      useTexture(useTexture),
       includeDepth(includeDepth),
       includeVertexInput(includeVertexInput),
-      pipeline(nullptr)
+      pipeline(nullptr),
+      pipelineLayout(nullptr),
+      descriptorSetLayouts(std::vector<VkDescriptorSetLayout>())
 {
+    initDescriptorAndPipelineLayouts();
     initPipeline();
 }
 
 VulkanPipeline::~VulkanPipeline()
 {
+    if (pipelineLayout)
+    {
+        for (auto &descriptorSetLayout : descriptorSetLayouts)
+            vkDestroyDescriptorSetLayout(window->getDevice(), descriptorSetLayout, nullptr);
+        vkDestroyPipelineLayout(window->getDevice(), pipelineLayout, nullptr);
+    }
     vkDestroyPipeline(window->getDevice(), pipeline, nullptr);
+}
+
+void VulkanPipeline::initDescriptorAndPipelineLayouts(
+    VkDescriptorSetLayoutCreateFlags descriptorSetLayoutCreateFlags)
+{
+    VkDescriptorSetLayoutBinding layoutBindings[2];
+    layoutBindings[0].binding = 0;
+    layoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    layoutBindings[0].descriptorCount = 1;
+    layoutBindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    layoutBindings[0].pImmutableSamplers = nullptr;
+
+    if (useTexture)
+    {
+        layoutBindings[1].binding = 1;
+        layoutBindings[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        layoutBindings[1].descriptorCount = 1;
+        layoutBindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+        layoutBindings[1].pImmutableSamplers = nullptr;
+    }
+
+    // Next take layout bindings and use them to create a descriptor set layout
+    VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {};
+    descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    descriptorSetLayoutCreateInfo.pNext = nullptr;
+    descriptorSetLayoutCreateInfo.flags = descriptorSetLayoutCreateFlags;
+    descriptorSetLayoutCreateInfo.bindingCount = useTexture ? 2 : 1;
+    descriptorSetLayoutCreateInfo.pBindings = layoutBindings;
+
+    VkResult U_ASSERT_ONLY result = VK_SUCCESS;
+
+    descriptorSetLayouts.resize(NUM_DESCRIPTOR_SETS);
+    result = vkCreateDescriptorSetLayout(window->getDevice(), &descriptorSetLayoutCreateInfo, nullptr, descriptorSetLayouts.data());
+    assert(result == VK_SUCCESS);
+
+    // Now use the descriptor layout to create a pipelineCreateInfo layout
+    VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
+    pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    pipelineLayoutCreateInfo.pNext = nullptr;
+    pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
+    pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
+    pipelineLayoutCreateInfo.setLayoutCount = NUM_DESCRIPTOR_SETS;
+    pipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayouts.data();
+
+    result = vkCreatePipelineLayout(window->getDevice(), &pipelineLayoutCreateInfo, nullptr, &pipelineLayout);
+    assert(result == VK_SUCCESS);
 }
 
 void VulkanPipeline::initPipeline()

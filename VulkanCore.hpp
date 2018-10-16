@@ -23,10 +23,6 @@
 
 #include "EventDispatcher.hpp"
 
-// Number of descriptor sets needs to be the same at alloc,
-// pipeline layout creation, and descriptor set layout creation
-#define NUM_DESCRIPTOR_SETS 1
-
 // Amount of time, in nanoseconds, to wait for a command buffer to complete
 #define FENCE_TIMEOUT 100000000
 
@@ -41,7 +37,7 @@ class VulkanCore
 {
   public:
     VulkanCore();
-    ~VulkanCore();
+    ~VulkanCore() = default;
 
   private:
     // would be nice to be able to configure functionality from a configuration
@@ -52,9 +48,6 @@ class VulkanCore
     VkResult initGlobalLayerProperties();
     VkResult initGlobalExtensionProperties(LayerProperties &layerProperties);
 
-    void initDescriptorAndPipelineLayouts(
-        bool useTexture,
-        VkDescriptorSetLayoutCreateFlags descriptorSetLayoutCreateFlags = 0);
     void initDescriptorSet(bool useTexture);
     void initScissors();
     void initViewPorts();
@@ -79,9 +72,6 @@ class VulkanCore
 
     std::unique_ptr<VulkanUniformBuffer> uniformBuffer;
 
-    VkPipelineLayout pipelineLayout;
-    std::vector<VkDescriptorSetLayout> descriptorSetLayout;
-
     std::shared_ptr<VulkanRenderPass> renderPass;
 
     std::shared_ptr<VulkanShaderProgram> shaderProgram;
@@ -90,12 +80,12 @@ class VulkanCore
 
     std::unique_ptr<VulkanFrameBuffers> frameBuffers;
 
+    std::shared_ptr<VulkanPipelineCache> pipelineCache;
+    std::unique_ptr<VulkanPipeline> pipeline;
+
     std::unique_ptr<VulkanDescriptorPool> descriptorPool;
 
     std::vector<VkDescriptorSet> descriptorSets;
-
-    std::shared_ptr<VulkanPipelineCache> pipelineCache;
-    std::unique_ptr<VulkanPipeline> pipeline;
 
     VkRect2D scissor;
     VkViewport viewPort;

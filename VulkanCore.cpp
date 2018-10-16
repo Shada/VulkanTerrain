@@ -14,6 +14,8 @@ namespace Tobi
 {
 WindowSettings settings{800, 800, "TobiApp"};
 
+const bool depthPresent = true;
+
 VulkanCore::VulkanCore() // TODO: do the make_shared here (in correct order).
     : resizeWindowDispatcher(std::make_shared<ResizeWindowDispatcher>()),
       window(std::make_shared<WindowXcb>(settings, resizeWindowDispatcher)),
@@ -26,31 +28,37 @@ VulkanCore::VulkanCore() // TODO: do the make_shared here (in correct order).
           window,
           (void *)&camera->getModelViewProjectionMatrix(),
           sizeof(camera->getModelViewProjectionMatrix()))),
-      pipelineLayout(nullptr),
-      renderPass(nullptr),
-      shaderProgram(nullptr),
-      vertexBuffer(nullptr),
-      frameBuffers(nullptr),
-      descriptorPool(nullptr),
-      descriptorSets(std::vector<VkDescriptorSet>()),
-      pipelineCache(nullptr),
-      pipeline(nullptr)
+      renderPass(std::make_shared<VulkanRenderPass>(window, depthBuffer, depthPresent)),
+      shaderProgram(std::make_shared<VulkanShaderProgram>(window)),
+      frameBuffers(std::make_unique<VulkanFrameBuffers>(
+          window,
+          depthBuffer,
+          renderPass,
+          swapChain,
+          depthPresent)),
+      vertexBuffer(std::make_shared<VulkanVertexBuffer>(
+          window,
+          cubeData,
+          sizeof(cubeData),
+          sizeof(cubeData[0]),
+          false)),
+      pipelineCache(std::make_shared<VulkanPipelineCache>(window)),
+      pipeline(std::make_unique<VulkanPipeline>(
+          window,
+          pipelineCache,
+          renderPass,
+          shaderProgram,
+          vertexBuffer,
+          VK_FALSE,
+          depthPresent)),
+      descriptorPool(std::make_unique<VulkanDescriptorPool>(window, false)),
+      descriptorSets(std::vector<VkDescriptorSet>())
 {
     resizeWindowDispatcher->Reg(swapChain);
 
     initVulkan();
 
     resizeWindowDispatcher->Unreg(swapChain);
-}
-
-VulkanCore::~VulkanCore()
-{
-    if (pipelineLayout)
-    {
-        for (int i = 0; i < NUM_DESCRIPTOR_SETS; i++)
-            vkDestroyDescriptorSetLayout(window->getDevice(), descriptorSetLayout[i], nullptr);
-        vkDestroyPipelineLayout(window->getDevice(), pipelineLayout, nullptr);
-    }
 }
 
 void waitSeconds(int seconds)
@@ -75,43 +83,7 @@ void VulkanCore::initVulkan()
         return;
     }
 
-    const bool depthPresent = true;
-
-    /* uniformBuffer = std::make_unique<VulkanUniformBuffer>(
-        window,
-        (void *)&camera->getModelViewProjectionMatrix(),
-        sizeof(camera->getModelViewProjectionMatrix()));*/
-
-    // TODO: move descriptors/layouts to appropriate class
-    initDescriptorAndPipelineLayouts(false);
-
-    renderPass = std::make_shared<VulkanRenderPass>(window, depthBuffer, depthPresent);
-
-    shaderProgram = std::make_shared<VulkanShaderProgram>(window);
-
-    frameBuffers = std::make_unique<VulkanFrameBuffers>(
-        window,
-        depthBuffer,
-        renderPass,
-        swapChain,
-        depthPresent);
-
-    vertexBuffer = std::make_shared<VulkanVertexBuffer>(window, cubeData, sizeof(cubeData), sizeof(cubeData[0]), false);
-
-    descriptorPool = std::make_unique<VulkanDescriptorPool>(window, false);
-
     initDescriptorSet(false);
-
-    pipelineCache = std::make_shared<VulkanPipelineCache>(window);
-
-    pipeline = std::make_unique<VulkanPipeline>(
-        window,
-        pipelineCache,
-        renderPass,
-        shaderProgram,
-        vertexBuffer,
-        pipelineLayout,
-        depthPresent);
 
     // VULKAN_KEY_START
 
@@ -151,7 +123,7 @@ void VulkanCore::initVulkan()
     vkCmdBeginRenderPass(commandBuffer->getCommandBuffer(), &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
     vkCmdBindPipeline(commandBuffer->getCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->getPipeline());
-    vkCmdBindDescriptorSets(commandBuffer->getCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, NUM_DESCRIPTOR_SETS,
+    vkCmdBindDescriptorSets(commandBuffer->getCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->getPipelineLayout(), 0, NUM_DESCRIPTOR_SETS,
                             descriptorSets.data(), 0, nullptr);
 
     const VkDeviceSize offsets[1] = {0};
@@ -343,52 +315,6 @@ VkResult VulkanCore::initGlobalExtensionProperties(LayerProperties &layerPropert
     return result;
 }
 
-void VulkanCore::initDescriptorAndPipelineLayouts(
-    bool useTexture,
-    VkDescriptorSetLayoutCreateFlags descriptorSetLayoutCreateFlags)
-{
-    VkDescriptorSetLayoutBinding layoutBindings[2];
-    layoutBindings[0].binding = 0;
-    layoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    layoutBindings[0].descriptorCount = 1;
-    layoutBindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-    layoutBindings[0].pImmutableSamplers = nullptr;
-
-    if (useTexture)
-    {
-        layoutBindings[1].binding = 1;
-        layoutBindings[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        layoutBindings[1].descriptorCount = 1;
-        layoutBindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-        layoutBindings[1].pImmutableSamplers = nullptr;
-    }
-
-    // Next take layout bindings and use them to create a descriptor set layout
-    VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {};
-    descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    descriptorSetLayoutCreateInfo.pNext = nullptr;
-    descriptorSetLayoutCreateInfo.flags = descriptorSetLayoutCreateFlags;
-    descriptorSetLayoutCreateInfo.bindingCount = useTexture ? 2 : 1;
-    descriptorSetLayoutCreateInfo.pBindings = layoutBindings;
-
-    VkResult U_ASSERT_ONLY result = VK_SUCCESS;
-
-    descriptorSetLayout.resize(NUM_DESCRIPTOR_SETS);
-    result = vkCreateDescriptorSetLayout(window->getDevice(), &descriptorSetLayoutCreateInfo, nullptr, descriptorSetLayout.data());
-    assert(result == VK_SUCCESS);
-
-    // Now use the descriptor layout to create a pipelineCreateInfo layout
-    VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
-    pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutCreateInfo.pNext = nullptr;
-    pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
-    pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
-    pipelineLayoutCreateInfo.setLayoutCount = NUM_DESCRIPTOR_SETS;
-    pipelineLayoutCreateInfo.pSetLayouts = descriptorSetLayout.data();
-
-    result = vkCreatePipelineLayout(window->getDevice(), &pipelineLayoutCreateInfo, nullptr, &pipelineLayout);
-    assert(result == VK_SUCCESS);
-}
 void VulkanCore::initDescriptorSet(bool useTexture)
 {
     // DEPENDS on init_descriptor_pool()
@@ -400,7 +326,7 @@ void VulkanCore::initDescriptorSet(bool useTexture)
     descriptorsetAllocationInfo[0].pNext = nullptr;
     descriptorsetAllocationInfo[0].descriptorPool = descriptorPool->getDescriptorPool();
     descriptorsetAllocationInfo[0].descriptorSetCount = NUM_DESCRIPTOR_SETS;
-    descriptorsetAllocationInfo[0].pSetLayouts = descriptorSetLayout.data();
+    descriptorsetAllocationInfo[0].pSetLayouts = pipeline->getDescriptorSetLayouts().data();
 
     descriptorSets.resize(NUM_DESCRIPTOR_SETS);
     result = vkAllocateDescriptorSets(window->getDevice(), descriptorsetAllocationInfo, descriptorSets.data());

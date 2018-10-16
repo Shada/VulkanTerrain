@@ -11,6 +11,10 @@
 namespace Tobi
 {
 
+// Number of descriptor sets needs to be the same at alloc,
+// pipeline layout creation, and descriptor set layout creation
+#define NUM_DESCRIPTOR_SETS 1
+
 class VulkanPipeline
 {
   public:
@@ -20,7 +24,7 @@ class VulkanPipeline
         std::shared_ptr<VulkanRenderPass> renderPass,
         std::shared_ptr<VulkanShaderProgram> shaderProgram,
         std::shared_ptr<VulkanVertexBuffer> vertexBuffer,
-        VkPipelineLayout &pipelineLayout,
+        VkBool32 useTexture,
         VkBool32 includeDepth,
         VkBool32 includeVertexInput = VK_TRUE);
     VulkanPipeline(const VulkanPipeline &) = delete;
@@ -30,8 +34,13 @@ class VulkanPipeline
     ~VulkanPipeline();
 
     const VkPipeline &getPipeline() { return pipeline; }
+    const VkPipelineLayout &getPipelineLayout() { return pipelineLayout; }
+    const std::vector<VkDescriptorSetLayout> &getDescriptorSetLayouts() { return descriptorSetLayouts; }
 
   private:
+    void initDescriptorAndPipelineLayouts(
+        VkDescriptorSetLayoutCreateFlags descriptorSetLayoutCreateFlags = 0);
+
     void initPipeline();
 
     std::shared_ptr<WindowXcb> window;
@@ -39,11 +48,13 @@ class VulkanPipeline
     std::shared_ptr<VulkanRenderPass> renderPass;
     std::shared_ptr<VulkanShaderProgram> shaderProgram;
     std::shared_ptr<VulkanVertexBuffer> vertexBuffer;
-    VkPipelineLayout &pipelineLayout;
+    VkBool32 useTexture;
     VkBool32 includeDepth;
     VkBool32 includeVertexInput;
 
     VkPipeline pipeline;
+    VkPipelineLayout pipelineLayout;
+    std::vector<VkDescriptorSetLayout> descriptorSetLayouts;
 };
 
 } // namespace Tobi
