@@ -26,10 +26,13 @@ VulkanCore::VulkanCore() // TODO: do the make_shared here (in correct order).
           window,
           (void *)&camera->getModelViewProjectionMatrix(),
           sizeof(camera->getModelViewProjectionMatrix()))),
-      shaderProgram(nullptr),
       pipelineLayout(nullptr),
       renderPass(nullptr),
+      shaderProgram(nullptr),
       vertexBuffer(nullptr),
+      frameBuffers(nullptr),
+      descriptorPool(nullptr),
+      descriptorSets(std::vector<VkDescriptorSet>()),
       pipelineCache(nullptr),
       pipeline(nullptr)
 {
@@ -73,6 +76,11 @@ void VulkanCore::initVulkan()
     }
 
     const bool depthPresent = true;
+
+    /* uniformBuffer = std::make_unique<VulkanUniformBuffer>(
+        window,
+        (void *)&camera->getModelViewProjectionMatrix(),
+        sizeof(camera->getModelViewProjectionMatrix()));*/
 
     // TODO: move descriptors/layouts to appropriate class
     initDescriptorAndPipelineLayouts(false);

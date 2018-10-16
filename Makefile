@@ -19,7 +19,7 @@ SDROBJ=obj/Shader/VulkanShaderProgram.o
 OBJ=$(BASEOBJ) $(UTILOBJ) $(PIPEOBJ) $(BUFOBJ) $(CMDOBJ) $(SDROBJ)
 
 obj/%.o: %.cpp $(DEPS)
-	$(CXX) -c -o$@ $< $(CXXFLAGS) -std=c++17 
+	$(CXX) -c -o$@ $< $(CXXFLAGS) -std=c++17 -g 
 
 TobiGame.out: $(OBJ)
-	$(CXX) -o $@ $^ -std=c++17 main.cpp -I$(VULKAN_SDK)/include -L$(VULKAN_SDK)/lib -lxcb -lvulkan -lpthread -L/home/admin/Documents/Programming/vulkan/glslang/install/lib -lglslang -lHLSL -lSPIRV -lSPIRV-Tools-opt -lSPIRV-Tools
+	$(CXX) -o $@ $^ -std=c++17 -g main.cpp -I$(VULKAN_SDK)/include -L$(VULKAN_SDK)/lib -lxcb -lvulkan -lpthread -L/home/admin/Documents/Programming/vulkan/glslang/install/lib -lglslang -lHLSL -lSPIRV -lSPIRV-Tools-opt -lSPIRV-Tools

@@ -59,14 +59,19 @@ class VulkanCore
     void initScissors();
     void initViewPorts();
 
-    VkRect2D scissor;
-    VkViewport viewPort;
+    std::vector<LayerProperties> instanceLayerProperties;
+
+    TextureData textureData;
 
     std::shared_ptr<ResizeWindowDispatcher> resizeWindowDispatcher;
 
     std::shared_ptr<WindowXcb> window;
 
-    std::shared_ptr<VulkanShaderProgram> shaderProgram;
+    std::unique_ptr<Camera> camera;
+
+    std::shared_ptr<VulkanCommandPool> commandPool;
+
+    std::unique_ptr<VulkanCommandBuffer> commandBuffer;
 
     std::shared_ptr<VulkanSwapChain> swapChain;
 
@@ -74,31 +79,26 @@ class VulkanCore
 
     std::unique_ptr<VulkanUniformBuffer> uniformBuffer;
 
-    std::shared_ptr<VulkanCommandPool> commandPool;
-
-    std::unique_ptr<VulkanCommandBuffer> commandBuffer;
-
-    std::unique_ptr<VulkanDescriptorPool> descriptorPool;
+    VkPipelineLayout pipelineLayout;
+    std::vector<VkDescriptorSetLayout> descriptorSetLayout;
 
     std::shared_ptr<VulkanRenderPass> renderPass;
 
-    std::unique_ptr<VulkanFrameBuffers> frameBuffers;
+    std::shared_ptr<VulkanShaderProgram> shaderProgram;
 
     std::shared_ptr<VulkanVertexBuffer> vertexBuffer;
 
-    std::unique_ptr<Camera> camera;
+    std::unique_ptr<VulkanFrameBuffers> frameBuffers;
+
+    std::unique_ptr<VulkanDescriptorPool> descriptorPool;
+
+    std::vector<VkDescriptorSet> descriptorSets;
 
     std::shared_ptr<VulkanPipelineCache> pipelineCache;
     std::unique_ptr<VulkanPipeline> pipeline;
 
-    std::vector<LayerProperties> instanceLayerProperties;
-
-    std::vector<VkDescriptorSet> descriptorSets;
-
-    TextureData textureData;
-
-    std::vector<VkDescriptorSetLayout> descriptorSetLayout;
-    VkPipelineLayout pipelineLayout;
+    VkRect2D scissor;
+    VkViewport viewPort;
 };
 
 } // namespace Tobi

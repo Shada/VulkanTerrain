@@ -19,7 +19,10 @@ class Camera
     Camera &operator=(Camera &&) & = default;
     ~Camera() = default;
 
-    const glm::mat4 &getModelViewProjectionMatrix() { return modelViewProjectionMatrix; }
+    const glm::mat4 &getModelViewProjectionMatrix()
+    {
+        return modelViewProjectionMatrix;
+    }
 
   private:
     void initCamera();
