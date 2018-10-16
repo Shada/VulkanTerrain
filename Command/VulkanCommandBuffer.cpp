@@ -16,6 +16,17 @@ VulkanCommandBuffer::VulkanCommandBuffer(std::shared_ptr<WindowXcb> window, std:
 
 VulkanCommandBuffer::~VulkanCommandBuffer()
 {
+    clean();
+}
+
+void VulkanCommandBuffer::initCommandBuffer()
+{
+    create();
+}
+
+void VulkanCommandBuffer::clean()
+{
+
     if (commandBuffer)
     {
         VkCommandBuffer commandBuffers[1] = {commandBuffer};
@@ -23,9 +34,9 @@ VulkanCommandBuffer::~VulkanCommandBuffer()
     }
 }
 
-void VulkanCommandBuffer::initCommandBuffer()
+void VulkanCommandBuffer::create()
 {
-    VkResult U_ASSERT_ONLY result = VK_SUCCESS;
+    auto U_ASSERT_ONLY result = VK_SUCCESS;
 
     VkCommandBufferAllocateInfo commandBufferAllocateInfo = {};
     commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -40,7 +51,7 @@ void VulkanCommandBuffer::initCommandBuffer()
 
 void VulkanCommandBuffer::executeBeginCommandBuffer()
 {
-    VkResult U_ASSERT_ONLY result = VK_SUCCESS;
+    auto U_ASSERT_ONLY result = VK_SUCCESS;
 
     VkCommandBufferBeginInfo commandBufferBeginInfo = {};
     commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -54,7 +65,7 @@ void VulkanCommandBuffer::executeBeginCommandBuffer()
 
 void VulkanCommandBuffer::executeEndCommandBuffer()
 {
-    VkResult U_ASSERT_ONLY result = VK_SUCCESS;
+    auto U_ASSERT_ONLY result = VK_SUCCESS;
 
     result = vkEndCommandBuffer(commandBuffer);
     assert(result == VK_SUCCESS);

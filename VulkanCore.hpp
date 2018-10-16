@@ -34,10 +34,34 @@ typedef struct TTextureData
 } TextureData;
 
 class VulkanCore
+    : public Dispatcher<ResizeWindowEvent>::Listener
 {
   public:
     VulkanCore();
     ~VulkanCore() = default;
+
+    void recreateSwapChain()
+    {
+        frameBuffers->clean();
+        commandBuffer->clean();
+        pipeline->clean();
+        renderPass->clean();
+        swapChain->clean();
+
+        swapChain->create();
+        renderPass->create();
+        pipeline->create();
+        depthBuffer->create();
+        frameBuffers->create();
+        commandBuffer->create();
+    }
+    virtual void onEvent(ResizeWindowEvent &event, Dispatcher<ResizeWindowEvent> &sender)
+    {
+        // recreate swapchain here.
+        std::cout << "SwapChain: onEvent ResizeWindowEvent " << event.width << "x" << event.height << std::endl;
+
+        recreateSwapChain();
+    }
 
   private:
     // would be nice to be able to configure functionality from a configuration

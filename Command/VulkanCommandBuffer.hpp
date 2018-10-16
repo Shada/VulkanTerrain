@@ -17,6 +17,9 @@ class VulkanCommandBuffer
     VulkanCommandBuffer &operator=(VulkanCommandBuffer &&) & = default;
     ~VulkanCommandBuffer();
 
+    void create();
+    void clean();
+
     void executeBeginCommandBuffer();
     void executeEndCommandBuffer();
 

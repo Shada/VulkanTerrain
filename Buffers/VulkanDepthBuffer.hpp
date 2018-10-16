@@ -17,6 +17,9 @@ public:
   VulkanDepthBuffer &operator=(VulkanDepthBuffer &&) & = default;
   ~VulkanDepthBuffer();
 
+  void clean();
+  void create();
+
   const VkImageView &getImageView() { return imageView; }
 
   const VkFormat &getFormat() { return format; }

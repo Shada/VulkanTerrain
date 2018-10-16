@@ -16,19 +16,12 @@ VulkanSwapChain::VulkanSwapChain(std::shared_ptr<WindowXcb> window)
 
 VulkanSwapChain::~VulkanSwapChain()
 {
-    if (swapChain)
-    {
-        for (uint32_t i = 0; i < swapChainImageCount; i++)
-        {
-            vkDestroyImageView(window->getDevice(), swapChainBuffers[i].view, nullptr);
-        }
-        vkDestroySwapchainKHR(window->getDevice(), swapChain, nullptr);
-    }
+    clean();
 }
 
-void VulkanSwapChain::aquireNextImage(VkSemaphore &imageAcquiredSemaphore)
+VkResult VulkanSwapChain::aquireNextImage(VkSemaphore &imageAcquiredSemaphore)
 {
-    VkResult result = vkAcquireNextImageKHR(
+    auto result = vkAcquireNextImageKHR(
         window->getDevice(),
         swapChain,
         UINT64_MAX,
@@ -37,7 +30,26 @@ void VulkanSwapChain::aquireNextImage(VkSemaphore &imageAcquiredSemaphore)
         &currentBuffer);
     // TODO: Deal with the VK_SUBOPTIMAL_KHR and VK_ERROR_OUT_OF_DATE_KHR (recreate Swapchain)
 
-    assert(result == VK_SUCCESS);
+    return result;
+}
+
+void VulkanSwapChain::clean()
+{
+    if (swapChain)
+    {
+        for (uint32_t i = 0; i < swapChainImageCount; i++)
+        {
+            vkDestroyImageView(window->getDevice(), swapChainBuffers[i].view, nullptr);
+        }
+        vkDestroySwapchainKHR(window->getDevice(), swapChain, nullptr);
+    }
+
+    swapChainBuffers.clear();
+}
+
+void VulkanSwapChain::create()
+{
+    initSwapChain();
 }
 
 void VulkanSwapChain::initSwapChain(VkImageUsageFlags usageFlags)

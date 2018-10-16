@@ -22,6 +22,9 @@ class VulkanRenderPass
     VulkanRenderPass &operator=(VulkanRenderPass &&) & = default;
     ~VulkanRenderPass();
 
+    void clean();
+    void create();
+
     const VkRenderPass &getRenderPass() { return renderPass; }
 
   private:

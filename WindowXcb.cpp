@@ -65,9 +65,7 @@ void WindowXcb::handleEvent(const xcb_generic_event_t *event)
     {
     case XCB_CONFIGURE_NOTIFY: // resize window event! Need to recreate swapchain and stuff (send RecreateSwapchainEvent ?) can window have pointer to swapchain?
     {
-        
         const xcb_configure_notify_event_t *notify = reinterpret_cast<const xcb_configure_notify_event_t *>(event);
-        game->resizeSwapChain(notify->width, notify->height);
 
         windowSettings->width = notify->width;
         windowSettings->height = notify->height;

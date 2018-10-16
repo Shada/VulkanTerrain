@@ -54,13 +54,11 @@ VulkanCore::VulkanCore()
       descriptorPool(std::make_unique<VulkanDescriptorPool>(window, false)),
       descriptorSets(std::vector<VkDescriptorSet>())
 {
-    resizeWindowDispatcher->Reg(swapChain);
-    resizeWindowDispatcher->Reg(frameBuffers);
+    resizeWindowDispatcher->Reg(std::shared_ptr<VulkanCore>(this));
 
     initVulkan();
 
-    resizeWindowDispatcher->Unreg(swapChain);
-    resizeWindowDispatcher->Unreg(frameBuffers);
+    resizeWindowDispatcher->Unreg(std::shared_ptr<VulkanCore>(this));
 }
 
 void waitSeconds(int seconds)
@@ -117,6 +115,12 @@ void VulkanCore::drawFrame()
     assert(result == VK_SUCCESS);
 
     swapChain->aquireNextImage(imageAcquiredSemaphore);
+
+    if (result == VK_ERROR_OUT_OF_DATE_KHR)
+    {
+        recreateSwapChain();
+        return;
+    }
 
     VkRenderPassBeginInfo renderPassBeginInfo;
     renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -193,6 +197,13 @@ void VulkanCore::drawFrame()
 
     assert(result == VK_SUCCESS);
     result = vkQueuePresentKHR(window->getPresentQueue(), &present);
+
+    if (result == VK_ERROR_OUT_OF_DATE_KHR)
+    {
+        recreateSwapChain();
+        return;
+    }
+
     assert(result == VK_SUCCESS);
 
     vkDestroySemaphore(window->getDevice(), imageAcquiredSemaphore, nullptr);

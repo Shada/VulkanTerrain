@@ -26,7 +26,8 @@ VulkanPipeline::VulkanPipeline(
       pipelineLayout(nullptr),
       descriptorSetLayouts(std::vector<VkDescriptorSetLayout>())
 {
-    initDescriptorAndPipelineLayouts();
+    initDescriptorLayouts();
+    initPipelineLayout();
     initPipeline();
 }
 
@@ -41,9 +42,10 @@ VulkanPipeline::~VulkanPipeline()
     vkDestroyPipeline(window->getDevice(), pipeline, nullptr);
 }
 
-void VulkanPipeline::initDescriptorAndPipelineLayouts(
+void VulkanPipeline::initDescriptorLayouts(
     VkDescriptorSetLayoutCreateFlags descriptorSetLayoutCreateFlags)
 {
+    auto U_ASSERT_ONLY result = VK_SUCCESS;
     VkDescriptorSetLayoutBinding layoutBindings[2];
     layoutBindings[0].binding = 0;
     layoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -68,12 +70,14 @@ void VulkanPipeline::initDescriptorAndPipelineLayouts(
     descriptorSetLayoutCreateInfo.bindingCount = useTexture ? 2 : 1;
     descriptorSetLayoutCreateInfo.pBindings = layoutBindings;
 
-    VkResult U_ASSERT_ONLY result = VK_SUCCESS;
-
     descriptorSetLayouts.resize(NUM_DESCRIPTOR_SETS);
     result = vkCreateDescriptorSetLayout(window->getDevice(), &descriptorSetLayoutCreateInfo, nullptr, descriptorSetLayouts.data());
     assert(result == VK_SUCCESS);
+}
 
+void VulkanPipeline::initPipelineLayout()
+{
+    auto U_ASSERT_ONLY result = VK_SUCCESS;
     // Now use the descriptor layout to create a pipelineCreateInfo layout
     VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
     pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -86,10 +90,9 @@ void VulkanPipeline::initDescriptorAndPipelineLayouts(
     result = vkCreatePipelineLayout(window->getDevice(), &pipelineLayoutCreateInfo, nullptr, &pipelineLayout);
     assert(result == VK_SUCCESS);
 }
-
 void VulkanPipeline::initPipeline()
 {
-    VkResult U_ASSERT_ONLY result;
+    auto U_ASSERT_ONLY result = VK_SUCCESS;
 
     VkDynamicState dynamicStateEnables[VK_DYNAMIC_STATE_RANGE_SIZE];
     VkPipelineDynamicStateCreateInfo dynamicState = {};
@@ -137,6 +140,7 @@ void VulkanPipeline::initPipeline()
     colorBlendStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
     colorBlendStateCreateInfo.flags = 0;
     colorBlendStateCreateInfo.pNext = nullptr;
+
     VkPipelineColorBlendAttachmentState colorBlendAttachmentState[1];
     colorBlendAttachmentState[0].colorWriteMask = 0xf;
     colorBlendAttachmentState[0].blendEnable = VK_FALSE;
@@ -241,6 +245,21 @@ void VulkanPipeline::initPipeline()
 
     result = vkCreateGraphicsPipelines(window->getDevice(), pipelineCache->getPipelineCache(), 1, &pipelineCreateInfo, nullptr, &pipeline);
     assert(result == VK_SUCCESS);
+}
+
+void VulkanPipeline::create()
+{
+    initPipelineLayout();
+    initPipeline();
+}
+
+void VulkanPipeline::clean()
+{
+    if (pipelineLayout)
+    {
+        vkDestroyPipelineLayout(window->getDevice(), pipelineLayout, nullptr);
+    }
+    vkDestroyPipeline(window->getDevice(), pipeline, nullptr);
 }
 
 } // namespace Tobi

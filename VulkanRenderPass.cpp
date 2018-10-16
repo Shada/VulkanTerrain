@@ -22,15 +22,17 @@ VulkanRenderPass::VulkanRenderPass(std::shared_ptr<WindowXcb> window,
 
 VulkanRenderPass::~VulkanRenderPass()
 {
-    if (renderPass)
-    {
-        vkDestroyRenderPass(window->getDevice(), renderPass, nullptr);
-    }
+    clean();
 }
 
 void VulkanRenderPass::initRenderPass()
 {
-    VkResult U_ASSERT_ONLY result;
+    create();
+}
+
+void VulkanRenderPass::create()
+{
+    auto U_ASSERT_ONLY result = VK_SUCCESS;
     // Need imageViewAttachments for render target and depth buffer
     VkAttachmentDescription imageViewAttachments[2];
     imageViewAttachments[0].format = window->getSurfaceFormat();
@@ -88,6 +90,15 @@ void VulkanRenderPass::initRenderPass()
 
     result = vkCreateRenderPass(window->getDevice(), &renderPassCreateInfo, nullptr, &renderPass);
     assert(result == VK_SUCCESS);
+}
+
+void VulkanRenderPass::clean()
+{
+
+    if (renderPass)
+    {
+        vkDestroyRenderPass(window->getDevice(), renderPass, nullptr);
+    }
 }
 
 } // namespace Tobi

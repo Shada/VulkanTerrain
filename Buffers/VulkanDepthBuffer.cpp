@@ -19,12 +19,22 @@ VulkanDepthBuffer::VulkanDepthBuffer(std::shared_ptr<WindowXcb> window)
 
 VulkanDepthBuffer::~VulkanDepthBuffer()
 {
+    clean();
+}
+
+void VulkanDepthBuffer::clean()
+{
     if (imageView)
         vkDestroyImageView(window->getDevice(), imageView, nullptr);
     if (image)
         vkDestroyImage(window->getDevice(), image, nullptr);
     if (memory)
         vkFreeMemory(window->getDevice(), memory, nullptr);
+}
+
+void VulkanDepthBuffer::create()
+{
+    initDepthBuffer();
 }
 
 void VulkanDepthBuffer::initDepthBuffer()

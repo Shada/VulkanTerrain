@@ -33,14 +33,17 @@ class VulkanPipeline
     VulkanPipeline &operator=(VulkanPipeline &&) & = default;
     ~VulkanPipeline();
 
+    void create();
+    void clean();
+
     const VkPipeline &getPipeline() { return pipeline; }
     const VkPipelineLayout &getPipelineLayout() { return pipelineLayout; }
     const std::vector<VkDescriptorSetLayout> &getDescriptorSetLayouts() { return descriptorSetLayouts; }
 
   private:
-    void initDescriptorAndPipelineLayouts(
+    void initDescriptorLayouts(
         VkDescriptorSetLayoutCreateFlags descriptorSetLayoutCreateFlags = 0);
-
+    void initPipelineLayout();
     void initPipeline();
 
     std::shared_ptr<WindowXcb> window;
