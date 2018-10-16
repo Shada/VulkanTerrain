@@ -4,12 +4,21 @@
 
 #include "VulkanCore.hpp"
 
+#include "EventDispatcher.hpp"
+
 namespace
 {
 
 void startProgram()
 {
-    auto vulkanCore = std::make_unique<Tobi::VulkanCore>();
+    auto resizeWindowDispatcher = std::make_shared<Tobi::ResizeWindowDispatcher>();
+    auto vulkanCore = std::make_shared<Tobi::VulkanCore>(resizeWindowDispatcher);
+
+    resizeWindowDispatcher->Reg(vulkanCore);
+
+    vulkanCore->run();
+
+    resizeWindowDispatcher->Unreg(vulkanCore);
 
     std::cout << "this is just for the breakpoint" << std::endl;
 }

@@ -16,8 +16,8 @@ std::shared_ptr<WindowSettings> settings = std::make_shared<WindowSettings>(800,
 
 const bool depthPresent = true;
 
-VulkanCore::VulkanCore()
-    : resizeWindowDispatcher(std::make_shared<ResizeWindowDispatcher>()),
+VulkanCore::VulkanCore(std::shared_ptr<ResizeWindowDispatcher> resizeWindowDispatcher)
+    : resizeWindowDispatcher(resizeWindowDispatcher),
       window(std::make_shared<WindowXcb>(settings, resizeWindowDispatcher)),
       camera(std::make_unique<Camera>(settings)),
       commandPool(std::make_shared<VulkanCommandPool>(window)),
@@ -54,11 +54,7 @@ VulkanCore::VulkanCore()
       descriptorPool(std::make_unique<VulkanDescriptorPool>(window, false)),
       descriptorSets(std::vector<VkDescriptorSet>())
 {
-    resizeWindowDispatcher->Reg(std::shared_ptr<VulkanCore>(this));
-
     initVulkan();
-
-    resizeWindowDispatcher->Unreg(std::shared_ptr<VulkanCore>(this));
 }
 
 void waitSeconds(int seconds)
@@ -84,7 +80,10 @@ void VulkanCore::initVulkan()
     }
 
     initDescriptorSet(false);
+}
 
+void VulkanCore::run()
+{
     while (window->isRunning())
     {
         window->pollEvents();

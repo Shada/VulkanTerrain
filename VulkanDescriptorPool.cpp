@@ -7,14 +7,16 @@ namespace Tobi
 
 VulkanDescriptorPool::VulkanDescriptorPool(std::shared_ptr<WindowXcb> window, bool useTexture)
     : window(window),
-      useTexture(useTexture)
+      useTexture(useTexture),
+      descriptorPool(nullptr)
 {
     initDescriptorPool();
 }
 
 VulkanDescriptorPool::~VulkanDescriptorPool()
 {
-    vkDestroyDescriptorPool(window->getDevice(), descriptorPool, nullptr);
+    if (descriptorPool)
+        vkDestroyDescriptorPool(window->getDevice(), descriptorPool, nullptr);
 }
 
 void VulkanDescriptorPool::initDescriptorPool()

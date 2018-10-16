@@ -37,7 +37,7 @@ class VulkanCore
     : public Dispatcher<ResizeWindowEvent>::Listener
 {
   public:
-    VulkanCore();
+    VulkanCore(std::shared_ptr<ResizeWindowDispatcher> resizeWindowDispatcher);
     ~VulkanCore() = default;
 
     void recreateSwapChain()
@@ -63,6 +63,8 @@ class VulkanCore
         recreateSwapChain();
     }
 
+    void run();
+
   private:
     // would be nice to be able to configure functionality from a configuration
     // GUI or a configuration file
@@ -80,9 +82,9 @@ class VulkanCore
 
     std::vector<LayerProperties> instanceLayerProperties;
 
-    TextureData textureData;
-
     std::shared_ptr<ResizeWindowDispatcher> resizeWindowDispatcher;
+
+    TextureData textureData;
 
     std::shared_ptr<WindowXcb> window;
 
