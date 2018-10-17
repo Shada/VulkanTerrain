@@ -25,6 +25,13 @@ class Dispatcher
     Listeners listeners;
 
   public:
+    virtual ~Dispatcher()
+    {
+        while (!listeners.empty())
+        {
+            listeners.erase(listeners.begin());
+        }
+    }
     void Reg(ListenerPtr listener)
     {
         if (listeners.end() != std::find(listeners.begin(), listeners.end(), listener))
@@ -58,14 +65,6 @@ struct ResizeWindowEvent
 
 class ResizeWindowDispatcher : public Dispatcher<ResizeWindowEvent>
 {
-};
-
-class Consumer : public Dispatcher<ResizeWindowEvent>::Listener
-{
-    virtual void onEvent(ResizeWindowEvent &event, Dispatcher<ResizeWindowEvent> &sender)
-    {
-        std::cout << "onEvent ResizeWindowEvent " << event.width << "x" << event.height << std::endl;
-    }
 };
 
 } // namespace Tobi

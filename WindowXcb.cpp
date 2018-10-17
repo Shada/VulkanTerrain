@@ -70,8 +70,8 @@ void WindowXcb::handleEvent(const xcb_generic_event_t *event)
         windowSettings->width = notify->width;
         windowSettings->height = notify->height;
 
-        auto event = ResizeWindowEvent(notify->width, notify->height);
-        resizeWindowDispatcher->Dispatch(event);
+        auto resizeEvent = ResizeWindowEvent(notify->width, notify->height);
+        resizeWindowDispatcher->Dispatch(resizeEvent);
     }
     break;
     case XCB_KEY_PRESS:
@@ -256,15 +256,15 @@ void WindowXcb::initWindow()
         coords);
     xcb_flush(connection);
 
-    xcb_generic_event_t *event;
-    while ((event = xcb_wait_for_event(connection)))
+    while (auto event = xcb_wait_for_event(connection))
     {
         if ((event->response_type & ~0x80) == XCB_EXPOSE)
         {
+            free(event);
             break;
         }
+        free(event);
     }
-    free(event);
 }
 
 void WindowXcb::initInstanceExtensionNames()
@@ -293,7 +293,6 @@ VkResult WindowXcb::initDeviceExtensionProperties(LayerProperties &layerProperti
     {
         do
         {
-            VkExtensionProperties *deviceExtensions;
             uint32_t deviceExtensionCount;
 
             result = vkEnumerateDeviceExtensionProperties(
@@ -313,7 +312,7 @@ VkResult WindowXcb::initDeviceExtensionProperties(LayerProperties &layerProperti
             }
 
             layerProperties.deviceExtensions.resize(deviceExtensionCount);
-            deviceExtensions = layerProperties.deviceExtensions.data();
+            auto deviceExtensions = layerProperties.deviceExtensions.data();
             result = vkEnumerateDeviceExtensionProperties(
                 gpu.physicalDevice,
                 layerName,
@@ -359,8 +358,8 @@ void WindowXcb::initInstance()
 
 VkResult WindowXcb::initEnumerateDevice(uint32_t gpuCount)
 {
-    uint32_t const U_ASSERT_ONLY requiredGpuCount = gpuCount;
-    VkResult result = vkEnumeratePhysicalDevices(instance, &gpuCount, nullptr);
+    auto const U_ASSERT_ONLY requiredGpuCount = gpuCount;
+    auto result = vkEnumeratePhysicalDevices(instance, &gpuCount, nullptr);
     assert(gpuCount);
 
     gpus.resize(gpuCount);

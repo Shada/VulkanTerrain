@@ -197,6 +197,8 @@ void VulkanCore::drawFrame()
     assert(result == VK_SUCCESS);
     result = vkQueuePresentKHR(window->getPresentQueue(), &present);
 
+    vkDestroySemaphore(window->getDevice(), imageAcquiredSemaphore, nullptr);
+    vkDestroyFence(window->getDevice(), drawFence, nullptr);
     if (result == VK_ERROR_OUT_OF_DATE_KHR)
     {
         recreateSwapChain();
@@ -204,9 +206,6 @@ void VulkanCore::drawFrame()
     }
 
     assert(result == VK_SUCCESS);
-
-    vkDestroySemaphore(window->getDevice(), imageAcquiredSemaphore, nullptr);
-    vkDestroyFence(window->getDevice(), drawFence, nullptr);
 }
 
 void VulkanCore::initViewPorts()

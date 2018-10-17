@@ -45,6 +45,7 @@ class VulkanCore
         frameBuffers->clean();
         commandBuffer->clean();
         pipeline->clean();
+        depthBuffer->clean();
         renderPass->clean();
         swapChain->clean();
 
