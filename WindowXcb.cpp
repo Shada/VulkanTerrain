@@ -46,14 +46,9 @@ WindowXcb::~WindowXcb()
 
 void WindowXcb::pollEvents()
 {
-    while (true)
+    xcb_generic_event_t *event;
+    while ((event = xcb_poll_for_event(connection)))
     {
-        xcb_generic_event_t *event = xcb_poll_for_event(connection);
-        if (!event)
-        {
-            break;
-        }
-
         handleEvent(event);
         free(event);
     }
@@ -63,6 +58,12 @@ void WindowXcb::handleEvent(const xcb_generic_event_t *event)
 {
     switch (event->response_type & 0x7f)
     {
+    case XCB_EXPOSE:
+    {
+        auto resizeEvent = ResizeWindowEvent(windowSettings->width, windowSettings->height);
+        resizeWindowDispatcher->Dispatch(resizeEvent);
+    }
+    break;
     case XCB_CONFIGURE_NOTIFY: // resize window event! Need to recreate swapchain and stuff (send RecreateSwapchainEvent ?) can window have pointer to swapchain?
     {
         const xcb_configure_notify_event_t *notify = reinterpret_cast<const xcb_configure_notify_event_t *>(event);
@@ -71,9 +72,6 @@ void WindowXcb::handleEvent(const xcb_generic_event_t *event)
         {
             windowSettings->width = notify->width;
             windowSettings->height = notify->height;
-
-            auto resizeEvent = ResizeWindowEvent(notify->width, notify->height);
-            resizeWindowDispatcher->Dispatch(resizeEvent);
         }
     }
     break;
@@ -196,7 +194,7 @@ void WindowXcb::initWindow()
 
     window = xcb_generate_id(connection);
 
-    auto valueMask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
+    uint32_t valueMask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
 
     uint32_t valueList[32];
     valueList[0] = screen->black_pixel;
@@ -259,15 +257,16 @@ void WindowXcb::initWindow()
         coords);
     xcb_flush(connection);
 
-    while (auto event = xcb_wait_for_event(connection))
+    xcb_generic_event_t *event;
+    while ((event = xcb_wait_for_event(connection)))
     {
         if ((event->response_type & ~0x80) == XCB_EXPOSE)
         {
-            free(event);
             break;
         }
         free(event);
     }
+    free(event);
 }
 
 void WindowXcb::initInstanceExtensionNames()

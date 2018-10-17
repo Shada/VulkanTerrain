@@ -40,27 +40,10 @@ class VulkanCore
     VulkanCore(std::shared_ptr<ResizeWindowDispatcher> resizeWindowDispatcher);
     ~VulkanCore() = default;
 
-    void recreateSwapChain()
-    {
-        frameBuffers->clean();
-        commandBuffer->clean();
-        pipeline->clean();
-        depthBuffer->clean();
-        renderPass->clean();
-        swapChain->clean();
+    void recreateSwapChain();
 
-        swapChain->create();
-        renderPass->create();
-        pipeline->create();
-        depthBuffer->create();
-        frameBuffers->create();
-        commandBuffer->create();
-    }
     virtual void onEvent(ResizeWindowEvent &event, Dispatcher<ResizeWindowEvent> &sender)
     {
-        // recreate swapchain here.
-        std::cout << "SwapChain: onEvent ResizeWindowEvent " << event.width << "x" << event.height << std::endl;
-
         recreateSwapChain();
     }
 
@@ -78,6 +61,10 @@ class VulkanCore
     void initDescriptorSet(bool useTexture);
     void initScissors();
     void initViewPorts();
+
+    void initClearValues();
+
+    void initRenderPassBeginInfo();
 
     void drawFrame();
 
@@ -118,6 +105,9 @@ class VulkanCore
 
     VkRect2D scissor;
     VkViewport viewPort;
+
+    VkClearValue clearValues[2];
+    VkRenderPassBeginInfo renderPassBeginInfo;
 };
 
 } // namespace Tobi

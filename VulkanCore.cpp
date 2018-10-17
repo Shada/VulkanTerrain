@@ -80,6 +80,8 @@ void VulkanCore::initVulkan()
     }
 
     initDescriptorSet(false);
+    initClearValues();
+    initRenderPassBeginInfo();
 }
 
 void VulkanCore::run()
@@ -91,18 +93,53 @@ void VulkanCore::run()
     }
 }
 
-void VulkanCore::drawFrame()
+void VulkanCore::initClearValues()
 {
-    auto result = VK_SUCCESS;
-    // VULKAN_KEY_START
-
-    VkClearValue clearValues[2];
     clearValues[0].color.float32[0] = 0.2f;
     clearValues[0].color.float32[1] = 0.2f;
     clearValues[0].color.float32[2] = 0.2f;
     clearValues[0].color.float32[3] = 0.2f;
     clearValues[1].depthStencil.depth = 1.0f;
     clearValues[1].depthStencil.stencil = 0;
+}
+
+void VulkanCore::initRenderPassBeginInfo()
+{
+    renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassBeginInfo.pNext = nullptr;
+    renderPassBeginInfo.renderPass = renderPass->getRenderPass();
+    renderPassBeginInfo.framebuffer = frameBuffers->getCurrentFrameBuffer();
+    renderPassBeginInfo.renderArea.offset.x = 0;
+    renderPassBeginInfo.renderArea.offset.y = 0;
+    renderPassBeginInfo.renderArea.extent.width = window->getWidth();
+    renderPassBeginInfo.renderArea.extent.height = window->getHeight();
+    renderPassBeginInfo.clearValueCount = 2;
+    renderPassBeginInfo.pClearValues = clearValues;
+}
+
+void VulkanCore::recreateSwapChain()
+{
+    frameBuffers->clean();
+    commandBuffer->clean();
+    pipeline->clean();
+    depthBuffer->clean();
+    renderPass->clean();
+    swapChain->clean();
+
+    swapChain->create();
+    renderPass->create();
+    pipeline->create();
+    depthBuffer->create();
+    frameBuffers->create();
+    commandBuffer->create();
+
+    initRenderPassBeginInfo();
+}
+
+void VulkanCore::drawFrame()
+{
+    auto result = VK_SUCCESS;
+    // VULKAN_KEY_START
 
     VkSemaphore imageAcquiredSemaphore;
     VkSemaphoreCreateInfo imageAcquiredSemaphoreCreateInfo;
@@ -115,23 +152,13 @@ void VulkanCore::drawFrame()
 
     swapChain->aquireNextImage(imageAcquiredSemaphore);
 
-    if (result == VK_ERROR_OUT_OF_DATE_KHR)
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
     {
         recreateSwapChain();
         return;
     }
 
-    VkRenderPassBeginInfo renderPassBeginInfo;
-    renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassBeginInfo.pNext = nullptr;
-    renderPassBeginInfo.renderPass = renderPass->getRenderPass();
     renderPassBeginInfo.framebuffer = frameBuffers->getCurrentFrameBuffer();
-    renderPassBeginInfo.renderArea.offset.x = 0;
-    renderPassBeginInfo.renderArea.offset.y = 0;
-    renderPassBeginInfo.renderArea.extent.width = window->getWidth();
-    renderPassBeginInfo.renderArea.extent.height = window->getHeight();
-    renderPassBeginInfo.clearValueCount = 2;
-    renderPassBeginInfo.pClearValues = clearValues;
 
     commandBuffer->executeBeginCommandBuffer();
 
