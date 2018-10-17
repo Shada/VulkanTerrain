@@ -8,21 +8,21 @@ I hope this will be one where I acctually get some game or demo out of. I will t
 
 Only supports linux for now, but I will make sure to make it cross-platform eventually. 
 
-Build using gcc :
-
-g++ VulkanCore.cpp WindowXcb.cpp main.cpp -I$VULKAN_SDK/include -L$VULKAN_SDK/lib -lxcb -lvulkan -DVK_USE_PLATFORM_XCB_KHR -LGLSLANG_PATH/include -LGLSLANG_PATH/lib -lglslang -lHLSL -lSPIRV -lSPIRV-Tools-opt -lSPIRV-Tools
+Build using make:
+    make TobiGame.out
 
 
 TODO:
-* Add makefile/cmake. 
+* Add cmake. 
 * Add glslang (and other future external libs) as submodules 
-* Refactor Vulkan-init. 
+* Refactor vulkan-parts
+* Improve performance
 * Add unit tests
 * Add vulkan validation layers
-* Make sure build speed is satisfactory
+* Make sure build speed is satisfactory (it's ok now, but could be better)
 * Extract descriptor info from shaders
 * Load models
 * Load shaders from files
-* Make game loop
-* Implement input handling (start with ESC for exit)
+* Make game loop more efficient (drawing is a bit slow)
 * Create camera with movement
+* Window resize is a bit slow as of now

@@ -67,11 +67,14 @@ void WindowXcb::handleEvent(const xcb_generic_event_t *event)
     {
         const xcb_configure_notify_event_t *notify = reinterpret_cast<const xcb_configure_notify_event_t *>(event);
 
-        windowSettings->width = notify->width;
-        windowSettings->height = notify->height;
+        if (windowSettings->width != notify->width || windowSettings->height != notify->height)
+        {
+            windowSettings->width = notify->width;
+            windowSettings->height = notify->height;
 
-        auto resizeEvent = ResizeWindowEvent(notify->width, notify->height);
-        resizeWindowDispatcher->Dispatch(resizeEvent);
+            auto resizeEvent = ResizeWindowEvent(notify->width, notify->height);
+            resizeWindowDispatcher->Dispatch(resizeEvent);
+        }
     }
     break;
     case XCB_KEY_PRESS:
@@ -118,7 +121,7 @@ void WindowXcb::handleEvent(const xcb_generic_event_t *event)
     default:
         break;
     }
-}
+} // namespace Tobi
 
 void WindowXcb::waitForDeviceIdle()
 {
