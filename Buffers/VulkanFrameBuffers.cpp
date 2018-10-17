@@ -40,7 +40,6 @@ void VulkanFrameBuffers::clean()
             vkDestroyFramebuffer(window->getDevice(), frameBuffer, nullptr);
         }
     }
-    frameBuffers.clear();
 }
 
 void VulkanFrameBuffers::create()

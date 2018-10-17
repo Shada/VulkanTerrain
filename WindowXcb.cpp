@@ -200,7 +200,7 @@ void WindowXcb::initWindow()
 
     uint32_t valueList[32];
     valueList[0] = screen->black_pixel;
-    valueList[1] = XCB_EVENT_MASK_KEY_RELEASE | XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_STRUCTURE_NOTIFY;
+    valueList[1] = XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_STRUCTURE_NOTIFY;
 
     xcb_create_window(
         connection,

@@ -14,6 +14,7 @@ VulkanDepthBuffer::VulkanDepthBuffer(std::shared_ptr<WindowXcb> window)
       memory(nullptr),
       window(window)
 {
+    initFormat();
     initDepthBuffer();
 }
 
@@ -37,11 +38,8 @@ void VulkanDepthBuffer::create()
     initDepthBuffer();
 }
 
-void VulkanDepthBuffer::initDepthBuffer()
+void VulkanDepthBuffer::initFormat()
 {
-    VkResult U_ASSERT_ONLY result = VK_SUCCESS;
-    bool U_ASSERT_ONLY pass = true;
-    VkImageCreateInfo imageCreateInfo = {};
 
     // allow custom depth formats
 #ifdef __ANDROID__
@@ -55,9 +53,15 @@ void VulkanDepthBuffer::initDepthBuffer()
         format = VK_FORMAT_D16_UNORM;
 #endif
 
-    const VkFormat depthFormat = format;
-    VkFormatProperties formatProperties;
-    vkGetPhysicalDeviceFormatProperties(window->getPhysicalDevice(), depthFormat, &formatProperties);
+    vkGetPhysicalDeviceFormatProperties(window->getPhysicalDevice(), format, &formatProperties);
+}
+
+void VulkanDepthBuffer::initDepthBuffer()
+{
+    auto U_ASSERT_ONLY result = VK_SUCCESS;
+    auto U_ASSERT_ONLY pass = true;
+    VkImageCreateInfo imageCreateInfo = {};
+
     if (formatProperties.linearTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)
     {
         imageCreateInfo.tiling = VK_IMAGE_TILING_LINEAR;
@@ -69,14 +73,14 @@ void VulkanDepthBuffer::initDepthBuffer()
     else
     {
         // Try other depth formats?
-        std::cout << "depth_format " << depthFormat << " Unsupported.\n";
+        std::cout << "depth_format " << format << " Unsupported.\n";
         exit(-1);
     }
 
     imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     imageCreateInfo.pNext = nullptr;
     imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
-    imageCreateInfo.format = depthFormat;
+    imageCreateInfo.format = format;
     imageCreateInfo.extent.width = window->getWidth();
     imageCreateInfo.extent.height = window->getHeight();
     imageCreateInfo.extent.depth = 1;
@@ -100,7 +104,7 @@ void VulkanDepthBuffer::initDepthBuffer()
     imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     imageViewCreateInfo.pNext = nullptr;
     imageViewCreateInfo.image = VK_NULL_HANDLE;
-    imageViewCreateInfo.format = depthFormat;
+    imageViewCreateInfo.format = format;
     imageViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_R;
     imageViewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_G;
     imageViewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_B;
@@ -113,8 +117,8 @@ void VulkanDepthBuffer::initDepthBuffer()
     imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
     imageViewCreateInfo.flags = 0;
 
-    if (depthFormat == VK_FORMAT_D16_UNORM_S8_UINT || depthFormat == VK_FORMAT_D24_UNORM_S8_UINT ||
-        depthFormat == VK_FORMAT_D32_SFLOAT_S8_UINT)
+    if (format == VK_FORMAT_D16_UNORM_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT ||
+        format == VK_FORMAT_D32_SFLOAT_S8_UINT)
     {
         imageViewCreateInfo.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
     }
@@ -129,8 +133,7 @@ void VulkanDepthBuffer::initDepthBuffer()
 
     memoryAllocationInfo.allocationSize = memoryRequirements.size;
     // Use the memory properties to determine the type of memory required
-    pass =
-        window->memoryTypeFromProperties(memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &memoryAllocationInfo.memoryTypeIndex);
+    pass = window->memoryTypeFromProperties(memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &memoryAllocationInfo.memoryTypeIndex);
     assert(pass);
 
     // Allocate memory
