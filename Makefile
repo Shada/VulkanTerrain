@@ -22,4 +22,4 @@ obj/%.o: %.cpp $(DEPS)
 	$(CXX) -c -o$@ $< $(CXXFLAGS) -std=c++17 -O3
 
 TobiGame.out: $(OBJ)
-	$(CXX) -o $@ $^ -std=c++17 -O3 main.cpp -I$(VULKAN_SDK)/include -L$(VULKAN_SDK)/lib -lxcb -lvulkan -lpthread -L/home/admin/Documents/Programming/vulkan/glslang/install/lib -lglslang -lHLSL -lSPIRV -lSPIRV-Tools-opt -lSPIRV-Tools
+	$(CXX) -o $@ $^ -std=c++17 -O3 main.cpp -I$(VULKAN_SDK)/include -L$(VULKAN_SDK)/lib -lxcb -lxcb-util -lvulkan -lpthread -L/home/admin/Documents/Programming/vulkan/glslang/install/lib -lglslang -lHLSL -lSPIRV -lSPIRV-Tools-opt -lSPIRV-Tools

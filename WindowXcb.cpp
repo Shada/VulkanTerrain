@@ -1,5 +1,6 @@
 #include <cassert>
 #include <iostream>
+#include <unistd.h>
 
 #include "WindowXcb.hpp"
 
@@ -47,79 +48,23 @@ WindowXcb::~WindowXcb()
 void WindowXcb::pollEvents()
 {
     xcb_generic_event_t *event;
-    while ((event = xcb_poll_for_event(connection)))
+    while ((event = xcb_poll_for_event(connection)) != nullptr)
     {
-        handleEvent(event);
+        auto code = event->response_type & ~0x80;
+        switch (code)
+        {
+        case XCB_CLIENT_MESSAGE:
+            if (reinterpret_cast<xcb_client_message_event_t *>(event)->data.data32[0] == atomWmDeleteWindow)
+                running = false; // status = STATUS_TEARDOWN;
+            break;
+
+        case XCB_DESTROY_NOTIFY:
+            running = false; // status = STATUS_TEARDOWN;
+            break;
+        }
         free(event);
     }
 }
-
-void WindowXcb::handleEvent(const xcb_generic_event_t *event)
-{
-    switch (event->response_type & 0x7f)
-    {
-    case XCB_EXPOSE:
-    {
-        auto resizeEvent = ResizeWindowEvent(windowSettings->width, windowSettings->height);
-        resizeWindowDispatcher->Dispatch(resizeEvent);
-    }
-    break;
-    case XCB_CONFIGURE_NOTIFY: // resize window event! Need to recreate swapchain and stuff (send RecreateSwapchainEvent ?) can window have pointer to swapchain?
-    {
-        const xcb_configure_notify_event_t *notify = reinterpret_cast<const xcb_configure_notify_event_t *>(event);
-
-        if (windowSettings->width != notify->width || windowSettings->height != notify->height)
-        {
-            windowSettings->width = notify->width;
-            windowSettings->height = notify->height;
-        }
-    }
-    break;
-    case XCB_KEY_PRESS:
-    {
-        const xcb_key_press_event_t *keyPress = reinterpret_cast<const xcb_key_press_event_t *>(event);
-        Game::Key key;
-
-        // TODO translate xcb_keycode_t
-        switch (keyPress->detail)
-        {
-        case 9:
-            key = Game::KEY_ESC;
-            break;
-        case 111:
-            key = Game::KEY_UP;
-            break;
-        case 116:
-            key = Game::KEY_DOWN;
-            break;
-        case 65:
-            key = Game::KEY_SPACE;
-            break;
-        case 41:
-            key = Game::KEY_F;
-            break;
-        default:
-            key = Game::KEY_UNKNOWN;
-            break;
-        }
-
-        game->onKey(Game::KEY_ESC); // send GameOnKeyEvent, so that game can react accordingly. Should window have pointer to game?
-    }
-    break;
-    case XCB_CLIENT_MESSAGE:
-    {
-        const xcb_client_message_event_t *message = reinterpret_cast<const xcb_client_message_event_t *>(event);
-        if (message->type == atomWmProtocol && message->data.data32[0] == atomWmDeleteWindow)
-        {
-            game->onKey(Game::KEY_SHUTDOWN);
-            running = false;
-        }
-    }
-    break;
-    default:
-        break;
-    }
-} // namespace Tobi
 
 void WindowXcb::waitForDeviceIdle()
 {
@@ -147,23 +92,15 @@ void WindowXcb::createWindow()
 
 void WindowXcb::initConnection()
 {
-    int scr;
-    connection = xcb_connect(nullptr, &scr);
+    connection = xcb_connect(nullptr, nullptr);
+
     if (connection == nullptr || xcb_connection_has_error(connection))
     {
-        std::cout << "Unable to make an XCB connection" << std::endl;
-        exit(-1); // change to throw exception instead, and log exceptions when caught
+        xcb_disconnect(connection);
+        throw std::runtime_error("Failed to connect xcb display server");
     }
 
-    const auto setup = xcb_get_setup(connection);
-    auto setupIterator = xcb_setup_roots_iterator(setup);
-
-    while (scr-- > 0)
-    {
-        xcb_screen_next(&setupIterator);
-    }
-
-    screen = setupIterator.data;
+    screen = xcb_setup_roots_iterator(xcb_get_setup(connection)).data;
 }
 
 namespace
@@ -194,12 +131,15 @@ void WindowXcb::initWindow()
 
     window = xcb_generate_id(connection);
 
-    uint32_t valueMask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
-
-    uint32_t valueList[32];
-    valueList[0] = screen->black_pixel;
-    valueList[1] = XCB_EVENT_MASK_EXPOSURE | XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_STRUCTURE_NOTIFY;
-
+    const uint32_t events[] =
+        {
+            XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY | XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT |
+            XCB_EVENT_MASK_LEAVE_WINDOW | XCB_EVENT_MASK_ENTER_WINDOW |
+            XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_PROPERTY_CHANGE |
+            XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE |
+            XCB_EVENT_MASK_FOCUS_CHANGE | XCB_EVENT_MASK_KEY_PRESS |
+            XCB_EVENT_MASK_KEY_RELEASE | XCB_EVENT_MASK_EXPOSURE // wanna remove the last one eventually
+        };
     xcb_create_window(
         connection,
         XCB_COPY_FROM_PARENT,
@@ -212,29 +152,34 @@ void WindowXcb::initWindow()
         0,
         XCB_WINDOW_CLASS_INPUT_OUTPUT,
         screen->root_visual,
-        valueMask,
-        valueList);
-
-    auto utf8StringCookie = intern_atom_cookie(connection, "UTF8_STRING");
-    auto wmNameCookie = intern_atom_cookie(connection, "WM_NAME");
-    auto protocolCookie = intern_atom_cookie(connection, "WM_PROTOCOLS");
-    auto deleteCookie = intern_atom_cookie(connection, "WM_DELETE_WINDOW");
-
-    auto utf8String = intern_atom(connection, utf8StringCookie);
-    auto wmName = intern_atom(connection, wmNameCookie);
-    atomWmProtocol = intern_atom(connection, protocolCookie);
-    atomWmDeleteWindow = intern_atom(connection, deleteCookie);
+        XCB_CW_EVENT_MASK,
+        events);
 
     // set WINDOW title
     xcb_change_property(
         connection,
         XCB_PROP_MODE_REPLACE,
         window,
-        wmName,
-        utf8String,
+        XCB_ATOM_WM_NAME,
+        XCB_ATOM_STRING,
         8,
         windowSettings->applicationName.size(),
         windowSettings->applicationName.c_str());
+    xcb_change_property(
+        connection,
+        XCB_PROP_MODE_REPLACE,
+        window,
+        XCB_ATOM_WM_ICON_NAME,
+        XCB_ATOM_STRING,
+        8,
+        windowSettings->applicationName.size(),
+        windowSettings->applicationName.c_str());
+
+    auto protocolCookie = intern_atom_cookie(connection, "WM_PROTOCOLS");
+    auto deleteCookie = intern_atom_cookie(connection, "WM_DELETE_WINDOW");
+
+    atomWmProtocol = intern_atom(connection, protocolCookie);
+    atomWmDeleteWindow = intern_atom(connection, deleteCookie);
 
     // advertise WM_DELETE_WINDOW
     xcb_change_property(
@@ -248,25 +193,9 @@ void WindowXcb::initWindow()
         &atomWmDeleteWindow);
 
     xcb_map_window(connection, window);
+    xcb_aux_sync(connection);
 
-    const uint32_t coords[] = {100, 100};
-    xcb_configure_window(
-        connection,
-        window,
-        XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y,
-        coords);
-    xcb_flush(connection);
-
-    xcb_generic_event_t *event;
-    while ((event = xcb_wait_for_event(connection)))
-    {
-        if ((event->response_type & ~0x80) == XCB_EXPOSE)
-        {
-            break;
-        }
-        free(event);
-    }
-    free(event);
+    pollEvents();
 }
 
 void WindowXcb::initInstanceExtensionNames()

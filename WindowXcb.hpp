@@ -2,9 +2,10 @@
 
 #include <cstdint>
 #include <vector>
+#include <xcb/xcb.h>
+#include <xcb/xcb_aux.h>
 
 #include <vulkan/vulkan.hpp>
-#include <xcb/xcb.h>
 
 #include "WindowSettings.hpp"
 #include "EventDispatcher.hpp"
@@ -38,7 +39,6 @@ class WindowXcb
     ~WindowXcb();
 
     void pollEvents();
-    void handleEvent(const xcb_generic_event_t *event);
 
     void waitForDeviceIdle();
 
