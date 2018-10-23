@@ -1,40 +1,18 @@
-#include <iostream>
-#include <stdexcept>
 #include <memory>
+#include "PlatformXcb.hpp"
 
-#include "VulkanCore.hpp"
-
-#include "EventDispatcher.hpp"
-
-namespace
+namespace Tobi
 {
 
-void startProgram()
+int run()
 {
-    auto resizeWindowDispatcher = std::make_shared<Tobi::ResizeWindowDispatcher>();
-    auto vulkanCore = std::make_shared<Tobi::VulkanCore>(resizeWindowDispatcher);
-
-    resizeWindowDispatcher->Reg(vulkanCore);
-
-    vulkanCore->run();
-
-    resizeWindowDispatcher->Unreg(vulkanCore);
-
-    std::cout << "this is just for the breakpoint" << std::endl;
+    std::shared_ptr<Platform> a = std::make_shared<PlatformXcb>();
+    return 1;
 }
 
-} // namespace
+} // namespace Tobi
 
 int main()
 {
-    try
-    {
-        startProgram();
-    }
-    catch (std::exception e)
-    {
-        std::cout << "Exception was caught: " << e.what() << std::endl;
-    }
-
-    return 0;
+    return Tobi::run();
 }

@@ -1,6 +1,6 @@
 #pragma once
 #include <unistd.h>
-#include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan.h>
 
 #include "../WindowXcb.hpp"
 

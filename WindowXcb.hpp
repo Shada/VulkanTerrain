@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <vector>
 
-#include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan.h>
 #include <xcb/xcb.h>
 
 #include "WindowSettings.hpp"

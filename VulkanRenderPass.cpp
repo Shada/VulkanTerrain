@@ -1,5 +1,7 @@
 #include "VulkanRenderPass.hpp"
 
+#include <cassert>
+
 #include "AssertTypeDefine.hpp"
 #include "util.hpp"
 

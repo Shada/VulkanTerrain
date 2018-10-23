@@ -1,6 +1,7 @@
 #include "VulkanDepthBuffer.hpp"
 
 #include <iostream>
+#include <cassert>
 
 #include "AssertTypeDefine.hpp"
 #include "util.hpp"

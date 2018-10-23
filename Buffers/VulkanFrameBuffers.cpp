@@ -1,5 +1,7 @@
 #include "VulkanFrameBuffers.hpp"
 
+#include <cassert>
+
 #include "AssertTypeDefine.hpp"
 
 namespace Tobi

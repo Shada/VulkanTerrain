@@ -1,128 +1,189 @@
 #pragma once
-#include <string>
-#include <vector>
-#include <memory>
 
-#include "VulkanSwapChain.hpp"
+#include <vulkan/vulkan.hpp>
 
-#define LOGE(...) fprintf(stderr, "ERROR: " __VA_ARGS__)
-#define LOGI(...) fprintf(stderr, "INFO: " __VA_ARGS__)
+#include "Common.hpp"
 
 namespace Tobi
 {
-enum Result
-{
-    RESULT_SUCCESS = 0,
-    RESULT_ERROR_GENERIC = -1,
-    RESULT_ERROR_OUTDATED_SWAPCHAIN = -2,
-    RESULT_ERROR_IO = -3,
-    RESULT_ERROR_OUT_OF_MEMORY = -4
-};
 
 class Platform
 {
   public:
-    Platform(const Platform &) = delete;
-    Platform(Platform &&) = delete;
-    Platform &operator=(const Platform &) & = delete;
-    Platform &operator=(Platform &&) & = delete;
+    Platform();
     virtual ~Platform();
 
+    /// @brief Describes the size and format of the swapchain.
     struct SwapChainDimensions
     {
+        /// Width of the swapchain.
         uint32_t width;
+        /// Height of the swapchain.
         uint32_t height;
+        /// Pixel format of the swapchain.
         VkFormat format;
     };
 
+    /// @brief Describes the status of the application lifecycle.
     enum Status
     {
+        /// The application is running.
         STATUS_RUNNING,
+        /// The application should exit as the user has requested it.
         STATUS_TEARDOWN
     };
 
-    virtual Result initialize() = 0;
+    /// @brief Initializes the Vulkan device.
+    /// @param swapchain The requested swapchain dimensions and size. Can be
+    /// overridden by WSI.
+    /// @param[out] instanceExtensions The required Vulkan instance extensions the
+    /// platform requires.
+    /// @param[out] deviceExtensions The required Vulkan device extensions the
+    /// platform requires.
+    /// @returns Error code
+    Result initVulkan(
+        const SwapChainDimensions &swapChainDimensions,
+        const std::vector<const char *> &requiredInstanceExtensions,
+        const std::vector<const char *> &requiredDeviceExtensions);
 
-    inline void addExternalLayerName(const char *layerName)
+    /// @brief Gets the current Vulkan instance.
+    /// @returns Vulkan instance.
+    inline VkInstance getInstance() const
     {
-        externalLayerNames.push_back(layerName);
+        return instance;
     }
 
-    inline void setExternalDebugCallback(PFN_vkDebugReportCallbackEXT callback, void *userData)
-    {
-        externalDebugCallback = callback;
-        externalDebugCallbackUserData = userData;
-    }
+    /// @brief Returns the currently set debug callback.
+    /// @returns The callback, or nullptr if not set.
     inline PFN_vkDebugReportCallbackEXT getExternalDebugCallback() const
     {
         return externalDebugCallback;
     }
+
+    /// @brief Returns the currently set debug callback.
+    /// @returns The callback, or nullptr if not set.
     inline void *getExternalDebugCallbackUserData() const
     {
-        return externalDebugCallbackUserData;
+        return pExternalDebugCallbackUserData;
     }
 
-    virtual Result createWindow(const SwapChainDimensions &swapChainDimensions) = 0;
+    /// @brief Terminates the platform. Normally this would be handled by the
+    /// destructor, but certain platforms
+    /// need to be able to terminate before exit() and initialize multiple times.
+    virtual void terminate();
 
-    void terminate();
+    /// @brief Gets the preferred swapchain size. Not relevant for all platforms.
+    /// @returns Error code.
+    virtual SwapChainDimensions getPreferredSwapChain() = 0;
 
   protected:
-    Platform() = default;
+    /// The Vulkan instance.
     VkInstance instance;
-    VkPhysicalDevice gpu;
-    VkDevice device;
-    VkQueue graphicsQueue;
-    VkQueue presentQueue;
-    VkQueue transferQueue;
-    VkQueue computeQueue;
+
+    /// The selected physical device
+    VkPhysicalDevice physicalDevice;
+
+    /// The logical device
+    VkDevice logicalDevice;
+
+    VkPhysicalDeviceProperties gpuProperties;
+    VkPhysicalDeviceMemoryProperties gpuMemoryProperties;
+
+    // present graphics, transfer and compute queues. If the gpu supports it, they will be separate queues
+    std::vector<VkQueueFamilyProperties> queueFamilyProperties;
+    VkQueueFlags supportedQueues;
     uint32_t graphicsQueueIndex;
     uint32_t presentQueueIndex;
-    uint32_t transferQueueIndex;
     uint32_t computeQueueIndex;
-    VkPhysicalDeviceProperties gpuProperties;
-    VkPhysicalDeviceMemoryProperties memoryProperties;
-    std::vector<VkQueueFamilyProperties> queueProperties;
-    std::vector<std::string> externalLayerNames;
-    PFN_vkDebugReportCallbackEXT externalDebugCallback;
-    void *externalDebugCallbackUserData;
+    uint32_t transferQueueIndex;
+    VkQueue graphicsQueue;
+    VkQueue presentQueue;
+    VkQueue computeQueue;
+    VkQueue transferQueue;
 
-    inline void addExternalLayers(
-        std::vector<const char *> &activeLayers,
-        const std::vector<VkLayerProperties> &supportedLayers)
+    /// List of external layers to load.
+    std::vector<std::string> externalLayers;
+
+    /// Indicates if application can use the required extensions or will try without
+    bool useInstanceExtensions;
+    bool useDeviceExtensions;
+    bool haveDebugReport;
+
+    /// List of all active instance extensions
+    std::vector<const char *> activeInstanceExtensions;
+
+    /// List of all active instance layers
+    std::vector<const char *> activeInstanceLayers;
+
+    /// List of all active instance layers
+    std::vector<const char *> activeDeviceLayers;
+
+    /// Debug Report calback function
+    VkDebugReportCallbackEXT debugReportCallback;
+
+    /// External debug callback.
+    PFN_vkDebugReportCallbackEXT externalDebugCallback;
+
+    /// User-data for external debug callback.
+    void *pExternalDebugCallbackUserData;
+
+    /// @brief Helper function to add external layers to a list of active ones.
+    /// @param activeInstanceLayers List of active layers to be used.
+    /// @param supportedLayers List of supported layers.
+    inline void addExternalLayers(std::vector<const char *> &activeInstanceLayers,
+                                  const std::vector<VkLayerProperties> &supportedLayers)
     {
-        for (auto &layerName : externalLayerNames)
+        for (auto &layer : externalLayers)
         {
             for (auto &supportedLayer : supportedLayers)
             {
-                if (layerName == supportedLayer.layerName)
+                if (layer == supportedLayer.layerName)
                 {
-                    activeLayers.push_back(supportedLayer.layerName);
-                    LOGI("Found external layerName: %s\n", supportedLayer.layerName);
+                    activeInstanceLayers.push_back(supportedLayer.layerName);
+                    LOGI("Found external layer: %s\n", supportedLayer.layerName);
                     break;
                 }
             }
         }
     }
 
-    Result initVulkan(
-        const SwapChainDimensions &swapChainDimensions, // change to screendimensions?
-        const std::vector<const char *> &instanceExtensions,
-        const std::vector<const char *> &deviceExtensions);
+    /// @brief Explicit tears down the swapchain.
+    void destroySwapChain();
 
   private:
-    std::shared_ptr<VulkanSwapChain> swapChain;
-
+    /// vulkan surface
     VkSurfaceKHR surface;
 
-    VkDebugReportCallbackEXT debug_callback;
+    /// swapchain
+    VkSwapchainKHR swapChain;
+    SwapChainDimensions swapChainDimensions;
+    std::vector<VkImage> swapChainImages;
 
+    Result initInstanceExtensions(
+        const std::vector<const char *> &requiredInstanceExtensions);
+
+    Result initDeviceExtensions(
+        const std::vector<const char *> &requiredDeviceExtensions);
+
+    Result initInstance();
+    Result initDevice(
+        const std::vector<const char *> &requiredDeviceExtensions);
+    Result initPhysicalDevice();
+
+    Result initSwapChain(const SwapChainDimensions &dim);
+
+    virtual Result initWindow() = 0;
     virtual VkSurfaceKHR createSurface() = 0;
-    Result loadDeviceSymbols();
-    Result loadInstanceSymbols();
 
-    bool validateExtensions(
-        const std::vector<const char *> &requiredExtensions,
-        const std::vector<VkExtensionProperties> &availableExtensions);
+    Result initQueueFamilyIndices();
+
+    void initDebugReport();
+
+    bool validateExtensions(const std::vector<const char *> &requiredExtensions,
+                            const std::vector<VkExtensionProperties> &availableExtensions);
+
+    Result loadInstanceSymbols();
+    Result loadDeviceSymbols();
 };
 
 } // namespace Tobi

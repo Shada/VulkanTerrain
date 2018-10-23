@@ -1,5 +1,8 @@
 #include "VulkanVertexBuffer.hpp"
 
+#include <cstring>
+#include <cassert>
+
 #include "AssertTypeDefine.hpp"
 
 namespace Tobi

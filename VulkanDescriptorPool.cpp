@@ -1,5 +1,7 @@
 #include "VulkanDescriptorPool.hpp"
 
+#include <cassert>
+
 #include "Utils/AssertTypeDefine.hpp"
 
 namespace Tobi

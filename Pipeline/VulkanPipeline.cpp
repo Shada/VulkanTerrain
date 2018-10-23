@@ -1,4 +1,8 @@
 #include "VulkanPipeline.hpp"
+
+#include <cassert>
+#include <cstring>
+
 #include "AssertTypeDefine.hpp"
 #include "util.hpp"
 

@@ -1,5 +1,7 @@
 #include "VulkanUniformBuffer.hpp"
 
+#include <cstring>
+
 #include "AssertTypeDefine.hpp"
 
 namespace Tobi

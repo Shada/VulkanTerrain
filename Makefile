@@ -1,25 +1,15 @@
 CC=gcc
 CXX=g++
-CXXFLAGS=-I. -I$(VULKAN_SDK)/include -I/home/admin/Documents/Programming/vulkan/glslang/install/include -I./Utils -DVK_USE_PLATFORM_XCB_KHR 
+CXXFLAGS=-I. -I./stub -I$(VULKAN_SDK)/include -I/home/admin/Documents/Programming/vulkan/glslang/install/include -DVK_USE_PLATFORM_XCB_KHR 
 
-UTILFILES=Utils/glslanghelper.hpp
-PIPEFILES=Pipeline/VulkanPipeline.hpp Pipeline/VulkanPipelineCache.hpp 
-BUFFILES=Buffers/VulkanVertexBuffer.hpp Buffers/VulkanFrameBuffers.hpp Buffers/VulkanUniformBuffer.hpp Buffers/VulkanDepthBuffer.hpp 
-BASEFILES=Camera.hpp VulkanRenderPass.hpp Platform.hpp PlatformXcb.hpp VulkanDescriptorPool.hpp VulkanSwapChain.hpp VulkanCore.hpp WindowXcb.hpp 
-CMDFILES=Command/VulkanCommandBuffer.hpp Command/VulkanCommandPool.hpp 
-SDRFILES=Shader/VulkanShaderProgram.hpp 
+BASEFILES= Platform.hpp PlatformXcb.hpp libvulkan-loader.hpp
 DEPS=$(BASEFILES) $(UTILFILES) $(PIPEFILES) $(BUFFILES) $(CMDFILES)
 
-UTILOBJ=obj/Utils/glslanghelper.o 
-PIPEOBJ=obj/Pipeline/VulkanPipeline.o obj/Pipeline/VulkanPipelineCache.o 
-BUFOBJ=obj/Buffers/VulkanVertexBuffer.o obj/Buffers/VulkanFrameBuffers.o obj/Buffers/VulkanUniformBuffer.o obj/Buffers/VulkanDepthBuffer.o 
-BASEOBJ=obj/Camera.o obj/VulkanRenderPass.o obj/Platform.o obj/PlatformXcb.o obj/VulkanDescriptorPool.o obj/VulkanSwapChain.o obj/VulkanCore.o obj/WindowXcb.o 
-CMDOBJ=obj/Command/VulkanCommandBuffer.o obj/Command/VulkanCommandPool.o 
-SDROBJ=obj/Shader/VulkanShaderProgram.o 
+BASEOBJ= obj/Platform.o obj/PlatformXcb.o obj/libvulkan-loader.o
 OBJ=$(BASEOBJ) $(UTILOBJ) $(PIPEOBJ) $(BUFOBJ) $(CMDOBJ) $(SDROBJ)
 
 obj/%.o: %.cpp $(DEPS)
-	$(CXX) -c -o$@ $< $(CXXFLAGS) -std=c++17 -O3
+	$(CXX) -c -g -o$@ $< $(CXXFLAGS) -std=c++17 -O3
 
 TobiGame.out: $(OBJ)
-	$(CXX) -o $@ $^ -std=c++17 -O3 main.cpp -I$(VULKAN_SDK)/include -L$(VULKAN_SDK)/lib -lxcb -lvulkan -lpthread -L/home/admin/Documents/Programming/vulkan/glslang/install/lib -lglslang -lHLSL -lSPIRV -lSPIRV-Tools-opt -lSPIRV-Tools
+	$(CXX) -o $@ $^ -g -std=c++17 -O3 main.cpp -I$(VULKAN_SDK)/include -L$(VULKAN_SDK)/lib -ldl -lxcb -lxcb-util -lvulkan -lpthread -L/home/admin/Documents/Programming/vulkan/glslang/install/lib -lglslang -lHLSL -lSPIRV -lSPIRV-Tools-opt -lSPIRV-Tools

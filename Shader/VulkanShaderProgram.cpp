@@ -1,11 +1,12 @@
 #include "VulkanShaderProgram.hpp"
 
-#include "VertexShaderText.hpp"
-#include "FragmentShaderText.hpp"
+#include <cassert>
+#include <iostream>
 
 #include "AssertTypeDefine.hpp"
+#include "FragmentShaderText.hpp"
 #include "glslanghelper.hpp"
-#include <iostream>
+#include "VertexShaderText.hpp"
 
 namespace Tobi
 {

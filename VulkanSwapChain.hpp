@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vector>
-#include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan.h>
 
 #include "WindowXcb.hpp"
 #include "EventDispatcher.hpp"

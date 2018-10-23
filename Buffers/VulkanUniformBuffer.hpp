@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan.h>
 #include <glm/glm.hpp>
 
 #include "../WindowXcb.hpp"
