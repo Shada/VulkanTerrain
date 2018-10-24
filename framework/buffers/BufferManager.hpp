@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Common.hpp"
-#include "../platform/Platform.hpp"
+#include "../Common.hpp"
+#include "../../platform/Platform.hpp"
 
 namespace Tobi
 {

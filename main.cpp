@@ -2,8 +2,8 @@
 #include <iostream>
 
 #include "platform/xcb/PlatformXcb.hpp"
-#include "framework/Model.hpp"
-#include "framework/VertexBuffer.hpp"
+#include "framework/model/Model.hpp"
+#include "framework/buffers/VertexBufferManager.hpp"
 
 namespace Tobi
 {
@@ -14,7 +14,7 @@ int run()
 
     auto model = std::make_shared<Model>();
 
-    auto vertexBuffer = std::make_shared<VertexBuffer>(platform);
+    auto vertexBuffer = std::make_shared<VertexBufferManager>(platform);
 
     vertexBuffer->createBuffer(
         model->getVertexData(),

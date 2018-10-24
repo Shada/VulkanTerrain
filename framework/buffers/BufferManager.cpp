@@ -27,7 +27,6 @@ const Buffer &BufferManager::createBuffer(
     VkFlags usageFlags)
 {
     auto result = VK_SUCCESS;
-    auto pass = true;
 
     Buffer buffer;
 
@@ -41,8 +40,7 @@ const Buffer &BufferManager::createBuffer(
     bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     bufferCreateInfo.flags = 0;
 
-    result = vkCreateBuffer(platform->getDevice(), &bufferCreateInfo, nullptr, &buffer.buffer);
-    assert(result == VK_SUCCESS);
+    VK_CHECK(vkCreateBuffer(platform->getDevice(), &bufferCreateInfo, nullptr, &buffer.buffer));
 
     VkMemoryRequirements memoryRequirements;
     vkGetBufferMemoryRequirements(platform->getDevice(), buffer.buffer, &memoryRequirements);
@@ -56,21 +54,17 @@ const Buffer &BufferManager::createBuffer(
     memoryAllocationInfo.memoryTypeIndex = platform->findMemoryTypeFromRequirements(
         memoryRequirements.memoryTypeBits,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    assert(pass && "No mappable, coherent memory");
 
-    result = vkAllocateMemory(platform->getDevice(), &memoryAllocationInfo, nullptr, &(buffer.memory));
-    assert(result == VK_SUCCESS);
+    VK_CHECK(vkAllocateMemory(platform->getDevice(), &memoryAllocationInfo, nullptr, &(buffer.memory)));
 
     uint8_t *pData;
-    result = vkMapMemory(platform->getDevice(), buffer.memory, 0, memoryRequirements.size, 0, (void **)&pData);
-    assert(result == VK_SUCCESS);
+    VK_CHECK(vkMapMemory(platform->getDevice(), buffer.memory, 0, memoryRequirements.size, 0, (void **)&pData));
 
     memcpy(pData, data, dataSize);
 
     vkUnmapMemory(platform->getDevice(), buffer.memory);
 
-    result = vkBindBufferMemory(platform->getDevice(), buffer.buffer, buffer.memory, 0);
-    assert(result == VK_SUCCESS);
+    VK_CHECK(vkBindBufferMemory(platform->getDevice(), buffer.buffer, buffer.memory, 0));
 
     buffer.bufferInfo.buffer = buffer.buffer;
     buffer.bufferInfo.offset = 0;
