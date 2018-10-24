@@ -1,4 +1,4 @@
-#include "PlatformXcb.hpp"
+#include "platform/xcb/PlatformXcb.hpp"
 
 namespace Tobi
 {

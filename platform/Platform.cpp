@@ -1,9 +1,9 @@
-#include "Platform.hpp"
+#include "platform/Platform.hpp"
 
 #include <iostream>
 #include <vector>
 
-#include "../libvulkan-loader.hpp"
+#include "libvulkan-loader.hpp"
 
 #ifdef FORCE_NO_VALIDATION
 #define ENABLE_VALIDATION_LAYERS 0
@@ -69,6 +69,8 @@ Platform::Platform()
     : instance(VK_NULL_HANDLE),
       physicalDevice(VK_NULL_HANDLE),
       logicalDevice(VK_NULL_HANDLE),
+      context(std::make_shared<Context>()),
+      semaphoreManager(nullptr),
       externalLayers(std::vector<std::string>()),
       queueFamilyProperties(std::vector<VkQueueFamilyProperties>()),
       useInstanceExtensions(true),
@@ -103,6 +105,10 @@ void Platform::terminate()
     // Don't release anything until the GPU is completely idle.
     if (logicalDevice)
         vkDeviceWaitIdle(logicalDevice);
+
+    semaphoreManager->terminate();
+
+    context->terminate();
 
     destroySwapChain();
 
@@ -215,6 +221,12 @@ Result Platform::initVulkan(
         LOGE("Failed to init swapchain.");
         return result;
     }
+
+    result = context->onPlatformUpdate(this);
+    if (FAILED(result))
+        return result;
+
+    semaphoreManager = std::make_unique<SemaphoreManager>(logicalDevice);
 
     return RESULT_SUCCESS;
 }

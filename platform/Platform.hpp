@@ -3,6 +3,8 @@
 #include <vulkan/vulkan.hpp>
 
 #include "../framework/Common.hpp"
+#include "../framework/Context.hpp"
+#include "../framework/SemaphoreManager.hpp"
 
 namespace Tobi
 {
@@ -67,6 +69,31 @@ class Platform
         return pExternalDebugCallbackUserData;
     }
 
+    inline const uint32_t getGraphicsQueueIndex() const
+    {
+        return graphicsQueueIndex;
+    }
+
+    inline const VkQueue &getGraphicsQueue() const
+    {
+        return graphicsQueue;
+    }
+
+    inline const VkDevice &getDevice() const
+    {
+        return logicalDevice;
+    }
+
+    inline const VkPhysicalDevice &getPhysicalDevice() const
+    {
+        return physicalDevice;
+    }
+
+    inline const uint32_t getNumSwapchainImages() const
+    {
+        return static_cast<uint32_t>(swapChainImages.size());
+    }
+
     /// @brief Terminates the platform. Normally this would be handled by the
     /// destructor, but certain platforms
     /// need to be able to terminate before exit() and initialize multiple times.
@@ -100,6 +127,11 @@ class Platform
     VkQueue presentQueue;
     VkQueue computeQueue;
     VkQueue transferQueue;
+
+    /// The vulkan context
+    std::shared_ptr<Context> context;
+
+    std::unique_ptr<SemaphoreManager> semaphoreManager;
 
     /// List of external layers to load.
     std::vector<std::string> externalLayers;
