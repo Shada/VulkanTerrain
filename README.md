@@ -11,6 +11,9 @@ Only supports linux for now, but I will make sure to make it cross-platform even
 Build using make:
     make TobiGame.out
 
+In this branch I perform a big refurbishment where I take ideas from other projects (such as github.com/ARM-Software/vulkan-sdk)
+I modify the code to suit my code standards and my own project structure.
+
 
 TODO:
 * Add cmake. 
