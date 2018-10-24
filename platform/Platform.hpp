@@ -103,6 +103,31 @@ class Platform
     /// @returns Error code.
     virtual SwapChainDimensions getPreferredSwapChain() = 0;
 
+    // To create a buffer, both the device and application have requirements from
+    // the buffer object.
+    // Vulkan exposes the different types of buffers the device can allocate, and we
+    // have to find a suitable one.
+    // deviceRequirements is a bitmask expressing which memory types can be used for
+    // a buffer object.
+    // The different memory types' properties must match with what the application
+    // wants.
+    uint32_t findMemoryTypeFromRequirements(uint32_t deviceRequirements, uint32_t hostRequirements)
+    {
+        for (uint32_t i = 0; i < VK_MAX_MEMORY_TYPES; i++)
+        {
+            if (deviceRequirements & (1u << i))
+            {
+                if ((gpuMemoryProperties.memoryTypes[i].propertyFlags & hostRequirements) == hostRequirements)
+                {
+                    return i;
+                }
+            }
+        }
+
+        LOGE("Failed to obtain suitable memory type.\n");
+        abort();
+    }
+
   protected:
     /// The Vulkan instance.
     VkInstance instance;

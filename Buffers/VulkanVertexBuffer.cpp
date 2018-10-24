@@ -36,8 +36,8 @@ VulkanVertexBuffer::~VulkanVertexBuffer()
 
 void VulkanVertexBuffer::initVertexBuffer()
 {
-    VkResult U_ASSERT_ONLY result;
-    bool U_ASSERT_ONLY pass;
+    auto result = VK_SUCCESS;
+    auto pass = true;
 
     VkBufferCreateInfo bufferCreateInfo = {};
     bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -58,8 +58,8 @@ void VulkanVertexBuffer::initVertexBuffer()
     memoryAllocationInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     memoryAllocationInfo.pNext = nullptr;
     memoryAllocationInfo.memoryTypeIndex = 0;
-
     memoryAllocationInfo.allocationSize = memoryRequirements.size;
+
     pass = window->memoryTypeFromProperties(memoryRequirements.memoryTypeBits,
                                             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                                             &memoryAllocationInfo.memoryTypeIndex);
@@ -67,8 +67,6 @@ void VulkanVertexBuffer::initVertexBuffer()
 
     result = vkAllocateMemory(window->getDevice(), &memoryAllocationInfo, nullptr, &(memory));
     assert(result == VK_SUCCESS);
-    bufferInfo.range = memoryRequirements.size;
-    bufferInfo.offset = 0;
 
     uint8_t *pData;
     result = vkMapMemory(window->getDevice(), memory, 0, memoryRequirements.size, 0, (void **)&pData);
@@ -80,6 +78,10 @@ void VulkanVertexBuffer::initVertexBuffer()
 
     result = vkBindBufferMemory(window->getDevice(), buffer, memory, 0);
     assert(result == VK_SUCCESS);
+
+    bufferInfo.buffer = buffer;
+    bufferInfo.offset = 0;
+    bufferInfo.range = dataSize;
 
     vertexInputBinding.binding = 0;
     vertexInputBinding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;

@@ -27,8 +27,8 @@ VulkanUniformBuffer::~VulkanUniformBuffer()
 
 void VulkanUniformBuffer::initUniformBuffer()
 {
-    VkResult U_ASSERT_ONLY result = VK_SUCCESS;
-    bool U_ASSERT_ONLY pass = true;
+    auto result = VK_SUCCESS;
+    auto pass = true;
 
     VkBufferCreateInfo bufferCreateInfo = {};
     bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
