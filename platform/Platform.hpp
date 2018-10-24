@@ -94,6 +94,8 @@ class Platform
         return static_cast<uint32_t>(swapChainImages.size());
     }
 
+    Result acquireNextImage();
+
     /// @brief Terminates the platform. Normally this would be handled by the
     /// destructor, but certain platforms
     /// need to be able to terminate before exit() and initialize multiple times.
@@ -215,6 +217,7 @@ class Platform
     VkSwapchainKHR swapChain;
     SwapChainDimensions swapChainDimensions;
     std::vector<VkImage> swapChainImages;
+    uint32_t currentSwapChainIndex;
 
     Result initInstanceExtensions(
         const std::vector<const char *> &requiredInstanceExtensions);

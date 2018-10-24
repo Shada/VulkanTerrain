@@ -72,7 +72,7 @@ const uint32_t BufferManager::createBuffer(
     buffer.bufferInfo.offset = 0;
     buffer.bufferInfo.range = dataSize;
 
-    buffers.insert(std::pair<uint32_t, Buffer>(idCounter, buffer));
+    buffers.insert({idCounter, buffer});
 
     return idCounter++;
 }

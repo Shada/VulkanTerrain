@@ -79,6 +79,7 @@ Platform::Platform()
       surface(VK_NULL_HANDLE),
       swapChain(VK_NULL_HANDLE),
       swapChainImages(std::vector<VkImage>()),
+      currentSwapChainIndex(0),
       activeInstanceExtensions(std::vector<const char *>()),
       activeInstanceLayers(std::vector<const char *>()),
       debugReportCallback(VK_NULL_HANDLE),
@@ -138,6 +139,47 @@ void Platform::terminate()
     }
 
     vulkanSymbolWrapperUnload();
+}
+
+Result Platform::acquireNextImage()
+{
+    auto acquireSemaphore = semaphoreManager->getClearedSemaphore();
+    VkResult res = vkAcquireNextImageKHR(logicalDevice, swapChain, UINT64_MAX, acquireSemaphore, VK_NULL_HANDLE, &currentSwapChainIndex);
+
+    if (res == VK_SUBOPTIMAL_KHR || res == VK_ERROR_OUT_OF_DATE_KHR)
+    {
+        vkQueueWaitIdle(queue);
+        semaphoreManager->addClearedSemaphore(acquireSemaphore);
+
+        // Recreate swapchain.
+        if (SUCCEEDED(initSwapchain(swapChainDimensions)))
+            return RESULT_ERROR_OUTDATED_SWAPCHAIN;
+        else
+            return RESULT_ERROR_GENERIC;
+    }
+    else if (res != VK_SUCCESS)
+    {
+        vkQueueWaitIdle(graphicsQueue);
+        vkQueueWaitIdle(computeQueue);
+        semaphoreManager->addClearedSemaphore(acquireSemaphore);
+        return RESULT_ERROR_GENERIC;
+    }
+    else
+    {
+        // Signal the underlying context that we're using this backbuffer now.
+        // This will also wait for all fences associated with this swapchain image
+        // to complete first.
+        // When submitting command buffer that writes to swapchain, we need to wait
+        // for this semaphore first.
+        // Also, delete the older semaphore.
+        auto oldSemaphore = context->beginFrame(currentSwapChainIndex, acquireSemaphore);
+
+        // Recycle the old semaphore back into the semaphore manager.
+        if (oldSemaphore != VK_NULL_HANDLE)
+            semaphoreManager->addClearedSemaphore(oldSemaphore);
+
+        return RESULT_SUCCESS;
+    }
 }
 
 Result Platform::initVulkan(
