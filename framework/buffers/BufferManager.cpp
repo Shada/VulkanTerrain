@@ -5,23 +5,24 @@ namespace Tobi
 
 BufferManager::BufferManager(std::shared_ptr<Platform> platform)
     : platform(platform),
-      buffers(std::vector<Buffer>())
+      buffers(std::map<uint32_t, Buffer>())
 {
 }
 
 BufferManager::~BufferManager()
 {
-    for (auto &buffer : buffers)
+    for (auto iter = buffers.begin(); iter != buffers.end(); ++iter)
     {
-        if (buffer.buffer)
+
+        if ((*iter).second.buffer)
         {
-            vkDestroyBuffer(platform->getDevice(), buffer.buffer, nullptr);
-            vkFreeMemory(platform->getDevice(), buffer.memory, nullptr);
+            vkDestroyBuffer(platform->getDevice(), (*iter).second.buffer, nullptr);
+            vkFreeMemory(platform->getDevice(), (*iter).second.memory, nullptr);
         }
     }
 }
 
-const Buffer &BufferManager::createBuffer(
+const uint32_t BufferManager::createBuffer(
     const void *data,
     const uint32_t dataSize,
     VkFlags usageFlags)
@@ -57,22 +58,23 @@ const Buffer &BufferManager::createBuffer(
 
     VK_CHECK(vkAllocateMemory(platform->getDevice(), &memoryAllocationInfo, nullptr, &(buffer.memory)));
 
-    uint8_t *pData;
-    VK_CHECK(vkMapMemory(platform->getDevice(), buffer.memory, 0, memoryRequirements.size, 0, (void **)&pData));
-
-    memcpy(pData, data, dataSize);
-
-    vkUnmapMemory(platform->getDevice(), buffer.memory);
-
     VK_CHECK(vkBindBufferMemory(platform->getDevice(), buffer.buffer, buffer.memory, 0));
+
+    if (data)
+    {
+        uint8_t *pData;
+        VK_CHECK(vkMapMemory(platform->getDevice(), buffer.memory, 0, memoryRequirements.size, 0, (void **)&pData));
+        memcpy(pData, data, dataSize);
+        vkUnmapMemory(platform->getDevice(), buffer.memory);
+    }
 
     buffer.bufferInfo.buffer = buffer.buffer;
     buffer.bufferInfo.offset = 0;
     buffer.bufferInfo.range = dataSize;
 
-    buffers.push_back(buffer);
+    buffers.insert(std::pair<uint32_t, Buffer>(idCounter, buffer));
 
-    return buffers.back();
+    return idCounter++;
 }
 
 } // namespace Tobi

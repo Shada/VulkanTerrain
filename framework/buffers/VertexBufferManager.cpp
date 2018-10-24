@@ -9,7 +9,7 @@ VertexBufferManager::VertexBufferManager(
 {
 }
 
-const Buffer &VertexBufferManager::createBuffer(
+const uint32_t VertexBufferManager::createBuffer(
     const void *data,
     const uint32_t dataSize)
 {

@@ -10,7 +10,7 @@ class VertexBufferManager : public BufferManager
     VertexBufferManager(std::shared_ptr<Platform> platform);
     ~VertexBufferManager() = default;
 
-    const Buffer &createBuffer(
+    const uint32_t createBuffer(
         const void *data,
         const uint32_t dataSize);
 };
