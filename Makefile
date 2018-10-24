@@ -1,12 +1,16 @@
 CC=gcc
 CXX=g++
-CXXFLAGS=-I. -I./stub -I$(VULKAN_SDK)/include -I/home/admin/Documents/Programming/vulkan/glslang/install/include -DVK_USE_PLATFORM_XCB_KHR 
+CXXFLAGS=-I. -Iplatform -Iframework -I$(VULKAN_SDK)/include -I/home/admin/Documents/Programming/vulkan/glslang/install/include -DVK_USE_PLATFORM_XCB_KHR 
 
-BASEFILES= Platform.hpp PlatformXcb.hpp libvulkan-loader.hpp
+PLATFORMFILES = platform/Platform.hpp platform/xcb/PlatformXcb.hpp
+#FRAMEWORKFILES = framework/Context.hpp framework/CommandBufferManager.hpp framework/FenceManager.hpp framework/SemaphoreManager.hpp
+BASEFILES =  libvulkan-loader.hpp
 DEPS=$(BASEFILES) $(UTILFILES) $(PIPEFILES) $(BUFFILES) $(CMDFILES)
 
-BASEOBJ= obj/Platform.o obj/PlatformXcb.o obj/libvulkan-loader.o
-OBJ=$(BASEOBJ) $(UTILOBJ) $(PIPEOBJ) $(BUFOBJ) $(CMDOBJ) $(SDROBJ)
+PLATFORMFILES = obj/platform/Platform.o obj/platform/xcb/PlatformXcb.o 
+#FRAMEWORKFILES = obj/framework/Context.o obj/framework/CommandBufferManager.o obj/framework/FenceManager.o obj/framework/SemaphoreManager.o
+BASEOBJ = obj/libvulkan-loader.o
+OBJ=$(BASEOBJ) $(PLATFORMFILES) $(FRAMEWORKFILES)
 
 obj/%.o: %.cpp $(DEPS)
 	$(CXX) -c -g -o$@ $< $(CXXFLAGS) -std=c++17 -O3
