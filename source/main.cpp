@@ -23,7 +23,7 @@ int init()
 
     vertexBuffer->createBuffer(
         model->getVertexData(),
-        model->getVertexCount());
+        model->getVertexDataSize());
 
     auto context = platform->getContext();
 

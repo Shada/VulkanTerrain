@@ -27,7 +27,10 @@ class BufferManager
         const uint32_t dataSize,
         VkFlags usageFlags);
 
-    const Buffer &getBuffer(uint32_t index) { return buffers[index]; }
+    const Buffer &getBuffer(uint32_t index)
+    {
+        return buffers[index];
+    }
 
   private:
     std::shared_ptr<Platform> platform;
