@@ -1,25 +1,22 @@
 CC=gcc
 CXX=g++
-CXXFLAGS=-I. -I$(VULKAN_SDK)/include -I/home/admin/Documents/Programming/vulkan/glslang/install/include -I./Utils -DVK_USE_PLATFORM_XCB_KHR 
+CXXFLAGS=-Isource/. -Isource/platform -Isource/framework -I$(VULKAN_SDK)/include -I/home/admin/Documents/Programming/vulkan/glslang/install/include -DVK_USE_PLATFORM_XCB_KHR 
 
-UTILFILES=Utils/glslanghelper.hpp
-PIPEFILES=Pipeline/VulkanPipeline.hpp Pipeline/VulkanPipelineCache.hpp 
-BUFFILES=Buffers/VulkanVertexBuffer.hpp Buffers/VulkanFrameBuffers.hpp Buffers/VulkanUniformBuffer.hpp Buffers/VulkanDepthBuffer.hpp 
-BASEFILES=Camera.hpp VulkanRenderPass.hpp VulkanDescriptorPool.hpp VulkanSwapChain.hpp VulkanCore.hpp WindowXcb.hpp 
-CMDFILES=Command/VulkanCommandBuffer.hpp Command/VulkanCommandPool.hpp 
-SDRFILES=Shader/VulkanShaderProgram.hpp 
+PLATFORMFILES = source/platform/Platform.hpp source/platform/xcb/PlatformXcb.hpp source/platform/AssetManager.hpp
+FRAMEWORKFILES = source/framework/Context.hpp source/framework/CommandBufferManager.hpp source/framework/FenceManager.hpp \
+	source/framework/SemaphoreManager.hpp source/framework/model/Model.hpp source/framework/buffers/VertexBufferManager.hpp source/framework/buffers/BufferManager.hpp 
+	
+BASEFILES =  source/libvulkan-loader.hpp
 DEPS=$(BASEFILES) $(UTILFILES) $(PIPEFILES) $(BUFFILES) $(CMDFILES)
 
-UTILOBJ=obj/Utils/glslanghelper.o 
-PIPEOBJ=obj/Pipeline/VulkanPipeline.o obj/Pipeline/VulkanPipelineCache.o 
-BUFOBJ=obj/Buffers/VulkanVertexBuffer.o obj/Buffers/VulkanFrameBuffers.o obj/Buffers/VulkanUniformBuffer.o obj/Buffers/VulkanDepthBuffer.o 
-BASEOBJ=obj/Camera.o obj/VulkanRenderPass.o obj/VulkanDescriptorPool.o obj/VulkanSwapChain.o obj/VulkanCore.o obj/WindowXcb.o 
-CMDOBJ=obj/Command/VulkanCommandBuffer.o obj/Command/VulkanCommandPool.o 
-SDROBJ=obj/Shader/VulkanShaderProgram.o 
-OBJ=$(BASEOBJ) $(UTILOBJ) $(PIPEOBJ) $(BUFOBJ) $(CMDOBJ) $(SDROBJ)
+PLATFORMFILES = obj/source/platform/Platform.o obj/source/platform/xcb/PlatformXcb.o obj/source/platform/AssetManager.o
+FRAMEWORKFILES = obj/source/framework/Context.o obj/source/framework/CommandBufferManager.o obj/source/framework/FenceManager.o \
+	obj/source/framework/SemaphoreManager.o  obj/source/framework/model/Model.o obj/source/framework/buffers/VertexBufferManager.o obj/source/framework/buffers/BufferManager.o
+BASEOBJ = obj/source/libvulkan-loader.o
+OBJ=$(BASEOBJ) $(PLATFORMFILES) $(FRAMEWORKFILES)
 
 obj/%.o: %.cpp $(DEPS)
-	$(CXX) -c -o$@ $< $(CXXFLAGS) -std=c++17 -O3
+	$(CXX) -c -g -o$@ $< $(CXXFLAGS) -std=c++17 
 
 TobiGame.out: $(OBJ)
-	$(CXX) -o $@ $^ -std=c++17 -O3 main.cpp -I$(VULKAN_SDK)/include -L$(VULKAN_SDK)/lib -lxcb -lxcb-util -lvulkan -lpthread -L/home/admin/Documents/Programming/vulkan/glslang/install/lib -lglslang -lHLSL -lSPIRV -lSPIRV-Tools-opt -lSPIRV-Tools
+	$(CXX) -o $@ $^ -g -std=c++17  source/main.cpp -I$(VULKAN_SDK)/include -L$(VULKAN_SDK)/lib -ldl -lxcb -lxcb-util -lvulkan -lpthread -L/home/admin/Documents/Programming/vulkan/glslang/install/lib -lglslang -lHLSL -lSPIRV -lSPIRV-Tools-opt -lSPIRV-Tools
