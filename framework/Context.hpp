@@ -55,6 +55,7 @@ class Context
     ~Context();
 
     void terminate();
+    void terminateBackBuffers();
 
     /// @brief Called by the platform internally when platform either initializes
     /// itself
@@ -63,34 +64,6 @@ class Context
     /// @param pPlatform The underlying Vulkan platform.
     /// @returns Error code
     Result onPlatformUpdate(Platform *pPlatform);
-
-    /// @brief Get the Vulkan device assigned to the context.
-    /// @returns Vulkan device
-    // NOTE: I probably don't want the device to be exposed.
-    VkDevice getDevice()
-    {
-        return device;
-    }
-
-    /// @brief Gets the Vulkan physical device assigned to the context.
-    /// @returns Vulkan physical device
-    // NOTE: I probably don't want the device to be exposed.
-    VkPhysicalDevice getPhysicalDevice() const;
-
-    /// @brief Get the Vulkan graphics queue assigned to the context.
-    /// @returns Vulkan queue
-    VkQueue getGraphicsQueue()
-    {
-        return queue;
-    }
-
-    /// @brief Gets the current platform.
-    /// @returns A reference to the platform
-    // NOTE: I probably don't want the platform to be exposed.
-    Platform &getPlatform()
-    {
-        return *pPlatform;
-    }
 
     /// @brief Requests a reset primary command buffer.
     ///
@@ -198,7 +171,6 @@ class Context
     /// called when swapchain has been created/recreated
     void updateSwapChain();
 
-    void terminateBackBuffers();
     void initRenderPass(VkFormat format);
     void initPipeline();
 

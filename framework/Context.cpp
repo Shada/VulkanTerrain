@@ -367,11 +367,6 @@ void Context::PerFrame::setSecondaryCommandManagersCount(uint32_t count)
     }
 }
 
-VkPhysicalDevice Context::getPhysicalDevice() const
-{
-    return pPlatform->getPhysicalDevice();
-}
-
 VkSemaphore Context::PerFrame::setSwapchainAcquireSemaphore(VkSemaphore acquireSemaphore)
 {
     VkSemaphore ret = swapchainAcquireSemaphore;
