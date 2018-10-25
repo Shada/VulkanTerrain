@@ -21,7 +21,7 @@
 #include "Context.hpp"
 #include "../platform/Platform.hpp"
 
-#include "Vertex.hpp"
+#include "model/Vertex.hpp"
 
 namespace Tobi
 {
