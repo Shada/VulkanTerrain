@@ -20,6 +20,10 @@ int run()
         model->getVertexData(),
         model->getVertexCount());
 
+    auto context = platform->getContext();
+
+    context->updateSwapChain();
+
     return 1;
 }
 

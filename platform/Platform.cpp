@@ -98,7 +98,6 @@ Platform::Platform()
 
 Platform::~Platform()
 {
-    terminate();
 }
 
 void Platform::terminate()
@@ -148,11 +147,12 @@ Result Platform::acquireNextImage()
 
     if (res == VK_SUBOPTIMAL_KHR || res == VK_ERROR_OUT_OF_DATE_KHR)
     {
-        vkQueueWaitIdle(queue);
+        vkQueueWaitIdle(graphicsQueue);
+        vkQueueWaitIdle(computeQueue);
         semaphoreManager->addClearedSemaphore(acquireSemaphore);
 
         // Recreate swapchain.
-        if (SUCCEEDED(initSwapchain(swapChainDimensions)))
+        if (SUCCEEDED(initSwapChain(swapChainDimensions)))
             return RESULT_ERROR_OUTDATED_SWAPCHAIN;
         else
             return RESULT_ERROR_GENERIC;
@@ -180,6 +180,7 @@ Result Platform::acquireNextImage()
 
         return RESULT_SUCCESS;
     }
+    return RESULT_SUCCESS;
 }
 
 Result Platform::initVulkan(

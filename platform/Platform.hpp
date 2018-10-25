@@ -55,6 +55,10 @@ class Platform
         return instance;
     }
 
+    std::shared_ptr<Context> &getContext()
+    {
+        return context;
+    }
     /// @brief Returns the currently set debug callback.
     /// @returns The callback, or nullptr if not set.
     inline PFN_vkDebugReportCallbackEXT getExternalDebugCallback() const
@@ -93,6 +97,9 @@ class Platform
     {
         return static_cast<uint32_t>(swapChainImages.size());
     }
+
+    const SwapChainDimensions &getSwapChainDimensions() const { return swapChainDimensions; }
+    const std::vector<VkImage> &getSwapChainImages() const { return swapChainImages; }
 
     Result acquireNextImage();
 

@@ -27,9 +27,24 @@
 #include "FenceManager.hpp"
 #include "Common.hpp"
 
+#include "../platform/AssetManager.hpp"
+
 namespace Tobi
 {
 class Platform;
+
+struct BackBuffer
+{
+    // We get this image from the platform. Its memory is bound to the display or
+    // window.
+    VkImage image;
+
+    // We need an image view to be able to access the image as a framebuffer.
+    VkImageView view;
+
+    // The actual frameBuffer.
+    VkFramebuffer frameBuffer;
+};
 
 /// @brief The Context is the primary way for samples to interact
 /// with the swapchain and get rendered images to screen.
@@ -180,12 +195,26 @@ class Context
         return perFrame[swapchainIndex]->swapchainReleaseSemaphore;
     }
 
+    /// called when swapchain has been created/recreated
+    void updateSwapChain();
+
+    void terminateBackBuffers();
+    void initRenderPass(VkFormat format);
+    void initPipeline();
+
   private:
     Platform *pPlatform;
     VkDevice device;
     VkQueue queue;
     uint32_t swapchainIndex;
     uint32_t renderingThreadCount;
+
+    std::vector<BackBuffer> backBuffers;
+    VkRenderPass renderPass;
+    // TODO: move to pipeline class
+    VkPipelineCache pipelineCache;
+    VkPipeline pipeline;
+    VkPipelineLayout pipelineLayout;
 
     //TODO: move to separate file
     struct PerFrame
@@ -210,6 +239,8 @@ class Context
 
     void submitCommandBuffer(VkCommandBuffer, VkSemaphore acquireSemaphore, VkSemaphore releaseSemaphore);
     void waitIdle();
+
+    VkShaderModule loadShaderModule(VkDevice device, const char *pPath);
 };
 
 } // namespace Tobi
