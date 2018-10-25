@@ -120,4 +120,18 @@ Platform::Status PlatformXcb::getWindowStatus()
     return status;
 }
 
+Result PlatformXcb::presentImage(uint32_t index)
+{
+    handleEvents();
+
+    if (status == STATUS_RUNNING)
+    {
+        Result result = Platform::presentImage(index);
+        xcb_flush(connection);
+        return result;
+    }
+    else
+        return RESULT_SUCCESS;
+}
+
 } // namespace Tobi

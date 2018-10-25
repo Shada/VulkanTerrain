@@ -111,7 +111,7 @@ int run(std::shared_ptr<Platform> platform, std::shared_ptr<VertexBufferManager>
     auto startTime = OS::getCurrentTime();
 
     auto maxFrameCount = static_cast<uint32_t>(100);
-    auto useMaxFrameCount = true;
+    auto useMaxFrameCount = false;
     auto context = platform->getContext();
 
     while (platform->getWindowStatus() == Platform::STATUS_RUNNING)

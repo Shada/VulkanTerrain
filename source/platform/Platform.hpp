@@ -153,7 +153,7 @@ class Platform
     /// @param index The swapchain index previously obtained from @ref
     /// acquireNextImage.
     /// @returns Error code.
-    Result presentImage(uint32_t index);
+    virtual Result presentImage(uint32_t index);
 
   protected:
     /// The Vulkan instance.

@@ -24,7 +24,12 @@ class PlatformXcb : public Platform
     /// @returns Window status.
     virtual Status getWindowStatus() override;
 
-  protected:
+    /// @brief Presents an image to the swapchain.
+    /// @param index The swapchain index previously obtained from @ref
+    /// acquireNextImage.
+    /// @returns Error code.
+    virtual Result presentImage(uint32_t index) override;
+
   private:
     xcb_connection_t *connection;
     xcb_window_t window;
