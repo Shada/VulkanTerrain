@@ -98,15 +98,20 @@ class Platform
         return static_cast<uint32_t>(swapChainImages.size());
     }
 
+    /// @brief Gets current window status.
+    /// @returns Window status.
+    virtual Status getWindowStatus() = 0;
+
     const SwapChainDimensions &getSwapChainDimensions() const { return swapChainDimensions; }
     const std::vector<VkImage> &getSwapChainImages() const { return swapChainImages; }
 
-    Result acquireNextImage();
+    Result acquireNextImage(uint32_t &swapChainIndex);
 
     /// @brief Terminates the platform. Normally this would be handled by the
     /// destructor, but certain platforms
     /// need to be able to terminate before exit() and initialize multiple times.
-    virtual void terminate();
+    virtual void
+    terminate();
 
     /// @brief Gets the preferred swapchain size. Not relevant for all platforms.
     /// @returns Error code.
@@ -136,6 +141,12 @@ class Platform
         LOGE("Failed to obtain suitable memory type.\n");
         abort();
     }
+
+    /// @brief Presents an image to the swapchain.
+    /// @param index The swapchain index previously obtained from @ref
+    /// acquireNextImage.
+    /// @returns Error code.
+    Result presentImage(uint32_t index);
 
   protected:
     /// The Vulkan instance.
@@ -224,7 +235,6 @@ class Platform
     VkSwapchainKHR swapChain;
     SwapChainDimensions swapChainDimensions;
     std::vector<VkImage> swapChainImages;
-    uint32_t currentSwapChainIndex;
 
     Result initInstanceExtensions(
         const std::vector<const char *> &requiredInstanceExtensions);

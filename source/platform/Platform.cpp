@@ -79,7 +79,6 @@ Platform::Platform()
       surface(VK_NULL_HANDLE),
       swapChain(VK_NULL_HANDLE),
       swapChainImages(std::vector<VkImage>()),
-      currentSwapChainIndex(0),
       activeInstanceExtensions(std::vector<const char *>()),
       activeInstanceLayers(std::vector<const char *>()),
       debugReportCallback(VK_NULL_HANDLE),
@@ -140,10 +139,10 @@ void Platform::terminate()
     vulkanSymbolWrapperUnload();
 }
 
-Result Platform::acquireNextImage()
+Result Platform::acquireNextImage(uint32_t &swapChainIndex)
 {
     auto acquireSemaphore = semaphoreManager->getClearedSemaphore();
-    VkResult res = vkAcquireNextImageKHR(logicalDevice, swapChain, UINT64_MAX, acquireSemaphore, VK_NULL_HANDLE, &currentSwapChainIndex);
+    VkResult res = vkAcquireNextImageKHR(logicalDevice, swapChain, UINT64_MAX, acquireSemaphore, VK_NULL_HANDLE, &swapChainIndex);
 
     if (res == VK_SUBOPTIMAL_KHR || res == VK_ERROR_OUT_OF_DATE_KHR)
     {
@@ -172,7 +171,7 @@ Result Platform::acquireNextImage()
         // When submitting command buffer that writes to swapchain, we need to wait
         // for this semaphore first.
         // Also, delete the older semaphore.
-        auto oldSemaphore = context->beginFrame(currentSwapChainIndex, acquireSemaphore);
+        auto oldSemaphore = context->beginFrame(swapChainIndex, acquireSemaphore);
 
         // Recycle the old semaphore back into the semaphore manager.
         if (oldSemaphore != VK_NULL_HANDLE)
@@ -871,6 +870,27 @@ Result Platform::loadDeviceSymbols()
     if (!VULKAN_SYMBOL_WRAPPER_LOAD_DEVICE_EXTENSION_SYMBOL(logicalDevice, vkQueuePresentKHR))
         return RESULT_ERROR_GENERIC;
     return RESULT_SUCCESS;
+}
+
+Result Platform::presentImage(uint32_t index)
+{
+    VkResult result;
+    VkPresentInfoKHR present = {VK_STRUCTURE_TYPE_PRESENT_INFO_KHR};
+    present.swapchainCount = 1;
+    present.pSwapchains = &swapChain;
+    present.pImageIndices = &index;
+    present.pResults = &result;
+    present.waitSemaphoreCount = 1;
+    present.pWaitSemaphores = &context->getSwapchainReleaseSemaphore();
+
+    VkResult res = vkQueuePresentKHR(presentQueue, &present);
+
+    if (res == VK_SUBOPTIMAL_KHR || res == VK_ERROR_OUT_OF_DATE_KHR)
+        return RESULT_ERROR_OUTDATED_SWAPCHAIN;
+    else if (res != VK_SUCCESS)
+        return RESULT_ERROR_GENERIC;
+    else
+        return RESULT_SUCCESS;
 }
 
 } // namespace Tobi

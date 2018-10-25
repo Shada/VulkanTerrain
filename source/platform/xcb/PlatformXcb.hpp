@@ -20,6 +20,10 @@ class PlatformXcb : public Platform
     /// @returns Error code.
     virtual SwapChainDimensions getPreferredSwapChain() override;
 
+    /// @brief Gets current window status.
+    /// @returns Window status.
+    virtual Status getWindowStatus() override;
+
   protected:
   private:
     xcb_connection_t *connection;

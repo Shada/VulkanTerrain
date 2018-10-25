@@ -74,7 +74,7 @@ namespace OS
 
 /// @brief Get the current monotonic time in seconds.
 /// @returns Current time.
-//double getCurrentTime();
+double getCurrentTime();
 
 /// @brief Get the asset manager for the platform.
 /// @returns The asset manager.
@@ -82,7 +82,7 @@ AssetManager &getAssetManager();
 
 /// @brief Returns number of threads the CPU supports executing concurrently.
 /// @returns Number of CPU threads.
-//uint32_t getNumberOfCpuThreads();
+uint32_t getNumberOfCpuThreads();
 } // namespace OS
 
 } // namespace Tobi

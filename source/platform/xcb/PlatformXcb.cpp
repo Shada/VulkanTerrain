@@ -116,4 +116,9 @@ Platform::SwapChainDimensions PlatformXcb::getPreferredSwapChain()
     return swapChainDimensions;
 }
 
+Platform::Status PlatformXcb::getWindowStatus()
+{
+    return status;
+}
+
 } // namespace Tobi

@@ -33,6 +33,33 @@ AssetManager &OS::getAssetManager()
     return manager;
 }
 
+double OS::getCurrentTime()
+{
+    timespec ts;
+    if (clock_gettime(CLOCK_MONOTONIC, &ts) < 0)
+    {
+        LOGE("clock_gettime() failed.\n");
+        return 0.0;
+    }
+
+    return ts.tv_sec + ts.tv_nsec * 1e-9;
+}
+
+unsigned OS::getNumberOfCpuThreads()
+{
+    long cpus = sysconf(_SC_NPROCESSORS_ONLN);
+    if (cpus > 0)
+    {
+        LOGI("Detected %ld CPUs.\n", cpus);
+        return unsigned(cpus);
+    }
+    else
+    {
+        LOGE("Failed to detect number of CPUs, assuming 1.\n");
+        return 1;
+    }
+}
+
 AssetManager::AssetManager()
 {
     pid_t pid = getpid();

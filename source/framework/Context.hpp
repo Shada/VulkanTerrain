@@ -57,13 +57,19 @@ class Context
     void terminate();
     void terminateBackBuffers();
 
+    const BackBuffer &getBackBuffer(uint32_t index) { return backBuffers[index]; }
+
+    const VkRenderPass &getRenderPass() { return renderPass; }
+    const VkPipeline &getPipeline() { return pipeline; }
+
     /// @brief Called by the platform internally when platform either initializes
     /// itself
     /// or the swapchain has been recreated.
     ///
     /// @param pPlatform The underlying Vulkan platform.
     /// @returns Error code
-    Result onPlatformUpdate(Platform *pPlatform);
+    Result
+    onPlatformUpdate(Platform *pPlatform);
 
     /// @brief Requests a reset primary command buffer.
     ///
