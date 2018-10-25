@@ -15,7 +15,6 @@ PlatformXcb::PlatformXcb()
 
 PlatformXcb::~PlatformXcb()
 {
-
     terminate();
 }
 

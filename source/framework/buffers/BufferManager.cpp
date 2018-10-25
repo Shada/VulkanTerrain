@@ -13,7 +13,6 @@ BufferManager::~BufferManager()
 {
     for (auto iter = buffers.begin(); iter != buffers.end(); ++iter)
     {
-
         if ((*iter).second.buffer)
         {
             vkDestroyBuffer(platform->getDevice(), (*iter).second.buffer, nullptr);

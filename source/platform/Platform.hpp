@@ -98,6 +98,13 @@ class Platform
         return static_cast<uint32_t>(swapChainImages.size());
     }
 
+    void waitDeviceIdle()
+    {
+        if (logicalDevice != VK_NULL_HANDLE)
+        {
+            vkDeviceWaitIdle(logicalDevice);
+        }
+    }
     /// @brief Gets current window status.
     /// @returns Window status.
     virtual Status getWindowStatus() = 0;

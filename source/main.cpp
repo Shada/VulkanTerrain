@@ -11,17 +11,15 @@
 namespace Tobi
 {
 
-std::shared_ptr<Platform> platform;
-std::shared_ptr<Model> model;
-std::shared_ptr<VertexBufferManager> vertexBuffer;
+int run(std::shared_ptr<Platform>, std::shared_ptr<VertexBufferManager>);
 
 int init()
 {
-    platform = std::make_shared<PlatformXcb>();
+    auto platform = std::make_shared<PlatformXcb>();
 
-    model = std::make_shared<Model>();
+    auto model = std::make_shared<Model>();
 
-    vertexBuffer = std::make_shared<VertexBufferManager>(platform);
+    auto vertexBuffer = std::make_shared<VertexBufferManager>(platform);
 
     vertexBuffer->createBuffer(
         model->getVertexData(),
@@ -31,10 +29,12 @@ int init()
 
     context->updateSwapChain();
 
+    run(platform, vertexBuffer);
+
     return 0;
 }
 
-void render(uint32_t swapChainIndex, float time)
+void render(std::shared_ptr<Platform> platform, std::shared_ptr<VertexBufferManager> vertexBuffer, uint32_t swapChainIndex, float time)
 {
     auto context = platform->getContext();
     // Render to this backbuffer.
@@ -105,7 +105,7 @@ void render(uint32_t swapChainIndex, float time)
     context->submitSwapchain(cmd);
 }
 
-int run()
+int run(std::shared_ptr<Platform> platform, std::shared_ptr<VertexBufferManager> vertexBuffer)
 {
     auto frameCount = static_cast<uint32_t>(0);
     auto startTime = OS::getCurrentTime();
@@ -132,7 +132,7 @@ int run()
             break;
         }
 
-        render(swapChainIndex, 0.0166f);
+        render(platform, vertexBuffer, swapChainIndex, 0.0166f);
         result = platform->presentImage(swapChainIndex);
 
         // Handle Outdated error in acquire.
@@ -150,6 +150,7 @@ int run()
         if (useMaxFrameCount && (--maxFrameCount == 0))
             break;
     }
+    platform->waitDeviceIdle();
     return 0;
 }
 
@@ -159,7 +160,7 @@ int main()
 {
     Tobi::init();
 
-    Tobi::run();
+    //Tobi::run();
 
     return 0;
 }

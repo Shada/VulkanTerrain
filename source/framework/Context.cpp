@@ -48,7 +48,9 @@ void Context::terminate()
     {
         vkDeviceWaitIdle(device);
     }
+
     terminateBackBuffers();
+
     if (pipelineCache)
     {
         vkDestroyPipelineCache(device, pipelineCache, nullptr);
