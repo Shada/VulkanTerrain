@@ -40,7 +40,7 @@ class Context
     Result initialize();
 
   private:
-    Platform *platform;
+    std::unique_ptr<Platform> platform;
 };
 
 } // namespace Tobi

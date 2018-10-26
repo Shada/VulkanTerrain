@@ -3,10 +3,9 @@
 namespace Tobi
 {
 
-Platform &Platform::getInstance()
+std::unique_ptr<Platform> Platform::create()
 {
-    static PlatformXcb platform;
-    return platform;
+    return std::make_unique<PlatformXcb>();
 }
 
 PlatformXcb::PlatformXcb()
@@ -14,12 +13,27 @@ PlatformXcb::PlatformXcb()
       window(0),
       atom_delete_window(nullptr)
 {
-    LOGI("CONTRUCTING PlatformXcb\n");
+    LOGI("CONSTRUCTING PlatformXcb\n");
 }
 
 PlatformXcb::~PlatformXcb()
 {
-    LOGI("DECONTRUCTING PlatformXcb\n");
+    LOGI("DECONSTRUCTING PlatformXcb\n");
+
+    if (connection)
+    {
+        xcb_aux_sync(connection);
+        handleEvents();
+
+        Platform::terminate();
+
+        xcb_destroy_window(connection, window);
+        xcb_disconnect(connection);
+        free(atom_delete_window);
+        connection = nullptr;
+        window = 0;
+        atom_delete_window = nullptr;
+    }
 }
 
 void PlatformXcb::handleEvents()
@@ -105,4 +119,21 @@ Result PlatformXcb::initWindow()
     return RESULT_SUCCESS;
 }
 
+Result PlatformXcb::initSurface()
+{
+    PFN_vkCreateXcbSurfaceKHR fpCreateXcbSurfaceKHR;
+    if (!VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkCreateXcbSurfaceKHR", fpCreateXcbSurfaceKHR))
+    {
+        LOGE("Failed to load symbol vkCreateXcbSurfaceKHR");
+        return RESULT_ERROR_GENERIC;
+    }
+
+    VkXcbSurfaceCreateInfoKHR surfaceCreateInfo = {VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR};
+    surfaceCreateInfo.connection = connection;
+    surfaceCreateInfo.window = window;
+
+    VK_CHECK(fpCreateXcbSurfaceKHR(instance, &surfaceCreateInfo, nullptr, &surface));
+
+    return RESULT_SUCCESS;
+}
 } // namespace Tobi

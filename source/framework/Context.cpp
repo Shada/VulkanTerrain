@@ -27,14 +27,14 @@ namespace Tobi
 {
 
 Context::Context()
-    : platform(&Platform::getInstance())
+    : platform(Platform::create())
 {
-    LOGI("CONTRUCTING Context\n");
+    LOGI("CONSTRUCTING Context\n");
 }
 
 Context::~Context()
 {
-    LOGI("DECONTRUCTING Context\n");
+    LOGI("DECONSTRUCTING Context\n");
 }
 
 Result Context::initialize()
@@ -45,8 +45,13 @@ Result Context::initialize()
     {
         LOGE("Failed to initialize Platform\n");
     }
+
+    // attach context to the platform ?? does it need the context in any way?
+
+    // "onPlatformUpdate" things here
+
     LOGI("FINISHED INITIALIZING Context\n");
-    return result;
+    return RESULT_SUCCESS;
 }
 
 } // namespace Tobi

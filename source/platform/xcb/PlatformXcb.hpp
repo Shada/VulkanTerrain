@@ -23,6 +23,8 @@ class PlatformXcb : public Platform
 
     virtual Result initWindow() override;
 
+    virtual Result initSurface() override;
+
     void handleEvents();
 };
 
