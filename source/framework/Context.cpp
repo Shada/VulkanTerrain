@@ -45,9 +45,9 @@ Context::~Context()
 {
     LOGI("DECONSTRUCTING Context\n");
 
-    perFrame.clear();
-
     waitIdle();
+
+    perFrame.clear();
 
     terminateBackBuffers();
 
