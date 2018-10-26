@@ -30,6 +30,19 @@ namespace Tobi
 class Platform;
 class PerFrame;
 
+struct BackBuffer
+{
+    // We get this image from the platform. Its memory is bound to the display or
+    // window.
+    VkImage image;
+
+    // We need an image view to be able to access the image as a framebuffer.
+    VkImageView view;
+
+    // The actual frameBuffer.
+    VkFramebuffer frameBuffer;
+};
+
 /// @brief The Context is the primary way for samples to interact
 /// with the swapchain and get rendered images to screen.
 class Context
@@ -43,13 +56,27 @@ class Context
   private:
     std::unique_ptr<Platform> platform;
 
+    std::vector<BackBuffer> backBuffers;
+    VkRenderPass renderPass;
+
+    // TODO: move to pipeline class
     VkPipelineCache pipelineCache;
+    VkPipeline pipeline;
+    VkPipelineLayout pipelineLayout;
 
     std::vector<std::unique_ptr<PerFrame>> perFrame;
 
+    void terminateBackBuffers();
+
     Result onPlatformUpdate();
 
+    void updateSwapChain();
+    void initRenderPass(VkFormat format);
+    void initPipeline();
+
     void waitIdle();
+
+    VkShaderModule loadShaderModule(VkDevice device, const char *pPath);
 };
 
 } // namespace Tobi

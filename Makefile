@@ -5,14 +5,14 @@ CXXFLAGS=-Isource/. -Isource/platform -Isource/framework -I$(VULKAN_SDK)/include
 PFP = source/platform/
 FWP = source/framework/
 
-PLATFORMFILES = $(PFP)Platform.hpp $(PFP)xcb/PlatformXcb.hpp 
+PLATFORMFILES = $(PFP)Platform.hpp $(PFP)xcb/PlatformXcb.hpp $(PFP)AssetManager.hpp
 FRAMEWORKFILES = $(FWP)Context.hpp $(FWP)SemaphoreManager.hpp $(FWP)PerFrame.hpp \
 $(FWP)CommandBufferManager.hpp $(FWP)FenceManager.hpp 
 	
 BASEFILES =  source/libvulkan-loader.hpp
 DEPS=$(BASEFILES) $(UTILFILES) $(PIPEFILES) $(BUFFILES) $(CMDFILES)
 
-PLATFORMFILES = obj/$(PFP)Platform.o obj/$(PFP)xcb/PlatformXcb.o 
+PLATFORMFILES = obj/$(PFP)Platform.o obj/$(PFP)xcb/PlatformXcb.o obj/$(PFP)AssetManager.o
 FRAMEWORKFILES = obj/$(FWP)Context.o obj/$(FWP)SemaphoreManager.o obj/$(FWP)PerFrame.o \
  obj/$(FWP)CommandBufferManager.o obj/$(FWP)FenceManager.o
 BASEOBJ = obj/source/libvulkan-loader.o

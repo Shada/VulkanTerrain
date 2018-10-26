@@ -44,6 +44,12 @@ class Platform
 
     inline const auto getGraphicsQueueFamilyIndex() const { return graphicsQueueFamilyIndex; }
 
+    inline const auto getGraphicsQueue() const { return graphicsQueue; }
+
+    inline const auto &getSwapChainDimensions() const { return swapChainDimensions; }
+
+    inline const auto &getSwapChainImages() const { return swapChainImages; }
+
     /// @brief Returns the currently set debug callback.
     /// @returns The callback, or nullptr if not set.
     inline PFN_vkDebugReportCallbackEXT getExternalDebugCallback() const { return externalDebugCallback; }
