@@ -2,16 +2,21 @@ CC=gcc
 CXX=g++
 CXXFLAGS=-Isource/. -Isource/platform -Isource/framework -I$(VULKAN_SDK)/include -I/home/admin/Documents/Programming/vulkan/glslang/install/include -DVK_USE_PLATFORM_XCB_KHR 
 
-PLATFORMFILES = source/platform/Platform.hpp source/platform/xcb/PlatformXcb.hpp source/platform/AssetManager.hpp
-FRAMEWORKFILES = source/framework/Context.hpp source/framework/CommandBufferManager.hpp source/framework/FenceManager.hpp \
-	source/framework/SemaphoreManager.hpp source/framework/model/Model.hpp source/framework/buffers/VertexBufferManager.hpp source/framework/buffers/BufferManager.hpp 
+PFP = source/platform/
+FWP = source/framework/
+
+PLATFORMFILES = $(PFP)Platform.hpp $(PFP)xcb/PlatformXcb.hpp $(PFP)AssetManager.hpp
+FRAMEWORKFILES = $(FWP)Context.hpp $(FWP)CommandBufferManager.hpp $(FWP)FenceManager.hpp \
+	$(FWP)SemaphoreManager.hpp $(FWP)model/Model.hpp $(FWP)buffers/VertexBufferManager.hpp \
+	$(FWP)buffers/BufferManager.hpp $(FWP)PerFrame.hpp
 	
 BASEFILES =  source/libvulkan-loader.hpp
 DEPS=$(BASEFILES) $(UTILFILES) $(PIPEFILES) $(BUFFILES) $(CMDFILES)
 
-PLATFORMFILES = obj/source/platform/Platform.o obj/source/platform/xcb/PlatformXcb.o obj/source/platform/AssetManager.o
-FRAMEWORKFILES = obj/source/framework/Context.o obj/source/framework/CommandBufferManager.o obj/source/framework/FenceManager.o \
-	obj/source/framework/SemaphoreManager.o  obj/source/framework/model/Model.o obj/source/framework/buffers/VertexBufferManager.o obj/source/framework/buffers/BufferManager.o
+PLATFORMFILES = obj/$(PFP)Platform.o obj/$(PFP)xcb/PlatformXcb.o obj/$(PFP)AssetManager.o
+FRAMEWORKFILES = obj/$(FWP)Context.o obj/$(FWP)CommandBufferManager.o obj/$(FWP)FenceManager.o \
+	obj/$(FWP)SemaphoreManager.o  obj/$(FWP)model/Model.o obj/$(FWP)buffers/VertexBufferManager.o \
+	obj/$(FWP)buffers/BufferManager.o obj/$(FWP)PerFrame.o
 BASEOBJ = obj/source/libvulkan-loader.o
 OBJ=$(BASEOBJ) $(PLATFORMFILES) $(FRAMEWORKFILES)
 

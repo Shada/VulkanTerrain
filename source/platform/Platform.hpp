@@ -12,7 +12,6 @@ namespace Tobi
 class Platform
 {
   public:
-    Platform();
     virtual ~Platform();
 
     /// @brief Describes the size and format of the swapchain.
@@ -156,6 +155,7 @@ class Platform
     virtual Result presentImage(uint32_t index);
 
   protected:
+    Platform();
     /// The Vulkan instance.
     VkInstance instance;
 

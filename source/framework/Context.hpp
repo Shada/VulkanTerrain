@@ -26,6 +26,7 @@
 #include "CommandBufferManager.hpp"
 #include "FenceManager.hpp"
 #include "Common.hpp"
+#include "PerFrame.hpp"
 
 #include "../platform/AssetManager.hpp"
 
@@ -68,8 +69,7 @@ class Context
     ///
     /// @param pPlatform The underlying Vulkan platform.
     /// @returns Error code
-    Result
-    onPlatformUpdate(Platform *pPlatform);
+    Result onPlatformUpdate(Platform *pPlatform);
 
     /// @brief Requests a reset primary command buffer.
     ///
@@ -182,6 +182,7 @@ class Context
 
   private:
     Platform *pPlatform;
+
     VkDevice device;
     VkQueue queue;
     uint32_t swapchainIndex;
@@ -194,25 +195,6 @@ class Context
     VkPipeline pipeline;
     VkPipelineLayout pipelineLayout;
 
-    //TODO: move to separate file
-    struct PerFrame
-    {
-        PerFrame(VkDevice device, uint32_t graphicsQueueIndex);
-        ~PerFrame();
-
-        void beginFrame();
-        VkSemaphore setSwapchainAcquireSemaphore(VkSemaphore acquireSemaphore);
-        void setSwapchainReleaseSemaphore(VkSemaphore releaseSemaphore);
-        void setSecondaryCommandManagersCount(uint32_t count);
-
-        VkDevice device;
-        std::shared_ptr<FenceManager> fenceManager;
-        std::unique_ptr<CommandBufferManager> commandManager;
-        std::vector<std::unique_ptr<CommandBufferManager>> secondaryCommandManagers;
-        VkSemaphore swapchainAcquireSemaphore;
-        VkSemaphore swapchainReleaseSemaphore;
-        uint32_t queueIndex;
-    };
     std::vector<std::unique_ptr<PerFrame>> perFrame;
 
     void submitCommandBuffer(VkCommandBuffer, VkSemaphore acquireSemaphore, VkSemaphore releaseSemaphore);
