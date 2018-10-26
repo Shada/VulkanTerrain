@@ -5,18 +5,14 @@ CXXFLAGS=-Isource/. -Isource/platform -Isource/framework -I$(VULKAN_SDK)/include
 PFP = source/platform/
 FWP = source/framework/
 
-PLATFORMFILES = $(PFP)Platform.hpp $(PFP)xcb/PlatformXcb.hpp $(PFP)AssetManager.hpp
-FRAMEWORKFILES = $(FWP)Context.hpp $(FWP)CommandBufferManager.hpp $(FWP)FenceManager.hpp \
-	$(FWP)SemaphoreManager.hpp $(FWP)model/Model.hpp $(FWP)buffers/VertexBufferManager.hpp \
-	$(FWP)buffers/BufferManager.hpp $(FWP)PerFrame.hpp
+PLATFORMFILES = $(PFP)Platform.hpp $(PFP)xcb/PlatformXcb.hpp 
+FRAMEWORKFILES = $(FWP)Context.hpp 
 	
 BASEFILES =  source/libvulkan-loader.hpp
 DEPS=$(BASEFILES) $(UTILFILES) $(PIPEFILES) $(BUFFILES) $(CMDFILES)
 
-PLATFORMFILES = obj/$(PFP)Platform.o obj/$(PFP)xcb/PlatformXcb.o obj/$(PFP)AssetManager.o
-FRAMEWORKFILES = obj/$(FWP)Context.o obj/$(FWP)CommandBufferManager.o obj/$(FWP)FenceManager.o \
-	obj/$(FWP)SemaphoreManager.o  obj/$(FWP)model/Model.o obj/$(FWP)buffers/VertexBufferManager.o \
-	obj/$(FWP)buffers/BufferManager.o obj/$(FWP)PerFrame.o
+PLATFORMFILES = obj/$(PFP)Platform.o obj/$(PFP)xcb/PlatformXcb.o 
+FRAMEWORKFILES = obj/$(FWP)Context.o 
 BASEOBJ = obj/source/libvulkan-loader.o
 OBJ=$(BASEOBJ) $(PLATFORMFILES) $(FRAMEWORKFILES)
 

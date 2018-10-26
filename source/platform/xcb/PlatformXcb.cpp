@@ -3,35 +3,23 @@
 namespace Tobi
 {
 
+Platform &Platform::getInstance()
+{
+    static PlatformXcb platform;
+    return platform;
+}
+
 PlatformXcb::PlatformXcb()
     : connection(nullptr),
       window(0),
       atom_delete_window(nullptr)
 {
-    initWindow();
-
-    initVulkan(getPreferredSwapChain(), {"VK_KHR_surface", "VK_KHR_xcb_surface"}, {"VK_KHR_swapchain"});
+    LOGI("CONTRUCTING PlatformXcb\n");
 }
 
 PlatformXcb::~PlatformXcb()
 {
-    terminate();
-}
-
-void PlatformXcb::terminate()
-{
-    if (connection)
-    {
-        xcb_aux_sync(connection);
-        handleEvents();
-
-        Platform::terminate();
-
-        xcb_destroy_window(connection, window);
-        xcb_disconnect(connection);
-        free(atom_delete_window);
-        connection = nullptr;
-    }
+    LOGI("DECONTRUCTING PlatformXcb\n");
 }
 
 void PlatformXcb::handleEvents()
@@ -53,6 +41,29 @@ void PlatformXcb::handleEvents()
         }
         free(event);
     }
+}
+
+Result PlatformXcb::initialize()
+{
+    LOGI("START INITIALIZING Platform Xcb\n");
+
+    auto result = initWindow();
+    if (FAILED(result))
+    {
+        LOGE("Failed to initialize xcb window\n");
+        return result;
+    }
+
+    SwapChainDimensions dim;
+    result = initVulkan(dim, {"VK_KHR_surface", "VK_KHR_xcb_surface"}, {"VK_KHR_swapchain"});
+    if (FAILED(result))
+    {
+        LOGE("Failed to initialize vulkanbase\n");
+        return result;
+    }
+
+    LOGI("FINISHED INITIALIZING Platform Xcb\n");
+    return RESULT_SUCCESS;
 }
 
 Result PlatformXcb::initWindow()
@@ -92,46 +103,6 @@ Result PlatformXcb::initWindow()
     status = STATUS_RUNNING;
 
     return RESULT_SUCCESS;
-}
-
-VkSurfaceKHR PlatformXcb::createSurface()
-{
-    VkSurfaceKHR surface;
-    PFN_vkCreateXcbSurfaceKHR fpCreateXcbSurfaceKHR;
-    if (!VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(instance, "vkCreateXcbSurfaceKHR", fpCreateXcbSurfaceKHR))
-        return VK_NULL_HANDLE;
-
-    VkXcbSurfaceCreateInfoKHR info = {VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR};
-    info.connection = connection;
-    info.window = window;
-
-    VK_CHECK(fpCreateXcbSurfaceKHR(instance, &info, nullptr, &surface));
-    return surface;
-}
-
-Platform::SwapChainDimensions PlatformXcb::getPreferredSwapChain()
-{
-    SwapChainDimensions swapChainDimensions = {1280, 720, VK_FORMAT_B8G8R8A8_UNORM};
-    return swapChainDimensions;
-}
-
-Platform::Status PlatformXcb::getWindowStatus()
-{
-    return status;
-}
-
-Result PlatformXcb::presentImage(uint32_t index)
-{
-    handleEvents();
-
-    if (status == STATUS_RUNNING)
-    {
-        Result result = Platform::presentImage(index);
-        xcb_flush(connection);
-        return result;
-    }
-    else
-        return RESULT_SUCCESS;
 }
 
 } // namespace Tobi
