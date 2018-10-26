@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "libvulkan-loader.hpp"
+#include "SemaphoreManager.hpp"
 
 #ifdef FORCE_NO_VALIDATION
 #define ENABLE_VALIDATION_LAYERS 0
@@ -68,12 +69,30 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugReportFlagsEXT flags,
 
 Platform::Platform()
     : instance(VK_NULL_HANDLE),
+      surface(VK_NULL_HANDLE),
+      physicalDevice(VK_NULL_HANDLE),
+      queueFamilyProperties(std::vector<VkQueueFamilyProperties>()),
+      supportedQueues(0),
+      graphicsQueueFamilyIndex(-1),
+      presentQueueFamilyIndex(-1),
+      computeQueueFamilyIndex(-1),
+      transferQueueFamilyIndex(-1),
+      graphicsQueue(VK_NULL_HANDLE),
+      presentQueue(VK_NULL_HANDLE),
+      computeQueue(VK_NULL_HANDLE),
+      transferQueue(VK_NULL_HANDLE),
+      logicalDevice(VK_NULL_HANDLE),
+      swapChain(VK_NULL_HANDLE),
+      swapChainImages(std::vector<VkImage>()),
+      semaphoreManager(nullptr),
       useInstanceExtensions(true),
       useDeviceExtensions(true),
       haveDebugReport(true),
       externalLayers(std::vector<std::string>()),
       activeInstanceExtensions(std::vector<const char *>()),
-      activeInstanceLayers(std::vector<const char *>())
+      activeInstanceLayers(std::vector<const char *>()),
+      activeDeviceLayers(std::vector<const char *>()),
+      debugReportCallback(VK_NULL_HANDLE)
 {
     LOGI("CONSTRUCTING Platform\n");
 }
@@ -86,6 +105,15 @@ Platform::~Platform()
 void Platform::terminate()
 {
     LOGI("TERMINATING PlatformXcb\n");
+
+    waitIdle();
+
+    if (semaphoreManager)
+    {
+        semaphoreManager.reset(nullptr);
+        semaphoreManager = nullptr;
+    }
+
     destroySwapChain();
 
     if (logicalDevice)
@@ -113,8 +141,7 @@ void Platform::terminate()
 
 void Platform::destroySwapChain()
 {
-    if (logicalDevice)
-        vkDeviceWaitIdle(logicalDevice);
+    waitIdle();
 
     if (swapChain)
     {
@@ -125,6 +152,14 @@ void Platform::destroySwapChain()
         }
         vkDestroySwapchainKHR(logicalDevice, swapChain, nullptr);
         swapChain = VK_NULL_HANDLE;
+    }
+}
+
+void Platform::waitIdle()
+{
+    if (logicalDevice)
+    {
+        vkDeviceWaitIdle(logicalDevice);
     }
 }
 
@@ -168,13 +203,9 @@ Result Platform::initVulkan(
         LOGE("Failed to init swap chain.");
         return RESULT_ERROR_GENERIC;
     }
-    /*
-    result = context->onPlatformUpdate(this);
-    if (FAILED(result))
-        return result;
 
     semaphoreManager = std::make_unique<SemaphoreManager>(logicalDevice);
-*/
+
     return RESULT_SUCCESS;
 }
 
@@ -390,7 +421,7 @@ Result Platform::initQueueFamilyIndices()
         if (queueFamilyProperties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
         {
             graphicsFamily = i;
-            graphicsQueueIndex = i;
+            graphicsQueueFamilyIndex = i;
             supportedQueues |= VK_QUEUE_GRAPHICS_BIT;
         }
 
@@ -401,14 +432,14 @@ Result Platform::initQueueFamilyIndices()
         if (queueFamilyProperties[i].queueCount > 0 && presentSupport)
         {
             presentFamily = i;
-            presentQueueIndex = i;
+            presentQueueFamilyIndex = i;
         }
 
         // Check for compute support.
         if (queueFamilyProperties[i].queueFlags & VK_QUEUE_COMPUTE_BIT)
         {
             computeFamily = i;
-            computeQueueIndex = i;
+            computeQueueFamilyIndex = i;
             supportedQueues |= VK_QUEUE_COMPUTE_BIT;
         }
 
@@ -416,7 +447,7 @@ Result Platform::initQueueFamilyIndices()
         if (queueFamilyProperties[i].queueFlags & VK_QUEUE_TRANSFER_BIT)
         {
             transferFamily = i;
-            transferQueueIndex = i;
+            transferQueueFamilyIndex = i;
             supportedQueues |= VK_QUEUE_TRANSFER_BIT;
         }
 
@@ -446,38 +477,38 @@ Result Platform::initDevice(
     if (supportedQueues & VK_QUEUE_GRAPHICS_BIT)
     {
         VkDeviceQueueCreateInfo graphicsQueueCreateInfo = {VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO};
-        graphicsQueueCreateInfo.queueFamilyIndex = graphicsQueueIndex;
+        graphicsQueueCreateInfo.queueFamilyIndex = graphicsQueueFamilyIndex;
         graphicsQueueCreateInfo.queueCount = 1;
         graphicsQueueCreateInfo.pQueuePriorities = queuePriorities;
         queueCreateInfos.emplace_back(graphicsQueueCreateInfo);
     }
     else
     {
-        graphicsQueueIndex = VK_NULL_HANDLE;
+        graphicsQueueFamilyIndex = VK_NULL_HANDLE;
     }
-    if (supportedQueues & VK_QUEUE_COMPUTE_BIT && computeQueueIndex != graphicsQueueIndex)
+    if (supportedQueues & VK_QUEUE_COMPUTE_BIT && computeQueueFamilyIndex != graphicsQueueFamilyIndex)
     {
         VkDeviceQueueCreateInfo computeQueueCreateInfo = {VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO};
-        computeQueueCreateInfo.queueFamilyIndex = computeQueueIndex;
+        computeQueueCreateInfo.queueFamilyIndex = computeQueueFamilyIndex;
         computeQueueCreateInfo.queueCount = 1;
         computeQueueCreateInfo.pQueuePriorities = queuePriorities;
         queueCreateInfos.emplace_back(computeQueueCreateInfo);
     }
     else
     {
-        computeQueueIndex = graphicsQueueIndex;
+        computeQueueFamilyIndex = graphicsQueueFamilyIndex;
     }
-    if (supportedQueues & VK_QUEUE_TRANSFER_BIT && transferQueueIndex != graphicsQueueIndex && transferQueueIndex != computeQueueIndex)
+    if (supportedQueues & VK_QUEUE_TRANSFER_BIT && transferQueueFamilyIndex != graphicsQueueFamilyIndex && transferQueueFamilyIndex != computeQueueFamilyIndex)
     {
         VkDeviceQueueCreateInfo transferQueueCreateInfo = {VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO};
-        transferQueueCreateInfo.queueFamilyIndex = transferQueueIndex;
+        transferQueueCreateInfo.queueFamilyIndex = transferQueueFamilyIndex;
         transferQueueCreateInfo.queueCount = 1;
         transferQueueCreateInfo.pQueuePriorities = queuePriorities;
         queueCreateInfos.emplace_back(transferQueueCreateInfo);
     }
     else
     {
-        transferQueueIndex = graphicsQueueIndex;
+        transferQueueFamilyIndex = graphicsQueueFamilyIndex;
     }
 
     VkPhysicalDeviceFeatures features = {false};
@@ -515,19 +546,19 @@ Result Platform::initDevice(
         return RESULT_ERROR_GENERIC;
     }
 
-    vkGetDeviceQueue(logicalDevice, graphicsQueueIndex, 0, &graphicsQueue);
-    if (graphicsQueueIndex == presentQueueIndex)
+    vkGetDeviceQueue(logicalDevice, graphicsQueueFamilyIndex, 0, &graphicsQueue);
+    if (graphicsQueueFamilyIndex == presentQueueFamilyIndex)
         presentQueue = graphicsQueue;
     else
-        vkGetDeviceQueue(logicalDevice, presentQueueIndex, 0, &presentQueue);
-    if (graphicsQueueIndex == computeQueueIndex)
+        vkGetDeviceQueue(logicalDevice, presentQueueFamilyIndex, 0, &presentQueue);
+    if (graphicsQueueFamilyIndex == computeQueueFamilyIndex)
         computeQueue = graphicsQueue;
     else
-        vkGetDeviceQueue(logicalDevice, computeQueueIndex, 0, &computeQueue);
-    if (graphicsQueueIndex == transferQueueIndex)
+        vkGetDeviceQueue(logicalDevice, computeQueueFamilyIndex, 0, &computeQueue);
+    if (graphicsQueueFamilyIndex == transferQueueFamilyIndex)
         transferQueue = graphicsQueue;
     else
-        vkGetDeviceQueue(logicalDevice, transferQueueIndex, 0, &transferQueue);
+        vkGetDeviceQueue(logicalDevice, transferQueueFamilyIndex, 0, &transferQueue);
 
     return RESULT_SUCCESS;
 }

@@ -3,10 +3,11 @@
 #include <vulkan/vulkan.hpp>
 
 #include "../framework/Common.hpp"
-#include "../framework/Context.hpp"
 
 namespace Tobi
 {
+
+class SemaphoreManager;
 
 class Platform
 {
@@ -32,6 +33,16 @@ class Platform
         /// The application should exit as the user has requested it.
         STATUS_TEARDOWN
     };
+
+    void waitIdle();
+
+    /// @brief Returns the logical device.
+    /// @returns The logical device, or nullptr if not set.
+    inline const auto &getDevice() const { return logicalDevice; }
+
+    inline const auto getSwapChainImageCount() const { return static_cast<uint32_t>(swapChainImages.size()); }
+
+    inline const auto getGraphicsQueueFamilyIndex() const { return graphicsQueueFamilyIndex; }
 
     /// @brief Returns the currently set debug callback.
     /// @returns The callback, or nullptr if not set.
@@ -76,10 +87,10 @@ class Platform
     // present graphics, transfer and compute queues. If the gpu supports it, they will be separate queues
     std::vector<VkQueueFamilyProperties> queueFamilyProperties;
     VkQueueFlags supportedQueues;
-    uint32_t graphicsQueueIndex;
-    uint32_t presentQueueIndex;
-    uint32_t computeQueueIndex;
-    uint32_t transferQueueIndex;
+    uint32_t graphicsQueueFamilyIndex;
+    uint32_t presentQueueFamilyIndex;
+    uint32_t computeQueueFamilyIndex;
+    uint32_t transferQueueFamilyIndex;
     VkQueue graphicsQueue;
     VkQueue presentQueue;
     VkQueue computeQueue;
@@ -92,6 +103,8 @@ class Platform
     VkSwapchainKHR swapChain;
     SwapChainDimensions swapChainDimensions;
     std::vector<VkImage> swapChainImages;
+
+    std::unique_ptr<SemaphoreManager> semaphoreManager;
 
     /// Indicates if application can use the required extensions or will try without
     bool useInstanceExtensions;

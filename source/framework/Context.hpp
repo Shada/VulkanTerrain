@@ -28,6 +28,7 @@
 namespace Tobi
 {
 class Platform;
+class PerFrame;
 
 /// @brief The Context is the primary way for samples to interact
 /// with the swapchain and get rendered images to screen.
@@ -41,6 +42,14 @@ class Context
 
   private:
     std::unique_ptr<Platform> platform;
+
+    VkPipelineCache pipelineCache;
+
+    std::vector<std::unique_ptr<PerFrame>> perFrame;
+
+    Result onPlatformUpdate();
+
+    void waitIdle();
 };
 
 } // namespace Tobi

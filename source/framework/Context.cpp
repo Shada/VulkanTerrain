@@ -19,15 +19,18 @@
  */
 
 #include "Context.hpp"
-#include "../platform/Platform.hpp"
 
+#include "../platform/Platform.hpp"
+#include "PerFrame.hpp"
 #include "model/Vertex.hpp"
 
 namespace Tobi
 {
 
 Context::Context()
-    : platform(Platform::create())
+    : platform(Platform::create()),
+      pipelineCache(VK_NULL_HANDLE),
+      perFrame(std::vector<std::unique_ptr<PerFrame>>())
 {
     LOGI("CONSTRUCTING Context\n");
 }
@@ -35,6 +38,12 @@ Context::Context()
 Context::~Context()
 {
     LOGI("DECONSTRUCTING Context\n");
+    if (pipelineCache)
+    {
+        auto device = platform->getDevice();
+        vkDestroyPipelineCache(device, pipelineCache, nullptr);
+        pipelineCache = VK_NULL_HANDLE;
+    }
 }
 
 Result Context::initialize()
@@ -44,14 +53,47 @@ Result Context::initialize()
     if (FAILED(result))
     {
         LOGE("Failed to initialize Platform\n");
+        return RESULT_ERROR_GENERIC;
     }
 
     // attach context to the platform ?? does it need the context in any way?
 
-    // "onPlatformUpdate" things here
+    if (FAILED(onPlatformUpdate()))
+    {
+        LOGE("Failed to create per frame data\n");
+        return RESULT_ERROR_GENERIC;
+    }
 
     LOGI("FINISHED INITIALIZING Context\n");
     return RESULT_SUCCESS;
+}
+
+Result Context::onPlatformUpdate()
+{
+    auto device = platform->getDevice();
+
+    waitIdle();
+
+    // Initialize per-frame resources.
+    // Every swapchain image has its own command pool and fence manager.
+    // This makes it very easy to keep track of when we can reset command buffers
+    // and such.
+    perFrame.clear();
+    for (uint32_t i = 0; i < platform->getSwapChainImageCount(); i++)
+        perFrame.emplace_back(new PerFrame(device, platform->getGraphicsQueueFamilyIndex()));
+    /*
+    setRenderingThreadCount(renderingThreadCount);*/
+
+    // Create a pipeline cache (although we'll only create one pipeline).
+    VkPipelineCacheCreateInfo pipelineCacheInfo = {VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO};
+    VK_CHECK(vkCreatePipelineCache(device, &pipelineCacheInfo, nullptr, &pipelineCache));
+
+    return RESULT_SUCCESS;
+}
+
+void Context::waitIdle()
+{
+    platform->waitIdle();
 }
 
 } // namespace Tobi

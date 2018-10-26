@@ -27,15 +27,18 @@ SemaphoreManager::SemaphoreManager(VkDevice device)
     : device(device),
       recycledSemaphores(std::vector<VkSemaphore>())
 {
+    LOGI("CONSTRUCTING SemaphoreManager\n");
 }
 
 SemaphoreManager::~SemaphoreManager()
 {
+    LOGI("DECONSTRUCTING SemaphoreManager\n");
     terminate();
 }
 
 void SemaphoreManager::terminate()
 {
+    LOGI("TERMINATING SemaphoreManager\n");
     for (auto &semaphore : recycledSemaphores)
         vkDestroySemaphore(device, semaphore, nullptr);
     recycledSemaphores.clear();

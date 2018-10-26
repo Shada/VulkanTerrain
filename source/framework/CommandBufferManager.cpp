@@ -33,6 +33,7 @@ CommandBufferManager::CommandBufferManager(
       commandBufferLevel(bufferLevel),
       activeCommandBufferCount(0)
 {
+    LOGI("CONSTRUCTING CommandBufferManager\n");
     VkCommandPoolCreateInfo commandPoolCreateInfo = {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
     commandPoolCreateInfo.queueFamilyIndex = queueFamilyIndex;
     commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
@@ -41,6 +42,7 @@ CommandBufferManager::CommandBufferManager(
 
 CommandBufferManager::~CommandBufferManager()
 {
+    LOGI("DECONSTRUCTING CommandBufferManager\n");
     if (!commandBuffers.empty())
         vkFreeCommandBuffers(device, commandPool, commandBuffers.size(), commandBuffers.data());
     vkDestroyCommandPool(device, commandPool, nullptr);

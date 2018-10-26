@@ -28,10 +28,12 @@ FenceManager::FenceManager(VkDevice device)
       fences(std::vector<VkFence>()),
       activeFenceCount(0)
 {
+    LOGI("CONSTRUCTING FenceManager\n");
 }
 
 FenceManager::~FenceManager()
 {
+    LOGI("DECONSTRUCTING FenceManager\n");
     beginFrame();
     for (auto &fence : fences)
         vkDestroyFence(device, fence, nullptr);
