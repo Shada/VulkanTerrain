@@ -13,11 +13,19 @@ class PlatformXcb : public Platform
     PlatformXcb();
     ~PlatformXcb();
 
+    /// @brief Presents an image to the swapchain.
+    /// @param index The swapchain index previously obtained from @ref
+    /// acquireNextImage.
+    /// @returns Error code.
+    virtual Result presentImage(uint32_t index, const VkSemaphore &releaseSemaphore) override;
+
+    virtual const Status &getWindowStatus() const { return status; }
+
   private:
     xcb_connection_t *connection;
     xcb_window_t window;
     xcb_intern_atom_reply_t *atom_delete_window;
-    Platform::Status status;
+    Status status;
 
     virtual Result initialize() override;
 

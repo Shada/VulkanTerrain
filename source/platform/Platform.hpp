@@ -3,6 +3,9 @@
 #include <vulkan/vulkan.hpp>
 
 #include "../framework/Common.hpp"
+#include "../framework/Status.hpp"
+
+#include "SwapChainDimensions.hpp"
 
 namespace Tobi
 {
@@ -14,31 +17,24 @@ class Platform
   public:
     virtual ~Platform();
 
-    /// @brief Describes the size and format of the swapchain.
-    struct SwapChainDimensions
-    {
-        /// Width of the swapchain.
-        uint32_t width;
-        /// Height of the swapchain.
-        uint32_t height;
-        /// Pixel format of the swapchain.
-        VkFormat format;
-    };
-
-    /// @brief Describes the status of the application lifecycle.
-    enum Status
-    {
-        /// The application is running.
-        STATUS_RUNNING,
-        /// The application should exit as the user has requested it.
-        STATUS_TEARDOWN
-    };
-
     void waitIdle();
+
+    /// @brief Presents an image to the swapchain.
+    /// @param index The swapchain index previously obtained from @ref
+    /// acquireNextImage.
+    /// @returns Error code.
+    virtual Result presentImage(uint32_t index, const VkSemaphore &releaseSemaphore);
+
+    Result acquireNextImage(uint32_t &swapChainIndex, VkSemaphore &acquireSemaphore);
+
+    void addClearedSemaphore(VkSemaphore clearedSemaphore);
 
     /// @brief Returns the logical device.
     /// @returns The logical device, or nullptr if not set.
-    inline const auto &getDevice() const { return logicalDevice; }
+    inline const auto &getDevice() const
+    {
+        return logicalDevice;
+    }
 
     inline const auto getSwapChainImageCount() const { return static_cast<uint32_t>(swapChainImages.size()); }
 
@@ -50,6 +46,8 @@ class Platform
 
     inline const auto &getSwapChainImages() const { return swapChainImages; }
 
+    virtual const Status &getWindowStatus() const = 0;
+
     /// @brief Returns the currently set debug callback.
     /// @returns The callback, or nullptr if not set.
     inline PFN_vkDebugReportCallbackEXT getExternalDebugCallback() const { return externalDebugCallback; }
@@ -57,6 +55,31 @@ class Platform
     /// @brief Returns the currently set debug callback.
     /// @returns The callback, or nullptr if not set.
     inline void *getExternalDebugCallbackUserData() const { return externalDebugCallbackUserData; }
+
+    // To create a buffer, both the device and application have requirements from
+    // the buffer object.
+    // Vulkan exposes the different types of buffers the device can allocate, and we
+    // have to find a suitable one.
+    // deviceRequirements is a bitmask expressing which memory types can be used for
+    // a buffer object.
+    // The different memory types' properties must match with what the application
+    // wants.
+    uint32_t findMemoryTypeFromRequirements(uint32_t deviceRequirements, uint32_t hostRequirements)
+    {
+        for (uint32_t i = 0; i < VK_MAX_MEMORY_TYPES; i++)
+        {
+            if (deviceRequirements & (1u << i))
+            {
+                if ((physicalDeviceMemoryProperties.memoryTypes[i].propertyFlags & hostRequirements) == hostRequirements)
+                {
+                    return i;
+                }
+            }
+        }
+
+        LOGE("Failed to obtain suitable memory type.\n");
+        abort();
+    }
 
   protected:
     Platform();
@@ -133,7 +156,7 @@ class Platform
     /// User-data for external debug callback.
     void *externalDebugCallbackUserData;
 
-    static std::unique_ptr<Platform> create();
+    static std::shared_ptr<Platform> create();
 
     /// @brief Explicit tears down the swapchain.
     void destroySwapChain();

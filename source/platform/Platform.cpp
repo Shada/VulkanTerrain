@@ -5,6 +5,7 @@
 
 #include "libvulkan-loader.hpp"
 #include "SemaphoreManager.hpp"
+#include "../framework/Context.hpp"
 
 #ifdef FORCE_NO_VALIDATION
 #define ENABLE_VALIDATION_LAYERS 0
@@ -155,12 +156,66 @@ void Platform::destroySwapChain()
     }
 }
 
+Result Platform::presentImage(uint32_t index, const VkSemaphore &releaseSemaphore)
+{
+    VkResult result;
+    VkPresentInfoKHR present = {VK_STRUCTURE_TYPE_PRESENT_INFO_KHR};
+    present.swapchainCount = 1;
+    present.pSwapchains = &swapChain;
+    present.pImageIndices = &index;
+    present.pResults = &result;
+    present.waitSemaphoreCount = 1;
+    present.pWaitSemaphores = &releaseSemaphore;
+
+    VkResult res = vkQueuePresentKHR(presentQueue, &present);
+
+    if (res == VK_SUBOPTIMAL_KHR || res == VK_ERROR_OUT_OF_DATE_KHR)
+        return RESULT_ERROR_OUTDATED_SWAPCHAIN;
+    else if (res != VK_SUCCESS)
+        return RESULT_ERROR_GENERIC;
+    else
+        return RESULT_SUCCESS;
+}
+
 void Platform::waitIdle()
 {
     if (logicalDevice)
     {
         vkDeviceWaitIdle(logicalDevice);
     }
+}
+
+Result Platform::acquireNextImage(uint32_t &swapChainIndex, VkSemaphore &acquireSemaphore)
+{
+    acquireSemaphore = semaphoreManager->getClearedSemaphore();
+    VkResult res = vkAcquireNextImageKHR(logicalDevice, swapChain, UINT64_MAX, acquireSemaphore, VK_NULL_HANDLE, &swapChainIndex);
+
+    if (res == VK_SUBOPTIMAL_KHR || res == VK_ERROR_OUT_OF_DATE_KHR)
+    {
+        vkQueueWaitIdle(graphicsQueue);
+        vkQueueWaitIdle(computeQueue);
+        semaphoreManager->addClearedSemaphore(acquireSemaphore);
+
+        // Recreate swapchain.
+        if (SUCCEEDED(initSwapChain(swapChainDimensions)))
+            return RESULT_ERROR_OUTDATED_SWAPCHAIN;
+        else
+            return RESULT_ERROR_GENERIC;
+    }
+    else if (res != VK_SUCCESS)
+    {
+        vkQueueWaitIdle(graphicsQueue);
+        vkQueueWaitIdle(computeQueue);
+        semaphoreManager->addClearedSemaphore(acquireSemaphore);
+        return RESULT_ERROR_GENERIC;
+    }
+
+    return RESULT_SUCCESS;
+}
+
+void Platform::addClearedSemaphore(VkSemaphore clearedSemaphore)
+{
+    semaphoreManager->addClearedSemaphore(clearedSemaphore);
 }
 
 Result Platform::initVulkan(

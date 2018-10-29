@@ -22,7 +22,8 @@
 
 #include "../platform/Platform.hpp"
 #include "PerFrame.hpp"
-#include "model/Vertex.hpp"
+#include "buffers/VertexBufferManager.hpp"
+#include "model/Model.hpp"
 
 #include "../platform/AssetManager.hpp"
 
@@ -36,7 +37,9 @@ Context::Context()
       pipelineCache(VK_NULL_HANDLE),
       pipeline(VK_NULL_HANDLE),
       pipelineLayout(VK_NULL_HANDLE),
-      perFrame(std::vector<std::unique_ptr<PerFrame>>())
+      perFrame(std::vector<std::unique_ptr<PerFrame>>()),
+      vertexBufferManager(std::make_unique<VertexBufferManager>(platform)),
+      swapChainIndex(0)
 {
     LOGI("CONSTRUCTING Context\n");
 }
@@ -85,6 +88,11 @@ void Context::terminateBackBuffers()
     }
 }
 
+Result Context::presentImage(uint32_t index)
+{
+    return platform->presentImage(index, getSwapChainReleaseSemaphore());
+}
+
 Result Context::initialize()
 {
     LOGI("START INITIALIZING Context\n");
@@ -103,8 +111,153 @@ Result Context::initialize()
         return RESULT_ERROR_GENERIC;
     }
 
+    updateSwapChain();
+
     LOGI("FINISHED INITIALIZING Context\n");
     return RESULT_SUCCESS;
+}
+
+const Buffer &Context::getVertexBuffer(uint32_t vertexBufferId) const
+{
+    return vertexBufferManager->getBuffer(vertexBufferId);
+}
+
+/// @brief Gets the fence manager for the current swapchain image.
+/// Used by the platform internally.
+/// @returns FenceManager
+std::shared_ptr<FenceManager> &Context::getFenceManager()
+{
+    return perFrame[swapChainIndex]->fenceManager;
+}
+
+/// @brief Gets the acquire semaphore for the swapchain.
+/// Used by the platform internally.
+/// @returns Semaphore.
+const VkSemaphore &Context::getSwapChainAcquireSemaphore() const
+{
+    return perFrame[swapChainIndex]->swapchainAcquireSemaphore;
+}
+
+/// @brief Gets the release semaphore for the swapchain.
+/// Used by the platform internally.
+/// @returns Semaphore.
+const VkSemaphore &Context::getSwapChainReleaseSemaphore() const
+{
+    return perFrame[swapChainIndex]->swapchainReleaseSemaphore;
+}
+
+void Context::submit(VkCommandBuffer cmd)
+{
+    submitCommandBuffer(cmd, VK_NULL_HANDLE, VK_NULL_HANDLE);
+}
+
+void Context::submitSwapChain(VkCommandBuffer cmd)
+{
+    // For the first frames, we will create a release semaphore.
+    // This can be reused every frame. Semaphores are reset when they have been
+    // successfully been waited on.
+    // If we aren't using acquire semaphores, we aren't using release semaphores
+    // either.
+    if (getSwapChainReleaseSemaphore() == VK_NULL_HANDLE && getSwapChainAcquireSemaphore() != VK_NULL_HANDLE)
+    {
+        VkSemaphore releaseSemaphore;
+        VkSemaphoreCreateInfo semaphoreInfo = {VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
+        VK_CHECK(vkCreateSemaphore(platform->getDevice(), &semaphoreInfo, nullptr, &releaseSemaphore));
+        perFrame[swapChainIndex]->setSwapchainReleaseSemaphore(releaseSemaphore);
+    }
+
+    submitCommandBuffer(cmd, getSwapChainAcquireSemaphore(), getSwapChainReleaseSemaphore());
+}
+
+void Context::submitCommandBuffer(VkCommandBuffer cmd, VkSemaphore acquireSemaphore, VkSemaphore releaseSemaphore)
+{
+    // All queue submissions get a fence that CPU will wait
+    // on for synchronization purposes.
+    VkFence fence = getFenceManager()->requestClearedFence();
+
+    VkSubmitInfo info = {VK_STRUCTURE_TYPE_SUBMIT_INFO};
+    info.commandBufferCount = 1;
+    info.pCommandBuffers = &cmd;
+
+    const VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    info.waitSemaphoreCount = acquireSemaphore != VK_NULL_HANDLE ? 1 : 0;
+    info.pWaitSemaphores = &acquireSemaphore;
+    info.pWaitDstStageMask = &waitStage;
+    info.signalSemaphoreCount = releaseSemaphore != VK_NULL_HANDLE ? 1 : 0;
+    info.pSignalSemaphores = &releaseSemaphore;
+
+    VK_CHECK(vkQueueSubmit(platform->getGraphicsQueue(), 1, &info, fence));
+}
+
+uint32_t Context::loadModel(const char *filename)
+{
+    LOGI("LOADING model\n");
+    // TODO: load the model from file,
+    // use a model manager, that holds all models(?),
+    // then have an class/struct that holds all necessary model data
+    // return handle to that class/struct.
+    auto model = std::make_shared<Model>();
+
+    auto vertexBufferId = vertexBufferManager->createBuffer(
+        model->getVertexData(),
+        model->getVertexDataSize());
+
+    return vertexBufferId;
+}
+
+const VkCommandBuffer &Context::requestPrimaryCommandBuffer() const
+{
+    return perFrame[swapChainIndex]->commandManager->requestCommandBuffer();
+}
+
+const SwapChainDimensions &Context::getSwapChainDimensions() const
+{
+    return platform->getSwapChainDimensions();
+}
+
+Result Context::acquireNextImage(uint32_t &swapChainIndex)
+{
+    VkSemaphore acquireSemaphore = VK_NULL_HANDLE;
+    auto result = platform->acquireNextImage(swapChainIndex, acquireSemaphore);
+
+    while (result == RESULT_ERROR_OUTDATED_SWAPCHAIN)
+    {
+        result = platform->acquireNextImage(swapChainIndex, acquireSemaphore);
+        updateSwapChain();
+    }
+
+    if (SUCCEEDED(result))
+    {
+        // Signal the underlying context that we're using this backbuffer now.
+        // This will also wait for all fences associated with this swapchain image
+        // to complete first.
+        // When submitting command buffer that writes to swapchain, we need to wait
+        // for this semaphore first.
+        // Also, delete the older semaphore.
+        auto oldSemaphore = beginFrame(swapChainIndex, acquireSemaphore);
+
+        // Recycle the old semaphore back into the semaphore manager.
+        if (oldSemaphore != VK_NULL_HANDLE)
+        {
+            platform->addClearedSemaphore(oldSemaphore);
+        }
+
+        return RESULT_SUCCESS;
+    }
+
+    return result;
+}
+
+VkSemaphore Context::beginFrame(uint32_t index, VkSemaphore acquireSemaphore)
+{
+    swapChainIndex = index;
+    perFrame[swapChainIndex]->beginFrame();
+    return perFrame[swapChainIndex]->setSwapchainAcquireSemaphore(acquireSemaphore);
+}
+
+Status Context::getWindowStatus()
+{
+    return platform->getWindowStatus();
 }
 
 Result Context::onPlatformUpdate()
@@ -119,7 +272,9 @@ Result Context::onPlatformUpdate()
     // and such.
     perFrame.clear();
     for (uint32_t i = 0; i < platform->getSwapChainImageCount(); i++)
+    {
         perFrame.emplace_back(new PerFrame(device, platform->getGraphicsQueueFamilyIndex()));
+    }
 
     /* setRenderingThreadCount(renderingThreadCount); */
 
@@ -132,6 +287,7 @@ Result Context::onPlatformUpdate()
 
 void Context::updateSwapChain()
 {
+    LOGI("UPDATING swap chain\n");
     auto dimensions = platform->getSwapChainDimensions();
     auto newBackBufferImages = platform->getSwapChainImages();
     auto device = platform->getDevice();
@@ -182,6 +338,11 @@ void Context::updateSwapChain()
 
         backBuffers.push_back(backBuffer);
     }
+}
+
+double Context::getCurrentTime()
+{
+    return OS::getCurrentTime();
 }
 
 void Context::initRenderPass(VkFormat format)

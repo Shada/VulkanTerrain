@@ -7,10 +7,12 @@ BufferManager::BufferManager(std::shared_ptr<Platform> platform)
     : platform(platform),
       buffers(std::map<uint32_t, Buffer>())
 {
+    LOGI("CONSTRUCTING BufferManager\n");
 }
 
 BufferManager::~BufferManager()
 {
+    LOGI("DECONSTRUCTING BufferManager\n");
     for (auto iter = buffers.begin(); iter != buffers.end(); ++iter)
     {
         if ((*iter).second.buffer)

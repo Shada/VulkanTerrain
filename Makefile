@@ -7,14 +7,16 @@ FWP = source/framework/
 
 PLATFORMFILES = $(PFP)Platform.hpp $(PFP)xcb/PlatformXcb.hpp $(PFP)AssetManager.hpp
 FRAMEWORKFILES = $(FWP)Context.hpp $(FWP)SemaphoreManager.hpp $(FWP)PerFrame.hpp \
-$(FWP)CommandBufferManager.hpp $(FWP)FenceManager.hpp 
+$(FWP)CommandBufferManager.hpp $(FWP)FenceManager.hpp $(FWP)buffers/VertexBufferManager.hpp \
+	$(FWP)buffers/BufferManager.hpp $(FWP)model/Model.hpp
 	
 BASEFILES =  source/libvulkan-loader.hpp
 DEPS=$(BASEFILES) $(UTILFILES) $(PIPEFILES) $(BUFFILES) $(CMDFILES)
 
 PLATFORMFILES = obj/$(PFP)Platform.o obj/$(PFP)xcb/PlatformXcb.o obj/$(PFP)AssetManager.o
 FRAMEWORKFILES = obj/$(FWP)Context.o obj/$(FWP)SemaphoreManager.o obj/$(FWP)PerFrame.o \
- obj/$(FWP)CommandBufferManager.o obj/$(FWP)FenceManager.o
+ obj/$(FWP)CommandBufferManager.o obj/$(FWP)FenceManager.o obj/$(FWP)buffers/VertexBufferManager.o \
+	obj/$(FWP)buffers/BufferManager.o  obj/$(FWP)model/Model.o
 BASEOBJ = obj/source/libvulkan-loader.o
 OBJ=$(BASEOBJ) $(PLATFORMFILES) $(FRAMEWORKFILES)
 

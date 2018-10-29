@@ -4,16 +4,10 @@
 
 #include "../Common.hpp"
 #include "../../platform/Platform.hpp"
+#include "Buffer.hpp"
 
 namespace Tobi
 {
-
-struct Buffer
-{
-    VkBuffer buffer;
-    VkDeviceMemory memory;
-    VkDescriptorBufferInfo bufferInfo;
-};
 
 class BufferManager
 {

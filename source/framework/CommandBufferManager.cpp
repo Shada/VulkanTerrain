@@ -54,14 +54,13 @@ void CommandBufferManager::beginFrame()
     vkResetCommandPool(device, commandPool, 0);
 }
 
-VkCommandBuffer CommandBufferManager::requestCommandBuffer()
+const VkCommandBuffer &CommandBufferManager::requestCommandBuffer()
 {
     // Either we recycle a previously allocated command buffer, or create a new
     // one.
-    VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
     if (activeCommandBufferCount < commandBuffers.size())
     {
-        commandBuffer = commandBuffers[activeCommandBufferCount++];
+        return commandBuffers[activeCommandBufferCount++];
     }
     else
     {
@@ -69,13 +68,15 @@ VkCommandBuffer CommandBufferManager::requestCommandBuffer()
         commandBufferCreateInfo.commandPool = commandPool;
         commandBufferCreateInfo.level = commandBufferLevel;
         commandBufferCreateInfo.commandBufferCount = 1;
+
+        VkCommandBuffer commandBuffer = VK_NULL_HANDLE;
         VK_CHECK(vkAllocateCommandBuffers(device, &commandBufferCreateInfo, &commandBuffer));
         commandBuffers.push_back(commandBuffer);
 
         activeCommandBufferCount++;
-    }
 
-    return commandBuffer;
+        return commandBuffers.back();
+    }
 }
 
 } // namespace Tobi

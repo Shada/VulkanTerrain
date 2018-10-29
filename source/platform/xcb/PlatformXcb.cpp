@@ -3,9 +3,9 @@
 namespace Tobi
 {
 
-std::unique_ptr<Platform> Platform::create()
+std::shared_ptr<Platform> Platform::create()
 {
-    return std::make_unique<PlatformXcb>();
+    return std::make_shared<PlatformXcb>();
 }
 
 PlatformXcb::PlatformXcb()
@@ -34,6 +34,20 @@ PlatformXcb::~PlatformXcb()
         window = 0;
         atom_delete_window = nullptr;
     }
+}
+
+Result PlatformXcb::presentImage(uint32_t index, const VkSemaphore &releaseSemaphore)
+{
+    handleEvents();
+
+    if (status == STATUS_RUNNING)
+    {
+        Result result = Platform::presentImage(index, releaseSemaphore);
+        xcb_flush(connection);
+        return result;
+    }
+    else
+        return RESULT_SUCCESS;
 }
 
 void PlatformXcb::handleEvents()

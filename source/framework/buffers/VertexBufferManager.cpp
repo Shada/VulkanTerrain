@@ -7,6 +7,7 @@ VertexBufferManager::VertexBufferManager(
     std::shared_ptr<Platform> platform)
     : BufferManager(platform)
 {
+    LOGI("CONSTRUCTING VertexBufferManager\n");
 }
 
 const uint32_t VertexBufferManager::createBuffer(

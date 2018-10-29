@@ -53,7 +53,7 @@ class CommandBufferManager
 
     /// @brief Requests a fresh or recycled command buffer which is in the reset
     /// state.
-    VkCommandBuffer requestCommandBuffer();
+    const VkCommandBuffer &requestCommandBuffer();
 
     /// @brief Begins the frame. When this is called,
     /// all command buffers managed by this class are assumed to be recycleable.
