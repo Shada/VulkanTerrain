@@ -58,6 +58,8 @@ class Context
 
     Result initialize();
 
+    Result render(float time);
+
     uint32_t loadModel(const char *filename);
 
     Result acquireNextImage(uint32_t &swapChainIndex);
@@ -102,8 +104,6 @@ class Context
 
     const auto &getBackBuffer(uint32_t swapChainIndex) const { return backBuffers[swapChainIndex]; }
 
-    const auto &getRenderPass() const { return renderPass; }
-    const auto &getPipeline() const { return pipeline; }
     const Buffer &getVertexBuffer(uint32_t vertexBufferId) const;
 
   private:
