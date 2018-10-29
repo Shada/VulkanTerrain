@@ -8,7 +8,7 @@ FWP = source/framework/
 PLATFORMFILES = $(PFP)Platform.hpp $(PFP)xcb/PlatformXcb.hpp $(PFP)AssetManager.hpp
 FRAMEWORKFILES = $(FWP)Context.hpp $(FWP)SemaphoreManager.hpp $(FWP)PerFrame.hpp \
 $(FWP)CommandBufferManager.hpp $(FWP)FenceManager.hpp $(FWP)buffers/VertexBufferManager.hpp \
-	$(FWP)buffers/BufferManager.hpp $(FWP)model/Model.hpp
+	$(FWP)buffers/UniformBufferManager.hpp $(FWP)buffers/BufferManager.hpp  $(FWP)model/Model.hpp
 	
 BASEFILES =  source/libvulkan-loader.hpp
 DEPS=$(BASEFILES) $(UTILFILES) $(PIPEFILES) $(BUFFILES) $(CMDFILES)
@@ -16,12 +16,12 @@ DEPS=$(BASEFILES) $(UTILFILES) $(PIPEFILES) $(BUFFILES) $(CMDFILES)
 PLATFORMFILES = obj/$(PFP)Platform.o obj/$(PFP)xcb/PlatformXcb.o obj/$(PFP)AssetManager.o
 FRAMEWORKFILES = obj/$(FWP)Context.o obj/$(FWP)SemaphoreManager.o obj/$(FWP)PerFrame.o \
  obj/$(FWP)CommandBufferManager.o obj/$(FWP)FenceManager.o obj/$(FWP)buffers/VertexBufferManager.o \
-	obj/$(FWP)buffers/BufferManager.o  obj/$(FWP)model/Model.o
+	obj/$(FWP)buffers/UniformBufferManager.o obj/$(FWP)buffers/BufferManager.o obj/$(FWP)model/Model.o
 BASEOBJ = obj/source/libvulkan-loader.o
 OBJ=$(BASEOBJ) $(PLATFORMFILES) $(FRAMEWORKFILES)
 
 obj/%.o: %.cpp $(DEPS)
-	$(CXX) -c -O3 -o$@ $< $(CXXFLAGS) -std=c++17 
+	$(CXX) -c -g -o$@ $< $(CXXFLAGS) -std=c++17 
 
 TobiGame.out: $(OBJ)
-	$(CXX) -o $@ $^ -O3 -std=c++17  source/main.cpp -I$(VULKAN_SDK)/include -L$(VULKAN_SDK)/lib -ldl -lxcb -lxcb-util -lvulkan -lpthread -L/home/admin/Documents/Programming/vulkan/glslang/install/lib -lglslang -lHLSL -lSPIRV -lSPIRV-Tools-opt -lSPIRV-Tools
+	$(CXX) -o $@ $^ -g -std=c++17  source/main.cpp -I$(VULKAN_SDK)/include -L$(VULKAN_SDK)/lib -ldl -lxcb -lxcb-util -lvulkan -lpthread -L/home/admin/Documents/Programming/vulkan/glslang/install/lib -lglslang -lHLSL -lSPIRV -lSPIRV-Tools-opt -lSPIRV-Tools

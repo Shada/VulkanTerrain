@@ -23,7 +23,9 @@
 #include "../platform/Platform.hpp"
 #include "PerFrame.hpp"
 #include "buffers/VertexBufferManager.hpp"
+#include "buffers/UniformBufferManager.hpp"
 #include "model/Model.hpp"
+#include "ShaderDataBlock.hpp"
 
 #include "../platform/AssetManager.hpp"
 
@@ -40,6 +42,7 @@ Context::Context()
       descriptorSetLayout(VK_NULL_HANDLE),
       perFrame(std::vector<std::unique_ptr<PerFrame>>()),
       vertexBufferManager(std::make_unique<VertexBufferManager>(platform)),
+      uniformBufferManager(std::make_unique<UniformBufferManager>(platform)),
       swapChainIndex(0)
 {
     LOGI("CONSTRUCTING Context\n");
@@ -125,6 +128,11 @@ const Buffer &Context::getVertexBuffer(uint32_t vertexBufferId) const
     return vertexBufferManager->getBuffer(vertexBufferId);
 }
 
+const Buffer &Context::getUniformBuffer(uint32_t uniformBufferId) const
+{
+    return uniformBufferManager->getBuffer(uniformBufferId);
+}
+
 /// @brief Gets the fence manager for the current swapchain image.
 /// Used by the platform internally.
 /// @returns FenceManager
@@ -204,6 +212,12 @@ uint32_t Context::loadModel(const char *filename)
     auto vertexBufferId = vertexBufferManager->createBuffer(
         model->getVertexData(),
         model->getVertexDataSize());
+
+    ShaderDataBlock shaderDataBlock = {};
+
+    auto uniformBufferId = uniformBufferManager->createBuffer(
+        &shaderDataBlock,
+        sizeof(ShaderDataBlock));
 
     return vertexBufferId;
 }

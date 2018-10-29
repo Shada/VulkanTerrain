@@ -33,6 +33,7 @@ namespace Tobi
 class Platform;
 class PerFrame;
 class VertexBufferManager;
+class UniformBufferManager;
 class FenceManager;
 
 struct BackBuffer
@@ -105,6 +106,7 @@ class Context
     const auto &getBackBuffer(uint32_t swapChainIndex) const { return backBuffers[swapChainIndex]; }
 
     const Buffer &getVertexBuffer(uint32_t vertexBufferId) const;
+    const Buffer &getUniformBuffer(uint32_t uniformBufferId) const;
 
   private:
     std::shared_ptr<Platform> platform;
@@ -121,6 +123,7 @@ class Context
     std::vector<std::unique_ptr<PerFrame>> perFrame;
 
     std::unique_ptr<VertexBufferManager> vertexBufferManager;
+    std::unique_ptr<UniformBufferManager> uniformBufferManager;
 
     uint32_t swapChainIndex;
 
