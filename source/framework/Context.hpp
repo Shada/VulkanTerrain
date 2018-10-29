@@ -116,6 +116,7 @@ class Context
     VkPipelineCache pipelineCache;
     VkPipeline pipeline;
     VkPipelineLayout pipelineLayout;
+    VkDescriptorSetLayout descriptorSetLayout;
 
     std::vector<std::unique_ptr<PerFrame>> perFrame;
 

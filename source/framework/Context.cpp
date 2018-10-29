@@ -37,6 +37,7 @@ Context::Context()
       pipelineCache(VK_NULL_HANDLE),
       pipeline(VK_NULL_HANDLE),
       pipelineLayout(VK_NULL_HANDLE),
+      descriptorSetLayout(VK_NULL_HANDLE),
       perFrame(std::vector<std::unique_ptr<PerFrame>>()),
       vertexBufferManager(std::make_unique<VertexBufferManager>(platform)),
       swapChainIndex(0)
@@ -82,9 +83,11 @@ void Context::terminateBackBuffers()
         vkDestroyRenderPass(device, renderPass, nullptr);
         vkDestroyPipeline(device, pipeline, nullptr);
         vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+        vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
         renderPass = VK_NULL_HANDLE;
         pipeline = VK_NULL_HANDLE;
         pipelineLayout = VK_NULL_HANDLE;
+        descriptorSetLayout = VK_NULL_HANDLE;
     }
 }
 
@@ -416,10 +419,25 @@ void Context::initPipeline()
 {
     auto device = platform->getDevice();
 
+    VkDescriptorSetLayoutBinding descriptorSetLayoutBinding = {};
+    descriptorSetLayoutBinding.binding = 0;
+    descriptorSetLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+    descriptorSetLayoutBinding.descriptorCount = 1;
+    descriptorSetLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+    VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {};
+    descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    descriptorSetLayoutCreateInfo.bindingCount = 1;
+    descriptorSetLayoutCreateInfo.pBindings = &descriptorSetLayoutBinding;
+
+    VK_CHECK(vkCreateDescriptorSetLayout(platform->getDevice(), &descriptorSetLayoutCreateInfo, nullptr, &descriptorSetLayout));
+
     // Create a blank pipeline layout.
     // We are not binding any resources to the pipeline in this first sample.
-    VkPipelineLayoutCreateInfo layoutInfo = {VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
-    VK_CHECK(vkCreatePipelineLayout(device, &layoutInfo, nullptr, &pipelineLayout));
+    VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
+    pipelineLayoutCreateInfo.setLayoutCount = 1;
+    pipelineLayoutCreateInfo.pSetLayouts = &descriptorSetLayout;
+    VK_CHECK(vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout));
 
     // Specify we will use triangle lists to draw geometry.
     VkPipelineInputAssemblyStateCreateInfo inputAssembly = {
@@ -512,24 +530,24 @@ void Context::initPipeline()
     shaderStages[1].module = loadShaderModule(device, "shaders/triangle.frag.spv");
     shaderStages[1].pName = "main";
 
-    VkGraphicsPipelineCreateInfo pipe = {VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO};
-    pipe.stageCount = 2;
-    pipe.pStages = shaderStages;
-    pipe.pVertexInputState = &vertexInput;
-    pipe.pInputAssemblyState = &inputAssembly;
-    pipe.pRasterizationState = &raster;
-    pipe.pColorBlendState = &blend;
-    pipe.pMultisampleState = &multisample;
-    pipe.pViewportState = &viewport;
-    pipe.pDepthStencilState = &depthStencil;
-    pipe.pDynamicState = &dynamic;
+    VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo = {VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO};
+    graphicsPipelineCreateInfo.stageCount = 2;
+    graphicsPipelineCreateInfo.pStages = shaderStages;
+    graphicsPipelineCreateInfo.pVertexInputState = &vertexInput;
+    graphicsPipelineCreateInfo.pInputAssemblyState = &inputAssembly;
+    graphicsPipelineCreateInfo.pRasterizationState = &raster;
+    graphicsPipelineCreateInfo.pColorBlendState = &blend;
+    graphicsPipelineCreateInfo.pMultisampleState = &multisample;
+    graphicsPipelineCreateInfo.pViewportState = &viewport;
+    graphicsPipelineCreateInfo.pDepthStencilState = &depthStencil;
+    graphicsPipelineCreateInfo.pDynamicState = &dynamic;
 
     // We need to specify the pipeline layout and the render pass description up
     // front as well.
-    pipe.renderPass = renderPass;
-    pipe.layout = pipelineLayout;
+    graphicsPipelineCreateInfo.renderPass = renderPass;
+    graphicsPipelineCreateInfo.layout = pipelineLayout;
 
-    VK_CHECK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &pipe, nullptr, &pipeline));
+    VK_CHECK(vkCreateGraphicsPipelines(device, pipelineCache, 1, &graphicsPipelineCreateInfo, nullptr, &pipeline));
 
     // Pipeline is baked, we can delete the shader modules now.
     vkDestroyShaderModule(device, shaderStages[0].module, nullptr);
