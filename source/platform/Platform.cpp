@@ -93,7 +93,8 @@ Platform::Platform()
       activeInstanceExtensions(std::vector<const char *>()),
       activeInstanceLayers(std::vector<const char *>()),
       activeDeviceLayers(std::vector<const char *>()),
-      debugReportCallback(VK_NULL_HANDLE)
+      debugReportCallback(VK_NULL_HANDLE),
+      vsync(false)
 {
     LOGI("CONSTRUCTING Platform\n");
 }
@@ -678,7 +679,24 @@ Result Platform::initSwapChain(const SwapChainDimensions &dimensions)
         swapChainSize = surfaceCapabilities.currentExtent;
 
     // FIFO must be supported by all implementations.
+
+    std::vector<VkPresentModeKHR> modes;
+    uint32_t count = 0;
+    vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &count, nullptr);
+
+    modes.resize(count);
+    vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &count, modes.data());
+
+    // FIFO is the only mode universally supported
     VkPresentModeKHR swapChainPresentMode = VK_PRESENT_MODE_FIFO_KHR;
+    for (auto m : modes)
+    {
+        if ((vsync && m == VK_PRESENT_MODE_MAILBOX_KHR) || (!vsync && m == VK_PRESENT_MODE_IMMEDIATE_KHR))
+        {
+            swapChainPresentMode = m;
+            break;
+        }
+    }
 
     // Determine the number of VkImage's to use in the swapChain.
     // Ideally, we desire to own 1 image at a time, the rest of the images can

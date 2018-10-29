@@ -140,6 +140,8 @@ class Platform
     bool useDeviceExtensions;
     bool haveDebugReport;
 
+    bool vsync;
+
     /// List of external layers to load.
     std::vector<std::string> externalLayers;
     /// List of all active instance extensions

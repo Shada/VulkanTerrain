@@ -50,7 +50,7 @@ class ApplicationStart
                 break;
 
             frameCount++;
-            if (frameCount == 100)
+            if (frameCount == 1000)
             {
                 auto endTime = context->getCurrentTime();
                 LOGI("FPS: %.3f\n", frameCount / (endTime - startTime));
