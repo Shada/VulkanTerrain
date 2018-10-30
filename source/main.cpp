@@ -19,8 +19,6 @@ class ApplicationStart
         context = std::make_shared<Context>();
 
         context->initialize();
-
-        model_id = context->loadModel("modelname");
     }
     ~ApplicationStart() = default;
 

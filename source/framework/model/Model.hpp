@@ -11,7 +11,7 @@ class Model
 {
   public:
     //TODO: load models from file
-    Model();
+    Model(const char *filename);
     ~Model();
 
     const void *getVertexData() const { return vertices.data(); }
@@ -20,6 +20,7 @@ class Model
 
   private:
     std::vector<Vertex> vertices;
+    const char *filename;
 
     void initialize();
 };

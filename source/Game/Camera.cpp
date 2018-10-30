@@ -7,7 +7,7 @@ namespace Tobi
 
 Camera::Camera(const SwapChainDimensions &swapChainDimensions)
     : swapChainDimensions(swapChainDimensions),
-      position(glm::vec3(0, 0, 5)),
+      position(glm::vec3(3, 3, 7)),
       lookAt(glm::vec3(0.f)),
       up(glm::vec3(0.f, 1.f, 0.f))
 

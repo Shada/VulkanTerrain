@@ -119,6 +119,9 @@ Result Context::initialize()
 
     camera = std::make_unique<Camera>(platform->getSwapChainDimensions());
 
+    triangleModelId = loadModel("triangle");
+    cubeModelId = loadModel("cube");
+
     LOGI("FINISHED INITIALIZING Context\n");
     return RESULT_SUCCESS;
 }
@@ -198,7 +201,7 @@ uint32_t Context::loadModel(const char *filename)
     // then have an class/struct that holds all necessary model data
     // return handle to that class/struct.
 
-    auto modelId = modelManager->loadModel("triangle");
+    auto modelId = modelManager->loadModel(filename);
 
     auto model = modelManager->getModel(modelId);
 
@@ -636,12 +639,22 @@ Result Context::render()
     scissor.extent.height = dim.height;
     vkCmdSetScissor(cmd, 0, 1, &scissor);
 
+    // draw triangle
+
     // Bind vertex buffer.
     VkDeviceSize offset = 0;
-    vkCmdBindVertexBuffers(cmd, 0, 1, &vertexBufferManager->getBuffer(0).buffer, &offset);
+    vkCmdBindVertexBuffers(cmd, 0, 1, &vertexBufferManager->getBuffer(triangleModelId).buffer, &offset);
 
     // Draw three vertices with one instance.
-    vkCmdDraw(cmd, 3, 1, 0, 0);
+    vkCmdDraw(cmd, modelManager->getModel(triangleModelId)->getVertexCount(), 1, 0, 0);
+
+    // draw cube
+
+    // Bind vertex buffer.
+    vkCmdBindVertexBuffers(cmd, 0, 1, &vertexBufferManager->getBuffer(cubeModelId).buffer, &offset);
+
+    // Draw three vertices with one instance.
+    vkCmdDraw(cmd, modelManager->getModel(cubeModelId)->getVertexCount(), 1, 0, 0);
 
     // Complete render pass.
     vkCmdEndRenderPass(cmd);

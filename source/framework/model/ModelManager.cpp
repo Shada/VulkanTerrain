@@ -18,7 +18,7 @@ uint32_t ModelManager::loadModel(const char *filename)
         LOGW("Model already loaded\n");
         return modelNameMap[filename];
     }
-    modelMap[idCounter] = std::make_shared<Model>();
+    modelMap[idCounter] = std::make_shared<Model>(filename);
     modelNameMap[filename] = idCounter;
 
     return idCounter++;

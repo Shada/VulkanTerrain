@@ -130,6 +130,9 @@ class Context
     std::unique_ptr<Camera> camera;
     ShaderDataBlock shaderDataBlock;
 
+    uint32_t triangleModelId;
+    uint32_t cubeModelId;
+
     uint32_t swapChainIndex;
 
     void terminateBackBuffers();

@@ -5,7 +5,8 @@ namespace Tobi
 
 BufferManager::BufferManager(std::shared_ptr<Platform> platform)
     : platform(platform),
-      buffers(std::map<uint32_t, Buffer>())
+      buffers(std::map<uint32_t, Buffer>()),
+      idCounter(1)
 {
     LOGI("CONSTRUCTING BufferManager\n");
 }
