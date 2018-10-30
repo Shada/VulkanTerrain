@@ -20,6 +20,6 @@ layout(location = 0) out mediump vec4 fragment_colour;
 
 void main()
 {	
-    gl_Position = params.view_projection * vertex_position;
+    gl_Position = params.view_projection * params.model * vertex_position;
     fragment_colour = vertex_colour;
 }

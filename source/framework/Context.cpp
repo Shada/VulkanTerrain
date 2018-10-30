@@ -43,7 +43,8 @@ Context::Context()
       uniformBufferManager(std::make_unique<UniformBufferManager>(platform)),
       swapChainIndex(0),
       camera(nullptr),
-      modelManager(std::make_unique<ModelManager>())
+      modelManager(std::make_unique<ModelManager>()),
+      objectManager(std::make_unique<ObjectManager>())
 {
     LOGI("CONSTRUCTING Context\n");
 }
@@ -119,8 +120,11 @@ Result Context::initialize()
 
     camera = std::make_unique<Camera>(platform->getSwapChainDimensions());
 
-    triangleModelId = loadModel("triangle");
-    cubeModelId = loadModel("cube");
+    auto triangleModelId = loadModel("triangle");
+    auto cubeModelId = loadModel("cube");
+
+    triangleId = objectManager->addObject(triangleModelId, {0, 1, 0}, {0, 0, 0}, {1.5, 1.5, 1.5});
+    cubeId = objectManager->addObject(cubeModelId, {1, 0, 0}, {0, 0, 0}, {0.5, 0.5, 0.5});
 
     LOGI("FINISHED INITIALIZING Context\n");
     return RESULT_SUCCESS;
@@ -619,8 +623,6 @@ Result Context::render()
     // Bind the graphics pipeline.
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
-    vkCmdPushConstants(cmd, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ShaderDataBlock), &shaderDataBlock);
-
     // Set up dynamic state.
     // Viewport
     VkViewport vp = {0};
@@ -643,6 +645,11 @@ Result Context::render()
 
     // Bind vertex buffer.
     VkDeviceSize offset = 0;
+    auto triangleModelId = objectManager->getMeshIndex(triangleId);
+    shaderDataBlock.modelMatrix = objectManager->getModelMatrix(triangleId);
+
+    vkCmdPushConstants(cmd, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ShaderDataBlock), &shaderDataBlock);
+
     vkCmdBindVertexBuffers(cmd, 0, 1, &vertexBufferManager->getBuffer(triangleModelId).buffer, &offset);
 
     // Draw three vertices with one instance.
@@ -651,6 +658,11 @@ Result Context::render()
     // draw cube
 
     // Bind vertex buffer.
+    auto cubeModelId = objectManager->getMeshIndex(cubeId);
+    shaderDataBlock.modelMatrix = objectManager->getModelMatrix(cubeId);
+
+    vkCmdPushConstants(cmd, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ShaderDataBlock), &shaderDataBlock);
+
     vkCmdBindVertexBuffers(cmd, 0, 1, &vertexBufferManager->getBuffer(cubeModelId).buffer, &offset);
 
     // Draw three vertices with one instance.

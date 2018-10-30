@@ -30,6 +30,7 @@
 #include "ShaderDataBlock.hpp"
 #include "../Game/Camera.hpp"
 #include "model/ModelManager.hpp"
+#include "model/ObjectManager.hpp"
 
 namespace Tobi
 {
@@ -126,12 +127,13 @@ class Context
     std::unique_ptr<UniformBufferManager> uniformBufferManager;
 
     std::unique_ptr<ModelManager> modelManager;
+    std::unique_ptr<ObjectManager> objectManager;
 
     std::unique_ptr<Camera> camera;
     ShaderDataBlock shaderDataBlock;
 
-    uint32_t triangleModelId;
-    uint32_t cubeModelId;
+    uint32_t triangleId;
+    uint32_t cubeId;
 
     uint32_t swapChainIndex;
 

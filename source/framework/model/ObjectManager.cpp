@@ -28,17 +28,17 @@ uint32_t ObjectManager::addObject(uint32_t meshIndex, glm::vec3 position, glm::v
 
 uint32_t ObjectManager::addObject(uint32_t meshIndex, glm::vec3 position, glm::vec3 rotation)
 {
-    return addObject(meshIndex, position, rotation, glm::vec3(0.f));
+    return addObject(meshIndex, position, rotation, glm::vec3(1.f));
 }
 
 uint32_t ObjectManager::addObject(uint32_t meshIndex, glm::vec3 position)
 {
-    return addObject(meshIndex, position, glm::vec3(0.f), glm::vec3(0.f));
+    return addObject(meshIndex, position, glm::vec3(0.f), glm::vec3(1.f));
 }
 
 uint32_t ObjectManager::addObject(uint32_t meshIndex)
 {
-    return addObject(meshIndex, glm::vec3(0.f), glm::vec3(0.f), glm::vec3(0.f));
+    return addObject(meshIndex, glm::vec3(0.f), glm::vec3(0.f), glm::vec3(1.f));
 }
 
 glm::mat4 ObjectManager::calculateMatrix(glm::vec3 position, glm::vec3 rotation, glm::vec3 scale)
