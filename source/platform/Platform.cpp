@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <vector>
+#include <map>
 
 #include "libvulkan-loader.hpp"
 #include "SemaphoreManager.hpp"
@@ -347,18 +348,18 @@ Result Platform::initInstance(
     // older, but compatible API versions.
     if (result == VK_ERROR_INCOMPATIBLE_DRIVER)
     {
-        applicationCreateInfo.apiVersion = VK_MAKE_VERSION(1, 0, 24);
+        applicationCreateInfo.apiVersion = VK_API_VERSION_1_1;
         result = vkCreateInstance(&instanceCreateInfo, nullptr, &instance);
         if (result == VK_SUCCESS)
-            LOGI("Created Vulkan instance with API version 1.0.2.\n");
+            LOGI("Created Vulkan instance with API version 1.1.0.\n");
     }
 
     if (result == VK_ERROR_INCOMPATIBLE_DRIVER)
     {
-        applicationCreateInfo.apiVersion = VK_MAKE_VERSION(1, 0, 1);
+        applicationCreateInfo.apiVersion = VK_API_VERSION_1_0;
         result = vkCreateInstance(&instanceCreateInfo, nullptr, &instance);
         if (result == VK_SUCCESS)
-            LOGI("Created Vulkan instance with API version 1.0.1.\n");
+            LOGI("Created Vulkan instance with API version 1.0.0.\n");
     }
 
     if (result != VK_SUCCESS)
@@ -409,39 +410,13 @@ Result Platform::initDebugReport()
 Result Platform::initPhysicalDevice(
     const std::vector<const char *> &requiredDeviceExtensions)
 {
-    uint32_t physicalDeviceCount = 0;
-    VK_CHECK(vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, nullptr));
+    physicalDevice = pickPhysicalDevice();
 
-    if (physicalDeviceCount < 1)
-    {
-        LOGE("Failed to enumerate Vulkan physical device.\n");
-        return RESULT_ERROR_GENERIC;
-    }
-
-    std::vector<VkPhysicalDevice> physicalDevices(physicalDeviceCount);
-    VK_CHECK(vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, physicalDevices.data()));
-
-    for (const auto &physicalDevice : physicalDevices)
-    {
-        VkPhysicalDeviceProperties properties;
-        vkGetPhysicalDeviceProperties(physicalDevice, &properties);
-
-#if defined(ARM) || defined(AARCH64)
-        // If we are on an arm-device and have multiple GPUs in our system, try to find a Mali device.
-        if (strstr(properties.deviceName, "Mali"))
-        {
-            physicalDevice = physicalDevice;
-            LOGI("Found ARM Mali physical device: %s.\n", properties.deviceName);
-            break;
-        }
-#else
-// find the most suitable device here
-#endif
-    }
-
-    // Fallback to the first GPU we find in the system.
     if (physicalDevice == VK_NULL_HANDLE)
-        physicalDevice = physicalDevices.front();
+    {
+        LOGE("Failed to find a suitable deice for the application");
+        abort();
+    }
 
     vkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
     vkGetPhysicalDeviceMemoryProperties(physicalDevice, &physicalDeviceMemoryProperties);
@@ -453,6 +428,67 @@ Result Platform::initPhysicalDevice(
     }
 
     return RESULT_SUCCESS;
+}
+
+int rateDeviceSuitability(VkPhysicalDevice physicalDevice)
+{
+    VkPhysicalDeviceProperties deviceProperties;
+    VkPhysicalDeviceFeatures deviceFeatures;
+    vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
+    vkGetPhysicalDeviceFeatures(physicalDevice, &deviceFeatures);
+
+    int score = 0;
+
+    // Discrete GPUs have a significant performance advantage
+    if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+    {
+        score += 1000;
+    }
+
+    // Maximum possible size of textures affects graphics quality
+    score += deviceProperties.limits.maxImageDimension2D;
+
+    // Application can't function without geometry shaders
+    if (!deviceFeatures.geometryShader)
+    {
+        return 0;
+    }
+
+    return score;
+}
+
+const VkPhysicalDevice Platform::pickPhysicalDevice() const
+{
+    uint32_t physicalDeviceCount = 0;
+    VK_CHECK(vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, nullptr));
+
+    if (physicalDeviceCount < 1)
+    {
+        LOGE("Failed to enumerate Vulkan physical device.\n");
+        return VK_NULL_HANDLE;
+    }
+
+    std::vector<VkPhysicalDevice> physicalDevices(physicalDeviceCount);
+    VK_CHECK(vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, physicalDevices.data()));
+
+    // Use an ordered map to automatically sort candidates by increasing score
+    std::multimap<int, VkPhysicalDevice> candidates;
+
+    for (const auto &physicalDevice : physicalDevices)
+    {
+        int score = rateDeviceSuitability(physicalDevice);
+        candidates.insert(std::make_pair(score, physicalDevice));
+    }
+
+    // Check if the best candidate is suitable at all
+    if (candidates.rbegin()->first > 0)
+    {
+        return candidates.rbegin()->second;
+    }
+    else
+    {
+        return VK_NULL_HANDLE;
+    }
 }
 
 Result Platform::initQueueFamilyIndices()

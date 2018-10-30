@@ -39,7 +39,6 @@ Context::Context()
       pipelineCache(VK_NULL_HANDLE),
       pipeline(VK_NULL_HANDLE),
       pipelineLayout(VK_NULL_HANDLE),
-      descriptorSetLayout(VK_NULL_HANDLE),
       perFrame(std::vector<std::unique_ptr<PerFrame>>()),
       vertexBufferManager(std::make_unique<VertexBufferManager>(platform)),
       uniformBufferManager(std::make_unique<UniformBufferManager>(platform)),
@@ -86,11 +85,11 @@ void Context::terminateBackBuffers()
         vkDestroyRenderPass(device, renderPass, nullptr);
         vkDestroyPipeline(device, pipeline, nullptr);
         vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
-        vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
         renderPass = VK_NULL_HANDLE;
         pipeline = VK_NULL_HANDLE;
         pipelineLayout = VK_NULL_HANDLE;
-        descriptorSetLayout = VK_NULL_HANDLE;
+        //descriptorPool = VK_NULL_HANDLE;
+        //descriptorSet = VK_NULL_HANDLE;
     }
 }
 
@@ -121,16 +120,6 @@ Result Context::initialize()
 
     LOGI("FINISHED INITIALIZING Context\n");
     return RESULT_SUCCESS;
-}
-
-const Buffer &Context::getVertexBuffer(uint32_t vertexBufferId) const
-{
-    return vertexBufferManager->getBuffer(vertexBufferId);
-}
-
-const Buffer &Context::getUniformBuffer(uint32_t uniformBufferId) const
-{
-    return uniformBufferManager->getBuffer(uniformBufferId);
 }
 
 /// @brief Gets the fence manager for the current swapchain image.
@@ -212,12 +201,6 @@ uint32_t Context::loadModel(const char *filename)
     auto vertexBufferId = vertexBufferManager->createBuffer(
         model->getVertexData(),
         model->getVertexDataSize());
-
-    ShaderDataBlock shaderDataBlock = {};
-
-    auto uniformBufferId = uniformBufferManager->createBuffer(
-        &shaderDataBlock,
-        sizeof(ShaderDataBlock));
 
     return vertexBufferId;
 }
@@ -315,7 +298,10 @@ void Context::updateSwapChain()
     // We can't initialize the renderpass until we know the swapchain format.
     initRenderPass(dimensions.format);
     // We can't initialize the pipeline until we know the render pass.
+
     initPipeline();
+    //initDescriptorPool();
+    //initDescriptorSet();
 
     // initialize new back buffers
 
@@ -433,24 +419,15 @@ void Context::initPipeline()
 {
     auto device = platform->getDevice();
 
-    VkDescriptorSetLayoutBinding descriptorSetLayoutBinding = {};
-    descriptorSetLayoutBinding.binding = 0;
-    descriptorSetLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-    descriptorSetLayoutBinding.descriptorCount = 1;
-    descriptorSetLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    VkPushConstantRange pushConstantRange = {};
+    pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    pushConstantRange.offset = 0;
+    pushConstantRange.size = sizeof(ShaderDataBlock);
 
-    VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {};
-    descriptorSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    descriptorSetLayoutCreateInfo.bindingCount = 1;
-    descriptorSetLayoutCreateInfo.pBindings = &descriptorSetLayoutBinding;
-
-    VK_CHECK(vkCreateDescriptorSetLayout(platform->getDevice(), &descriptorSetLayoutCreateInfo, nullptr, &descriptorSetLayout));
-
-    // Create a blank pipeline layout.
-    // We are not binding any resources to the pipeline in this first sample.
     VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
-    pipelineLayoutCreateInfo.setLayoutCount = 1;
-    pipelineLayoutCreateInfo.pSetLayouts = &descriptorSetLayout;
+    pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
+    pipelineLayoutCreateInfo.pPushConstantRanges = &pushConstantRange;
+
     VK_CHECK(vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout));
 
     // Specify we will use triangle lists to draw geometry.
@@ -623,6 +600,9 @@ Result Context::render(float time)
     // Bind the graphics pipeline.
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
+    ShaderDataBlock shaderDataBlock = {};
+    vkCmdPushConstants(cmd, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ShaderDataBlock), &shaderDataBlock);
+
     // Set up dynamic state.
     // Viewport
     VkViewport vp = {0};
@@ -643,7 +623,7 @@ Result Context::render(float time)
 
     // Bind vertex buffer.
     VkDeviceSize offset = 0;
-    vkCmdBindVertexBuffers(cmd, 0, 1, &getVertexBuffer(0).buffer, &offset);
+    vkCmdBindVertexBuffers(cmd, 0, 1, &vertexBufferManager->getBuffer(0).buffer, &offset);
 
     // Draw three vertices with one instance.
     vkCmdDraw(cmd, 3, 1, 0, 0);

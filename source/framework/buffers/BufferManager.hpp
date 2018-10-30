@@ -26,6 +26,11 @@ class BufferManager
         return buffers[index];
     }
 
+    const VkDescriptorBufferInfo &getBufferInfo(uint32_t index)
+    {
+        return buffers[index].bufferInfo;
+    }
+
   private:
     std::shared_ptr<Platform> platform;
 

@@ -175,6 +175,8 @@ class Platform
     Result initPhysicalDevice(
         const std::vector<const char *> &requiredDeviceExtensions);
 
+    const VkPhysicalDevice pickPhysicalDevice() const;
+
     virtual Result initSurface() = 0;
 
     Result initQueueFamilyIndices();

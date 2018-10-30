@@ -105,9 +105,6 @@ class Context
 
     const auto &getBackBuffer(uint32_t swapChainIndex) const { return backBuffers[swapChainIndex]; }
 
-    const Buffer &getVertexBuffer(uint32_t vertexBufferId) const;
-    const Buffer &getUniformBuffer(uint32_t uniformBufferId) const;
-
   private:
     std::shared_ptr<Platform> platform;
 
@@ -118,7 +115,6 @@ class Context
     VkPipelineCache pipelineCache;
     VkPipeline pipeline;
     VkPipelineLayout pipelineLayout;
-    VkDescriptorSetLayout descriptorSetLayout;
 
     std::vector<std::unique_ptr<PerFrame>> perFrame;
 
