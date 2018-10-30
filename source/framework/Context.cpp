@@ -88,8 +88,6 @@ void Context::terminateBackBuffers()
         renderPass = VK_NULL_HANDLE;
         pipeline = VK_NULL_HANDLE;
         pipelineLayout = VK_NULL_HANDLE;
-        //descriptorPool = VK_NULL_HANDLE;
-        //descriptorSet = VK_NULL_HANDLE;
     }
 }
 
@@ -300,8 +298,6 @@ void Context::updateSwapChain()
     // We can't initialize the pipeline until we know the render pass.
 
     initPipeline();
-    //initDescriptorPool();
-    //initDescriptorSet();
 
     // initialize new back buffers
 
