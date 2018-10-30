@@ -27,6 +27,8 @@
 #include "Status.hpp"
 #include "../platform/SwapChainDimensions.hpp"
 #include "buffers/Buffer.hpp"
+#include "ShaderDataBlock.hpp"
+#include "../Game/Camera.hpp"
 
 namespace Tobi
 {
@@ -59,7 +61,8 @@ class Context
 
     Result initialize();
 
-    Result render(float time);
+    Result update(float time);
+    Result render();
 
     uint32_t loadModel(const char *filename);
 
@@ -120,6 +123,9 @@ class Context
 
     std::unique_ptr<VertexBufferManager> vertexBufferManager;
     std::unique_ptr<UniformBufferManager> uniformBufferManager;
+
+    std::unique_ptr<Camera> camera;
+    ShaderDataBlock shaderDataBlock;
 
     uint32_t swapChainIndex;
 

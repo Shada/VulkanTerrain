@@ -25,7 +25,6 @@
 #include "buffers/VertexBufferManager.hpp"
 #include "buffers/UniformBufferManager.hpp"
 #include "model/Model.hpp"
-#include "ShaderDataBlock.hpp"
 
 #include "../platform/AssetManager.hpp"
 
@@ -42,7 +41,8 @@ Context::Context()
       perFrame(std::vector<std::unique_ptr<PerFrame>>()),
       vertexBufferManager(std::make_unique<VertexBufferManager>(platform)),
       uniformBufferManager(std::make_unique<UniformBufferManager>(platform)),
-      swapChainIndex(0)
+      swapChainIndex(0),
+      camera(nullptr)
 {
     LOGI("CONSTRUCTING Context\n");
 }
@@ -115,6 +115,8 @@ Result Context::initialize()
     }
 
     updateSwapChain();
+
+    camera = std::make_unique<Camera>(platform->getSwapChainDimensions());
 
     LOGI("FINISHED INITIALIZING Context\n");
     return RESULT_SUCCESS;
@@ -564,7 +566,20 @@ VkShaderModule Context::loadShaderModule(VkDevice device, const char *pPath)
     return shaderModule;
 }
 
-Result Context::render(float time)
+Result Context::update(float time)
+{
+    // TODO:change to within epsilon
+    if (time == 0.0)
+        return RESULT_SUCCESS;
+
+    camera->update(time);
+
+    shaderDataBlock.viewProjectionMatrix = camera->getViewProjectionMatrix();
+
+    return RESULT_SUCCESS;
+}
+
+Result Context::render()
 {
     // Request a fresh command buffer.
     auto cmd = requestPrimaryCommandBuffer();
@@ -596,7 +611,6 @@ Result Context::render(float time)
     // Bind the graphics pipeline.
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
-    ShaderDataBlock shaderDataBlock = {};
     vkCmdPushConstants(cmd, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ShaderDataBlock), &shaderDataBlock);
 
     // Set up dynamic state.

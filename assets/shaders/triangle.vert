@@ -12,14 +12,14 @@ layout(location = 1) in vec4 vertex_colour;
 
 layout(std140, push_constant) uniform param_block 
 {
-	mat4 view_projection;
 	mat4 model;
+	mat4 view_projection;
 } params;
 
 layout(location = 0) out mediump vec4 fragment_colour;
 
 void main()
 {	
-    gl_Position = vertex_position;
+    gl_Position = params.view_projection * vertex_position;
     fragment_colour = vertex_colour;
 }

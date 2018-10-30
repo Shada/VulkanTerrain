@@ -27,13 +27,18 @@ class ApplicationStart
     int run()
     {
         auto frameCount = static_cast<uint32_t>(0);
-        auto startTime = context->getCurrentTime();
+        auto startTime = 0.0;
+        auto frameTime = 0.0;
+        auto totalRunTime = 0.0;
+        auto fpsReportTime = 0.0;
 
         auto maxFrameCount = static_cast<uint32_t>(100);
         auto useMaxFrameCount = false;
 
         while (context->getWindowStatus() == Status::STATUS_RUNNING)
         {
+            startTime = context->getCurrentTime();
+
             uint32_t swapChainIndex;
             auto result = context->acquireNextImage(swapChainIndex);
 
@@ -42,17 +47,24 @@ class ApplicationStart
                 LOGE("Unrecoverable swapchain error.\n");
                 break;
             }
-            result = context->render(0.0166f);
+
+            result = context->update(frameTime);
+
+            result = context->render();
 
             if (FAILED(result) && result != RESULT_ERROR_OUTDATED_SWAPCHAIN)
                 break;
 
+            auto endTime = context->getCurrentTime();
+            frameTime = endTime - startTime;
             frameCount++;
-            if (frameCount == 100)
+            totalRunTime += frameTime;
+            fpsReportTime += frameTime;
+            if (fpsReportTime >= 1.0)
             {
-                auto endTime = context->getCurrentTime();
-                LOGI("FPS: %.3f\n", frameCount / (endTime - startTime));
+                LOGI("FPS: %.3f\n", frameCount / fpsReportTime);
                 frameCount = 0;
+                fpsReportTime = 0.0;
                 startTime = endTime;
             }
             if (useMaxFrameCount && (--maxFrameCount == 0))
