@@ -24,7 +24,7 @@ class ApplicationStart
     }
     ~ApplicationStart() = default;
 
-    int run()
+    void run()
     {
         auto frameCount = static_cast<uint32_t>(0);
         auto startTime = 0.0;
@@ -58,8 +58,10 @@ class ApplicationStart
             auto endTime = context->getCurrentTime();
             frameTime = endTime - startTime;
             frameCount++;
+
             totalRunTime += frameTime;
             fpsReportTime += frameTime;
+
             if (fpsReportTime >= 1.0)
             {
                 LOGI("FPS: %.3f\n", frameCount / fpsReportTime);
@@ -70,8 +72,6 @@ class ApplicationStart
             if (useMaxFrameCount && (--maxFrameCount == 0))
                 break;
         }
-
-        return 0;
     }
 
   private:
@@ -90,5 +90,5 @@ int main()
     delete applicationStart;
     applicationStart = nullptr;
 
-    return 0;
+    return EXIT_SUCCESS;
 }

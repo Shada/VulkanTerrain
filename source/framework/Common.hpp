@@ -33,9 +33,11 @@
 #include <android/log.h>
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, "Tobi", __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, "Tobi", __VA_ARGS__)
+#define LOGW(...) __android_log_print(ANDROID_LOG_WARNING, "Tobi", __VA_ARGS__)
 #else
 #define LOGE(...) fprintf(stderr, "ERROR: " __VA_ARGS__)
 #define LOGI(...) fprintf(stderr, "INFO: " __VA_ARGS__)
+#define LOGW(...) fprintf(stderr, "WARNING: " __VA_ARGS__)
 #endif
 
 /// @brief Helper macro to test the result of Vulkan calls which can return an

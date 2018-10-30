@@ -42,7 +42,8 @@ Context::Context()
       vertexBufferManager(std::make_unique<VertexBufferManager>(platform)),
       uniformBufferManager(std::make_unique<UniformBufferManager>(platform)),
       swapChainIndex(0),
-      camera(nullptr)
+      camera(nullptr),
+      modelManager(std::make_unique<ModelManager>())
 {
     LOGI("CONSTRUCTING Context\n");
 }
@@ -196,7 +197,10 @@ uint32_t Context::loadModel(const char *filename)
     // use a model manager, that holds all models(?),
     // then have an class/struct that holds all necessary model data
     // return handle to that class/struct.
-    auto model = std::make_shared<Model>();
+
+    auto modelId = modelManager->loadModel("triangle");
+
+    auto model = modelManager->getModel(modelId);
 
     auto vertexBufferId = vertexBufferManager->createBuffer(
         model->getVertexData(),
@@ -605,6 +609,7 @@ Result Context::render()
     rpBegin.renderArea.extent.height = dim.height;
     rpBegin.clearValueCount = 1;
     rpBegin.pClearValues = &clearValue;
+
     // We will add draw commands in the same command buffer.
     vkCmdBeginRenderPass(cmd, &rpBegin, VK_SUBPASS_CONTENTS_INLINE);
 

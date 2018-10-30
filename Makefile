@@ -9,7 +9,7 @@ PLATFORMFILES = $(PFP)Platform.hpp $(PFP)xcb/PlatformXcb.hpp $(PFP)AssetManager.
 FRAMEWORKFILES = $(FWP)Context.hpp $(FWP)SemaphoreManager.hpp $(FWP)PerFrame.hpp \
 $(FWP)CommandBufferManager.hpp $(FWP)FenceManager.hpp $(FWP)buffers/VertexBufferManager.hpp \
 	$(FWP)buffers/UniformBufferManager.hpp $(FWP)buffers/BufferManager.hpp  $(FWP)model/Model.hpp \
-	source/Game/Camera.hpp
+	 $(FWP)model/ModelManager.hpp source/Game/Camera.hpp
 	
 BASEFILES =  source/libvulkan-loader.hpp
 DEPS=$(BASEFILES) $(UTILFILES) $(PIPEFILES) $(BUFFILES) $(CMDFILES)
@@ -18,7 +18,7 @@ PLATFORMFILES = obj/$(PFP)Platform.o obj/$(PFP)xcb/PlatformXcb.o obj/$(PFP)Asset
 FRAMEWORKFILES = obj/$(FWP)Context.o obj/$(FWP)SemaphoreManager.o obj/$(FWP)PerFrame.o \
  obj/$(FWP)CommandBufferManager.o obj/$(FWP)FenceManager.o obj/$(FWP)buffers/VertexBufferManager.o \
 	obj/$(FWP)buffers/UniformBufferManager.o obj/$(FWP)buffers/BufferManager.o obj/$(FWP)model/Model.o \
-	obj/source/Game/Camera.o
+	obj/$(FWP)model/ModelManager.o obj/source/Game/Camera.o
 BASEOBJ = obj/source/libvulkan-loader.o
 OBJ=$(BASEOBJ) $(PLATFORMFILES) $(FRAMEWORKFILES)
 

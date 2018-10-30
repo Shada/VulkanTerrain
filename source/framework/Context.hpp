@@ -29,6 +29,7 @@
 #include "buffers/Buffer.hpp"
 #include "ShaderDataBlock.hpp"
 #include "../Game/Camera.hpp"
+#include "model/ModelManager.hpp"
 
 namespace Tobi
 {
@@ -123,6 +124,8 @@ class Context
 
     std::unique_ptr<VertexBufferManager> vertexBufferManager;
     std::unique_ptr<UniformBufferManager> uniformBufferManager;
+
+    std::unique_ptr<ModelManager> modelManager;
 
     std::unique_ptr<Camera> camera;
     ShaderDataBlock shaderDataBlock;
