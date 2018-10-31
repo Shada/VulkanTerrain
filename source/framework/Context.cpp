@@ -45,18 +45,21 @@ Context::Context()
       uniformBufferManager(std::make_unique<UniformBufferManager>(platform)),
       swapChainIndex(0),
       camera(nullptr),
+      keyStates(std::make_shared<KeyStates>()),
       modelManager(std::make_unique<ModelManager>()),
       objectManager(std::make_unique<ObjectManager>())
 {
     LOGI("CONSTRUCTING Context\n");
+    EventDispatchersStruct::keyPressDispatcher->Reg(keyStates);
+    EventDispatchersStruct::keyReleaseDispatcher->Reg(keyStates);
 }
 
 Context::~Context()
 {
     LOGI("DECONSTRUCTING Context\n");
 
-    EventDispatchersStruct::keyPressDispatcher->Unreg(camera);
-    EventDispatchersStruct::keyReleaseDispatcher->Unreg(camera);
+    EventDispatchersStruct::keyPressDispatcher->Unreg(keyStates);
+    EventDispatchersStruct::keyReleaseDispatcher->Unreg(keyStates);
 
     waitIdle();
 
@@ -124,9 +127,6 @@ Result Context::initialize()
     updateSwapChain();
 
     camera = std::make_shared<Camera>(platform->getSwapChainDimensions());
-
-    EventDispatchersStruct::keyPressDispatcher->Reg(camera);
-    EventDispatchersStruct::keyReleaseDispatcher->Reg(camera);
 
     auto triangleModelId = loadModel("triangle");
     auto cubeModelId = loadModel("cube");

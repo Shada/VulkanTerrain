@@ -2,12 +2,14 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "KeyState.hpp"
+
 namespace Tobi
 {
 
 Camera::Camera(const SwapChainDimensions &swapChainDimensions)
     : swapChainDimensions(swapChainDimensions),
-      position(glm::vec3(3.f, 3.f, 7.f)),
+      position(glm::vec3(3.f, 1.f, 7.f)),
       lookDirection(glm::vec3(0.f, 0.f, -1.f)),
       up(glm::vec3(0.f, 1.f, 0.f))
 
@@ -32,6 +34,38 @@ void Camera::initialize()
 
 void Camera::update(float time)
 {
+    if (KeyStates::keyStates[TobiKeyCodes::TOBI_KEY_W] != KeyStates::keyStates[TobiKeyCodes::TOBI_KEY_S])
+    {
+        if (KeyStates::keyStates[TobiKeyCodes::TOBI_KEY_S])
+        {
+            movingDirection.z = 1.f;
+        }
+        else
+        {
+            movingDirection.z = -1.f;
+        }
+    }
+    else
+    {
+        movingDirection.z = 0.0f;
+    }
+
+    if (KeyStates::keyStates[TobiKeyCodes::TOBI_KEY_A] != KeyStates::keyStates[TobiKeyCodes::TOBI_KEY_D])
+    {
+        if (KeyStates::keyStates[TobiKeyCodes::TOBI_KEY_D])
+        {
+            movingDirection.x = 1.f;
+        }
+        else
+        {
+            movingDirection.x = -1.f;
+        }
+    }
+    else
+    {
+        movingDirection.x = 0.0f;
+    }
+
     auto speed = 0.5f;
     position += movingDirection * speed * time;
 

@@ -31,6 +31,7 @@
 #include "../Game/Camera.hpp"
 #include "model/ModelManager.hpp"
 #include "model/ObjectManager.hpp"
+#include "../Game/KeyState.hpp"
 
 namespace Tobi
 {
@@ -134,6 +135,9 @@ class Context
     std::unique_ptr<ObjectManager> objectManager;
 
     std::shared_ptr<Camera> camera;
+
+    std::shared_ptr<KeyStates> keyStates;
+
     ShaderDataBlock shaderDataBlock;
 
     uint32_t triangleId;

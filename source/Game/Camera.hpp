@@ -12,8 +12,7 @@
 namespace Tobi
 {
 
-class Camera : public Dispatcher<KeyPressEvent>::Listener,
-               public Dispatcher<KeyReleaseEvent>::Listener
+class Camera
 {
   public:
     Camera(const SwapChainDimensions &swapChainDimensions);
@@ -29,84 +28,6 @@ class Camera : public Dispatcher<KeyPressEvent>::Listener,
     {
         return viewProjectionMatrix;
     }
-
-    virtual void onEvent(KeyPressEvent &event, Dispatcher<KeyPressEvent> &sender)
-    {
-        switch (event.key)
-        {
-        case TobiKeyCodes::TOBI_KEY_W:
-        {
-            if (movingDirection.z == 0)
-                movingDirection.z = -1.f;
-            else
-                movingDirection.z = 0.f;
-        }
-        break;
-        case TobiKeyCodes::TOBI_KEY_S:
-        {
-            if (movingDirection.z == 0)
-                movingDirection.z = 1.f;
-            else
-                movingDirection.z = 0.f;
-        }
-        break;
-        case TobiKeyCodes::TOBI_KEY_A:
-        {
-            if (movingDirection.x == 0)
-                movingDirection.x = -1.f;
-            else
-                movingDirection.x = 0.f;
-        }
-        break;
-        case TobiKeyCodes::TOBI_KEY_D:
-        {
-            if (movingDirection.x == 0)
-                movingDirection.x = 1.f;
-            else
-                movingDirection.x = 0.f;
-        }
-        break;
-        default:
-        {
-        }
-        break;
-        }
-    };
-
-    virtual void onEvent(KeyReleaseEvent &event, Dispatcher<KeyReleaseEvent> &sender)
-    {
-        switch (event.key)
-        {
-        case TobiKeyCodes::TOBI_KEY_W:
-        {
-            if (movingDirection.z < 0)
-                movingDirection.z = 0;
-        }
-        break;
-        case TobiKeyCodes::TOBI_KEY_S:
-        {
-            if (movingDirection.z > 0)
-                movingDirection.z = 0;
-        }
-        break;
-        case TobiKeyCodes::TOBI_KEY_A:
-        {
-            if (movingDirection.x < 0)
-                movingDirection.x = 0;
-        }
-        break;
-        case TobiKeyCodes::TOBI_KEY_D:
-        {
-            if (movingDirection.x > 0)
-                movingDirection.x = 0;
-        }
-        break;
-        default:
-        {
-        }
-        break;
-        }
-    };
 
   private:
     void initialize();

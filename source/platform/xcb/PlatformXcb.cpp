@@ -1,7 +1,8 @@
 #include "platform/xcb/PlatformXcb.hpp"
 #include "framework/EventDispatchers.hpp"
 #include <X11/XKBlib.h>
-#include "../../Game/KeyCodes.hpp"
+#include "../../Game/KeyState.hpp"
+
 namespace Tobi
 {
 
@@ -53,34 +54,12 @@ Result PlatformXcb::presentImage(uint32_t index, const VkSemaphore &releaseSemap
         return RESULT_SUCCESS;
 }
 
-TobiKeyCodes convertStringToKeyCode(const char *keyName)
-{
-    if (strcmp(keyName, "w") == 0 || strcmp(keyName, "W") == 0)
-    {
-        return TobiKeyCodes::TOBI_KEY_W;
-    }
-    if (strcmp(keyName, "s") == 0 || strcmp(keyName, "S") == 0)
-    {
-        return TobiKeyCodes::TOBI_KEY_S;
-    }
-    if (strcmp(keyName, "a") == 0 || strcmp(keyName, "A") == 0)
-    {
-        return TobiKeyCodes::TOBI_KEY_A;
-    }
-    if (strcmp(keyName, "d") == 0 || strcmp(keyName, "D") == 0)
-    {
-        return TobiKeyCodes::TOBI_KEY_D;
-    }
-    return TobiKeyCodes::TOBI_NUM_KEYS;
-}
-
 void PlatformXcb::handleEvents()
 {
     xcb_generic_event_t *event;
     while ((event = xcb_poll_for_event(connection)) != nullptr)
     {
         auto code = event->response_type & ~0x80;
-        LOGI("EVENT\n");
         switch (code)
         {
         case XCB_CLIENT_MESSAGE:
@@ -101,23 +80,7 @@ void PlatformXcb::handleEvents()
             const auto keyPressEvent = reinterpret_cast<const xcb_key_press_event_t *>(event);
             auto keyCode = keyPressEvent->detail;
 
-            auto key = TobiKeyCodes::TOBI_KEY_UNDEFINED;
-
-            switch (keyCode)
-            {
-            case 111:
-            {
-                key = TobiKeyCodes::TOBI_KEY_W;
-            }
-            break;
-            case 116:
-            {
-                key = TobiKeyCodes::TOBI_KEY_S;
-            }
-            break;
-            }
-
-            KeyPressEvent keyEvent(key);
+            KeyPressEvent keyEvent(static_cast<uint32_t>(keyCode));
             EventDispatchersStruct::keyPressDispatcher->Dispatch(keyEvent);
 
             if (keyCode == 9)
@@ -130,22 +93,7 @@ void PlatformXcb::handleEvents()
             const auto keyReleaseEvent = reinterpret_cast<const xcb_key_release_event_t *>(event);
             auto keyCode = keyReleaseEvent->detail;
 
-            auto key = TobiKeyCodes::TOBI_KEY_UNDEFINED;
-            switch (keyCode)
-            {
-            case 111:
-            {
-                key = TobiKeyCodes::TOBI_KEY_W;
-            }
-            break;
-            case 116:
-            {
-                key = TobiKeyCodes::TOBI_KEY_S;
-            }
-            break;
-            }
-
-            KeyReleaseEvent keyEvent(static_cast<uint32_t>(key));
+            KeyReleaseEvent keyEvent(static_cast<uint32_t>(keyCode));
             EventDispatchersStruct::keyReleaseDispatcher->Dispatch(keyEvent);
 
             if (keyCode == 9)
