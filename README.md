@@ -11,24 +11,15 @@ Only supports linux for now, but I will make sure to make it cross-platform even
 Build using make:
     make TobiGame.out
 
-In this branch I perform a big refurbishment where I take ideas from other projects (such as github.com/ARM-Software/vulkan-sdk)
-I modify the code to suit my code standards and my own project structure.
-
-
 TODO:
-* Add cmake. 
+* Add cmake build. 
 * Add glslang (and other future external libs) as submodules 
-* Refactor vulkan-parts
-* Improve performance
+* Refactor vulkan-parts (mostly done, but still too much in vulkan stuff in context)
 * Add unit tests
-* Add vulkan validation layers
-* Make sure build speed is satisfactory (it's ok now, but could be better)
+* Load models from file
+* Iterate through objects when rendering/updating
+* Make scene that can hold collection of objects
+* Make option to load shaders with glslang 
 * Extract descriptor info from shaders
-* Load models
-* Load shaders from files
-* Make game loop more efficient (drawing is a bit slow)
-* Create camera with movement
-* Window resize is a bit slow as of now
-
-
-check https://github.com/ARM-software/vulkan-sdk.git
+* Make camera rotatable
+* Better key mapping
