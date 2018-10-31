@@ -48,6 +48,11 @@ class CommandBufferManager
         VkCommandBufferLevel bufferLevel,
         uint32_t queueFamilyIndex); // TODO: change to QueueTypeBit?
 
+    CommandBufferManager(const CommandBufferManager &) = delete;
+    CommandBufferManager(CommandBufferManager &&) = delete;
+    CommandBufferManager &operator=(const CommandBufferManager &) & = delete;
+    CommandBufferManager &operator=(CommandBufferManager &&) & = delete;
+
     /// @brief Destructor
     ~CommandBufferManager();
 

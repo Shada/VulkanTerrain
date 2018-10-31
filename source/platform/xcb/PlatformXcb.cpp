@@ -59,14 +59,35 @@ void PlatformXcb::handleEvents()
         switch (code)
         {
         case XCB_CLIENT_MESSAGE:
+        {
             if (reinterpret_cast<xcb_client_message_event_t *>(event)->data.data32[0] == atom_delete_window->atom)
                 status = STATUS_TEARDOWN;
-            break;
+        }
+        break;
 
         case XCB_DESTROY_NOTIFY:
+        {
             status = STATUS_TEARDOWN;
-            break;
         }
+        break;
+
+        case XCB_KEY_PRESS:
+        {
+            const auto keyPress = reinterpret_cast<const xcb_key_press_event_t *>(event);
+            if (keyPress->detail == 9)
+                status = STATUS_TEARDOWN;
+        }
+        break;
+
+        case XCB_KEY_RELEASE:
+        {
+            const auto keyRelease = reinterpret_cast<const xcb_key_release_event_t *>(event);
+            if (keyRelease->detail == 9)
+                status = STATUS_TEARDOWN;
+        }
+        break;
+        }
+
         free(event);
     }
 }
@@ -106,6 +127,7 @@ Result PlatformXcb::initWindow()
                                XCB_EVENT_MASK_LEAVE_WINDOW | XCB_EVENT_MASK_ENTER_WINDOW |
                                XCB_EVENT_MASK_STRUCTURE_NOTIFY | XCB_EVENT_MASK_PROPERTY_CHANGE |
                                XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE |
+                               XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_KEY_RELEASE |
                                XCB_EVENT_MASK_FOCUS_CHANGE};
 
     xcb_create_window(connection, XCB_COPY_FROM_PARENT, window, screen->root, 0, 0, 1280, 720, 0,

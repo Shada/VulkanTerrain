@@ -13,6 +13,10 @@ class BufferManager
 {
   public:
     BufferManager(std::shared_ptr<Platform> platform);
+    BufferManager(const BufferManager &) = delete;
+    BufferManager(BufferManager &&) = delete;
+    BufferManager &operator=(const BufferManager &) & = delete;
+    BufferManager &operator=(BufferManager &&) & = delete;
     virtual ~BufferManager();
 
     /// Creates a buffer and returns the id

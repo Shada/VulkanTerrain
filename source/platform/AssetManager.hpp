@@ -34,6 +34,10 @@ class AssetManager
 {
   public:
     AssetManager();
+    AssetManager(const AssetManager &) = delete;
+    AssetManager(AssetManager &&) = delete;
+    AssetManager &operator=(const AssetManager &) & = delete;
+    AssetManager &operator=(AssetManager &&) & = delete;
     ~AssetManager() = default;
 
     /// @brief Reads a binary file into typed container.

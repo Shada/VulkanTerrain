@@ -12,7 +12,11 @@ class Model
   public:
     //TODO: load models from file
     Model(const char *filename);
-    ~Model();
+    Model(const Model &) = delete;
+    Model(Model &&) = delete;
+    Model &operator=(const Model &) & = delete;
+    Model &operator=(Model &&) & = delete;
+    ~Model() = default;
 
     const void *getVertexData() const { return vertices.data(); }
     const uint32_t getVertexCount() const { return vertices.size(); }

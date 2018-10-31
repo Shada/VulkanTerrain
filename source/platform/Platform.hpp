@@ -15,6 +15,10 @@ class SemaphoreManager;
 class Platform
 {
   public:
+    Platform(const Platform &) = delete;
+    Platform(Platform &&) = delete;
+    Platform &operator=(const Platform &) & = delete;
+    Platform &operator=(Platform &&) & = delete;
     virtual ~Platform();
 
     void waitIdle();

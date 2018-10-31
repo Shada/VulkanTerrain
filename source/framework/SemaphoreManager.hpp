@@ -37,6 +37,11 @@ class SemaphoreManager
     /// @param device The Vulkan device
     SemaphoreManager(VkDevice device);
 
+    SemaphoreManager(const SemaphoreManager &) = delete;
+    SemaphoreManager(SemaphoreManager &&) = delete;
+    SemaphoreManager &operator=(const SemaphoreManager &) & = delete;
+    SemaphoreManager &operator=(SemaphoreManager &&) & = delete;
+
     /// @brief Destructor
     ~SemaphoreManager();
 

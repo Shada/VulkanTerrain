@@ -20,6 +20,10 @@ class ApplicationStart
 
         context->initialize();
     }
+    ApplicationStart(const ApplicationStart &) = delete;
+    ApplicationStart(ApplicationStart &&) = delete;
+    ApplicationStart &operator=(const ApplicationStart &) & = delete;
+    ApplicationStart &operator=(ApplicationStart &&) & = delete;
     ~ApplicationStart() = default;
 
     void run()

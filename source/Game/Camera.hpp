@@ -15,9 +15,9 @@ class Camera
   public:
     Camera(const SwapChainDimensions &swapChainDimensions);
     Camera(const Camera &) = delete;
-    Camera(Camera &&) = default;
+    Camera(Camera &&) = delete;
     Camera &operator=(const Camera &) & = delete;
-    Camera &operator=(Camera &&) & = default;
+    Camera &operator=(Camera &&) & = delete;
     ~Camera() = default;
 
     void update(float deltaTime);

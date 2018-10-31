@@ -13,6 +13,10 @@ namespace Tobi
 struct PerFrame
 {
     PerFrame(VkDevice device, uint32_t queueFamilyIndex);
+    PerFrame(const PerFrame &) = delete;
+    PerFrame(PerFrame &&) = delete;
+    PerFrame &operator=(const PerFrame &) & = delete;
+    PerFrame &operator=(PerFrame &&) & = delete;
     ~PerFrame();
 
     void beginFrame();

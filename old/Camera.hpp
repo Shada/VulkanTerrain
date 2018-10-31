@@ -15,9 +15,9 @@ class Camera
   public:
     Camera(std::shared_ptr<WindowSettings> windowSettings);
     Camera(const Camera &) = delete;
-    Camera(Camera &&) = default;
+    Camera(Camera &&) = delete;
     Camera &operator=(const Camera &) & = delete;
-    Camera &operator=(Camera &&) & = default;
+    Camera &operator=(Camera &&) & = delete;
     ~Camera() = default;
 
     const glm::mat4 &getModelViewProjectionMatrix()

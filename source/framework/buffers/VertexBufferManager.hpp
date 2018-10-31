@@ -8,6 +8,10 @@ class VertexBufferManager : public BufferManager
 {
   public:
     VertexBufferManager(std::shared_ptr<Platform> platform);
+    VertexBufferManager(const VertexBufferManager &) = delete;
+    VertexBufferManager(VertexBufferManager &&) = delete;
+    VertexBufferManager &operator=(const VertexBufferManager &) & = delete;
+    VertexBufferManager &operator=(VertexBufferManager &&) & = delete;
     ~VertexBufferManager() = default;
 
     const uint32_t createBuffer(

@@ -41,6 +41,11 @@ class FenceManager
     /// @param device The Vulkan device
     FenceManager(VkDevice device);
 
+    FenceManager(const FenceManager &) = delete;
+    FenceManager(FenceManager &&) = delete;
+    FenceManager &operator=(const FenceManager &) & = delete;
+    FenceManager &operator=(FenceManager &&) & = delete;
+
     /// @brief Destructor
     ~FenceManager();
 
@@ -53,7 +58,7 @@ class FenceManager
     /// for all GPU work to complete before this returns.
     void beginFrame();
 
-    /// @brief Called internally by the Context whenever submissions to GPU
+    /// @brief Called internally by the FenceManager whenever submissions to GPU
     /// happens.
     VkFence requestClearedFence();
 

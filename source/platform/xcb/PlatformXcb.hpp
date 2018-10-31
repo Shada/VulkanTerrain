@@ -11,6 +11,10 @@ class PlatformXcb : public Platform
 {
   public:
     PlatformXcb();
+    PlatformXcb(const PlatformXcb &) = delete;
+    PlatformXcb(PlatformXcb &&) = delete;
+    PlatformXcb &operator=(const PlatformXcb &) & = delete;
+    PlatformXcb &operator=(PlatformXcb &&) & = delete;
     ~PlatformXcb();
 
     /// @brief Presents an image to the swapchain.

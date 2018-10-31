@@ -12,6 +12,11 @@ class ModelManager
 {
   public:
     ModelManager();
+    ModelManager(const ModelManager &) = delete;
+    ModelManager(ModelManager &&) = delete;
+    ModelManager &operator=(const ModelManager &) & = delete;
+    ModelManager &operator=(ModelManager &&) & = delete;
+    ~ModelManager() = default;
 
     uint32_t loadModel(const char *filename);
 

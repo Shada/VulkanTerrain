@@ -13,10 +13,6 @@ Model::Model(const char *filename)
     initialize();
 }
 
-Model::~Model()
-{
-}
-
 void Model::initialize()
 {
     if (strcmp(filename, "triangle") == 0)

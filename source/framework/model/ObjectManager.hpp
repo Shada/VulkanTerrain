@@ -12,6 +12,11 @@ class ObjectManager
 {
   public:
     ObjectManager();
+    ObjectManager(const ObjectManager &) = delete;
+    ObjectManager(ObjectManager &&) = delete;
+    ObjectManager &operator=(const ObjectManager &) & = delete;
+    ObjectManager &operator=(ObjectManager &&) & = delete;
+    ~ObjectManager() = default;
 
     uint32_t addObject(uint32_t meshIndex);
     uint32_t addObject(uint32_t meshIndex, glm::vec3 position);
