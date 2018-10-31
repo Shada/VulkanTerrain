@@ -4,12 +4,12 @@ namespace Tobi
 {
 
 /// @brief Describes the status of the application lifecycle.
-enum Status
+enum TobiStatus
 {
     /// The application is running.
-    STATUS_RUNNING,
+    TOBI_STATUS_RUNNING,
     /// The application should exit as the user has requested it.
-    STATUS_TEARDOWN
+    TOBI_STATUS_TEARDOWN
 };
 
 } // namespace Tobi

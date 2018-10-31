@@ -3,7 +3,7 @@
 #include <vulkan/vulkan.hpp>
 
 #include "../framework/Common.hpp"
-#include "../framework/Status.hpp"
+#include "../framework/TobiStatus.hpp"
 
 #include "SwapChainDimensions.hpp"
 
@@ -50,7 +50,7 @@ class Platform
 
     inline const auto &getSwapChainImages() const { return swapChainImages; }
 
-    virtual const Status &getWindowStatus() const = 0;
+    virtual const TobiStatus &getWindowStatus() const = 0;
 
     /// @brief Returns the currently set debug callback.
     /// @returns The callback, or nullptr if not set.

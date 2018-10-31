@@ -24,7 +24,7 @@
 #include <vector>
 
 #include "Common.hpp"
-#include "Status.hpp"
+#include "TobiStatus.hpp"
 #include "../platform/SwapChainDimensions.hpp"
 #include "buffers/Buffer.hpp"
 #include "ShaderDataBlock.hpp"
@@ -108,7 +108,7 @@ class Context
 
     double getCurrentTime();
 
-    Status getWindowStatus();
+    TobiStatus getWindowStatus();
 
     const SwapChainDimensions &getSwapChainDimensions() const;
 

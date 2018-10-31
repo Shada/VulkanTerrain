@@ -3,7 +3,7 @@
 
 #include "framework/Context.hpp"
 
-#include "framework/Status.hpp"
+#include "framework/TobiStatus.hpp"
 
 // TODO: change so that platform is within context, and is not returned.
 // Only use the context to interact with vulkan platform
@@ -37,7 +37,7 @@ class ApplicationStart
         auto maxFrameCount = static_cast<uint32_t>(100);
         auto useMaxFrameCount = false;
 
-        while (context->getWindowStatus() == Status::STATUS_RUNNING)
+        while (context->getWindowStatus() == TobiStatus::TOBI_STATUS_RUNNING)
         {
             startTime = context->getCurrentTime();
 

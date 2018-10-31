@@ -274,7 +274,7 @@ VkSemaphore Context::beginFrame(uint32_t index, VkSemaphore acquireSemaphore)
     return perFrame[swapChainIndex]->setSwapchainAcquireSemaphore(acquireSemaphore);
 }
 
-Status Context::getWindowStatus()
+TobiStatus Context::getWindowStatus()
 {
     return platform->getWindowStatus();
 }

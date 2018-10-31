@@ -7,8 +7,8 @@ namespace Tobi
 
 Camera::Camera(const SwapChainDimensions &swapChainDimensions)
     : swapChainDimensions(swapChainDimensions),
-      position(glm::vec3(3, 3, 7)),
-      lookAt(glm::vec3(0.f)),
+      position(glm::vec3(3.f, 3.f, 7.f)),
+      lookDirection(glm::vec3(0.f, 0.f, -1.f)),
       up(glm::vec3(0.f, 1.f, 0.f))
 
 {
@@ -18,6 +18,7 @@ Camera::Camera(const SwapChainDimensions &swapChainDimensions)
 
 void Camera::initialize()
 {
+    auto lookAt = position + lookDirection;
     viewMatrix = glm::lookAt(position, lookAt, up);
 
     float aspect = static_cast<float>(swapChainDimensions.width) / static_cast<float>(swapChainDimensions.height);
@@ -34,6 +35,7 @@ void Camera::update(float time)
     auto speed = 0.5f;
     position += movingDirection * speed * time;
 
+    auto lookAt = position + lookDirection;
     viewMatrix = glm::lookAt(position, lookAt, up);
 
     viewProjectionMatrix = clipMatrix * projectionMatrix * viewMatrix;

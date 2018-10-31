@@ -1,5 +1,7 @@
 #include "platform/xcb/PlatformXcb.hpp"
 #include "framework/EventDispatchers.hpp"
+#include <X11/XKBlib.h>
+#include "../../Game/KeyCodes.hpp"
 namespace Tobi
 {
 
@@ -9,7 +11,8 @@ std::shared_ptr<Platform> Platform::create()
 }
 
 PlatformXcb::PlatformXcb()
-    : connection(nullptr),
+    : display(nullptr),
+      connection(nullptr),
       window(0),
       atom_delete_window(nullptr)
 {
@@ -40,7 +43,7 @@ Result PlatformXcb::presentImage(uint32_t index, const VkSemaphore &releaseSemap
 {
     handleEvents();
 
-    if (status == STATUS_RUNNING)
+    if (status == TOBI_STATUS_RUNNING)
     {
         Result result = Platform::presentImage(index, releaseSemaphore);
         xcb_flush(connection);
@@ -50,48 +53,103 @@ Result PlatformXcb::presentImage(uint32_t index, const VkSemaphore &releaseSemap
         return RESULT_SUCCESS;
 }
 
+TobiKeyCodes convertStringToKeyCode(const char *keyName)
+{
+    if (strcmp(keyName, "w") == 0 || strcmp(keyName, "W") == 0)
+    {
+        return TobiKeyCodes::TOBI_KEY_W;
+    }
+    if (strcmp(keyName, "s") == 0 || strcmp(keyName, "S") == 0)
+    {
+        return TobiKeyCodes::TOBI_KEY_S;
+    }
+    if (strcmp(keyName, "a") == 0 || strcmp(keyName, "A") == 0)
+    {
+        return TobiKeyCodes::TOBI_KEY_A;
+    }
+    if (strcmp(keyName, "d") == 0 || strcmp(keyName, "D") == 0)
+    {
+        return TobiKeyCodes::TOBI_KEY_D;
+    }
+    return TobiKeyCodes::TOBI_NUM_KEYS;
+}
+
 void PlatformXcb::handleEvents()
 {
     xcb_generic_event_t *event;
     while ((event = xcb_poll_for_event(connection)) != nullptr)
     {
         auto code = event->response_type & ~0x80;
+        LOGI("EVENT\n");
         switch (code)
         {
         case XCB_CLIENT_MESSAGE:
         {
             if (reinterpret_cast<xcb_client_message_event_t *>(event)->data.data32[0] == atom_delete_window->atom)
-                status = STATUS_TEARDOWN;
+                status = TOBI_STATUS_TEARDOWN;
         }
         break;
 
         case XCB_DESTROY_NOTIFY:
         {
-            status = STATUS_TEARDOWN;
+            status = TOBI_STATUS_TEARDOWN;
         }
         break;
 
         case XCB_KEY_PRESS:
         {
-            const auto keyPress = reinterpret_cast<const xcb_key_press_event_t *>(event);
+            const auto keyPressEvent = reinterpret_cast<const xcb_key_press_event_t *>(event);
+            auto keyCode = keyPressEvent->detail;
 
-            KeyPressEvent keyEvent(keyPress->detail);
+            auto key = TobiKeyCodes::TOBI_KEY_UNDEFINED;
+
+            switch (keyCode)
+            {
+            case 111:
+            {
+                key = TobiKeyCodes::TOBI_KEY_W;
+            }
+            break;
+            case 116:
+            {
+                key = TobiKeyCodes::TOBI_KEY_S;
+            }
+            break;
+            }
+
+            KeyPressEvent keyEvent(key);
             EventDispatchersStruct::keyPressDispatcher->Dispatch(keyEvent);
 
-            if (keyPress->detail == 9)
-                status = STATUS_TEARDOWN;
+            if (keyCode == 9)
+                status = TOBI_STATUS_TEARDOWN;
         }
         break;
 
         case XCB_KEY_RELEASE:
         {
-            const auto keyRelease = reinterpret_cast<const xcb_key_release_event_t *>(event);
+            const auto keyReleaseEvent = reinterpret_cast<const xcb_key_release_event_t *>(event);
+            auto keyCode = keyReleaseEvent->detail;
 
-            KeyReleaseEvent keyEvent(keyRelease->detail);
+            auto key = TobiKeyCodes::TOBI_KEY_UNDEFINED;
+            switch (keyCode)
+            {
+            case 111:
+            {
+                key = TobiKeyCodes::TOBI_KEY_W;
+            }
+            break;
+            case 116:
+            {
+                key = TobiKeyCodes::TOBI_KEY_S;
+            }
+            break;
+            }
+
+            KeyReleaseEvent keyEvent(static_cast<uint32_t>(key));
             EventDispatchersStruct::keyReleaseDispatcher->Dispatch(keyEvent);
 
-            if (keyRelease->detail == 9)
-                status = STATUS_TEARDOWN;
+            if (keyCode == 9)
+                status = TOBI_STATUS_TEARDOWN;
         }
         break;
         }
@@ -125,7 +183,13 @@ Result PlatformXcb::initialize()
 
 Result PlatformXcb::initWindow()
 {
-    connection = xcb_connect(nullptr, nullptr);
+    display = XOpenDisplay(nullptr);
+
+    if (!display)
+        return RESULT_ERROR_IO;
+
+    connection = XGetXCBConnection(display);
+
     if (xcb_connection_has_error(connection))
         return RESULT_ERROR_IO;
 
@@ -158,7 +222,7 @@ Result PlatformXcb::initWindow()
     xcb_aux_sync(connection);
     handleEvents();
 
-    status = STATUS_RUNNING;
+    status = TOBI_STATUS_RUNNING;
 
     return RESULT_SUCCESS;
 }

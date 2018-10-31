@@ -4,10 +4,10 @@
 #include <glm/glm.hpp>
 
 #include "../framework/Common.hpp"
-
 #include "../platform/SwapChainDimensions.hpp"
-
 #include "../framework/EventDispatcher.hpp"
+
+#include "KeyCodes.hpp"
 
 namespace Tobi
 {
@@ -32,14 +32,80 @@ class Camera : public Dispatcher<KeyPressEvent>::Listener,
 
     virtual void onEvent(KeyPressEvent &event, Dispatcher<KeyPressEvent> &sender)
     {
-        // if press W
-        movingDirection.z = -1;
+        switch (event.key)
+        {
+        case TobiKeyCodes::TOBI_KEY_W:
+        {
+            if (movingDirection.z == 0)
+                movingDirection.z = -1.f;
+            else
+                movingDirection.z = 0.f;
+        }
+        break;
+        case TobiKeyCodes::TOBI_KEY_S:
+        {
+            if (movingDirection.z == 0)
+                movingDirection.z = 1.f;
+            else
+                movingDirection.z = 0.f;
+        }
+        break;
+        case TobiKeyCodes::TOBI_KEY_A:
+        {
+            if (movingDirection.x == 0)
+                movingDirection.x = -1.f;
+            else
+                movingDirection.x = 0.f;
+        }
+        break;
+        case TobiKeyCodes::TOBI_KEY_D:
+        {
+            if (movingDirection.x == 0)
+                movingDirection.x = 1.f;
+            else
+                movingDirection.x = 0.f;
+        }
+        break;
+        default:
+        {
+        }
+        break;
+        }
     };
 
     virtual void onEvent(KeyReleaseEvent &event, Dispatcher<KeyReleaseEvent> &sender)
     {
-        // if press W
-        movingDirection.z = 0;
+        switch (event.key)
+        {
+        case TobiKeyCodes::TOBI_KEY_W:
+        {
+            if (movingDirection.z < 0)
+                movingDirection.z = 0;
+        }
+        break;
+        case TobiKeyCodes::TOBI_KEY_S:
+        {
+            if (movingDirection.z > 0)
+                movingDirection.z = 0;
+        }
+        break;
+        case TobiKeyCodes::TOBI_KEY_A:
+        {
+            if (movingDirection.x < 0)
+                movingDirection.x = 0;
+        }
+        break;
+        case TobiKeyCodes::TOBI_KEY_D:
+        {
+            if (movingDirection.x > 0)
+                movingDirection.x = 0;
+        }
+        break;
+        default:
+        {
+        }
+        break;
+        }
     };
 
   private:
@@ -47,8 +113,9 @@ class Camera : public Dispatcher<KeyPressEvent>::Listener,
 
     const SwapChainDimensions &swapChainDimensions;
 
+    // free moving camera has a look direction
     glm::vec3 position;
-    glm::vec3 lookAt;
+    glm::vec3 lookDirection;
     glm::vec3 up;
 
     glm::vec3 movingDirection;
