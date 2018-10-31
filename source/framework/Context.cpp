@@ -28,6 +28,8 @@
 
 #include "../platform/AssetManager.hpp"
 
+#include "EventDispatchers.hpp"
+
 namespace Tobi
 {
 
@@ -52,6 +54,9 @@ Context::Context()
 Context::~Context()
 {
     LOGI("DECONSTRUCTING Context\n");
+
+    EventDispatchersStruct::keyPressDispatcher->Unreg(camera);
+    EventDispatchersStruct::keyReleaseDispatcher->Unreg(camera);
 
     waitIdle();
 
@@ -118,7 +123,10 @@ Result Context::initialize()
 
     updateSwapChain();
 
-    camera = std::make_unique<Camera>(platform->getSwapChainDimensions());
+    camera = std::make_shared<Camera>(platform->getSwapChainDimensions());
+
+    EventDispatchersStruct::keyPressDispatcher->Reg(camera);
+    EventDispatchersStruct::keyReleaseDispatcher->Reg(camera);
 
     auto triangleModelId = loadModel("triangle");
     auto cubeModelId = loadModel("cube");

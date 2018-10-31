@@ -133,7 +133,7 @@ class Context
     std::unique_ptr<ModelManager> modelManager;
     std::unique_ptr<ObjectManager> objectManager;
 
-    std::unique_ptr<Camera> camera;
+    std::shared_ptr<Camera> camera;
     ShaderDataBlock shaderDataBlock;
 
     uint32_t triangleId;

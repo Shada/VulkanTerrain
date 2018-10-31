@@ -1,5 +1,5 @@
 #include "platform/xcb/PlatformXcb.hpp"
-
+#include "framework/EventDispatchers.hpp"
 namespace Tobi
 {
 
@@ -74,6 +74,10 @@ void PlatformXcb::handleEvents()
         case XCB_KEY_PRESS:
         {
             const auto keyPress = reinterpret_cast<const xcb_key_press_event_t *>(event);
+
+            KeyPressEvent keyEvent(keyPress->detail);
+            EventDispatchersStruct::keyPressDispatcher->Dispatch(keyEvent);
+
             if (keyPress->detail == 9)
                 status = STATUS_TEARDOWN;
         }
@@ -82,6 +86,10 @@ void PlatformXcb::handleEvents()
         case XCB_KEY_RELEASE:
         {
             const auto keyRelease = reinterpret_cast<const xcb_key_release_event_t *>(event);
+
+            KeyReleaseEvent keyEvent(keyRelease->detail);
+            EventDispatchersStruct::keyReleaseDispatcher->Dispatch(keyEvent);
+
             if (keyRelease->detail == 9)
                 status = STATUS_TEARDOWN;
         }

@@ -31,6 +31,9 @@ void Camera::initialize()
 
 void Camera::update(float time)
 {
+    auto speed = 0.5f;
+    position += movingDirection * speed * time;
+
     viewMatrix = glm::lookAt(position, lookAt, up);
 
     viewProjectionMatrix = clipMatrix * projectionMatrix * viewMatrix;

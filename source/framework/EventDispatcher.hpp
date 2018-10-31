@@ -5,6 +5,8 @@
 #include <iostream>
 #include <algorithm>
 
+#include "Common.hpp"
+
 namespace Tobi
 {
 
@@ -64,6 +66,9 @@ struct KeyPressEvent
 
 class KeyPressDispatcher : public Dispatcher<KeyPressEvent>
 {
+  public:
+    KeyPressDispatcher() { LOGI("CONSTRUCTING KeyPressDispatcher\n"); };
+    ~KeyPressDispatcher() { LOGI("DECONSTRUCTING KeyPressDispatcher\n"); };
 };
 
 struct KeyReleaseEvent
@@ -74,6 +79,9 @@ struct KeyReleaseEvent
 
 class KeyReleaseDispatcher : public Dispatcher<KeyReleaseEvent>
 {
+  public:
+    KeyReleaseDispatcher() { LOGI("CONSTRUCTING KeyReleaseDispatcher\n"); };
+    ~KeyReleaseDispatcher() { LOGI("DECONSTRUCTING KeyReleaseDispatcher\n"); };
 };
 
 } // namespace Tobi

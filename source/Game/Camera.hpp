@@ -7,10 +7,13 @@
 
 #include "../platform/SwapChainDimensions.hpp"
 
+#include "../framework/EventDispatcher.hpp"
+
 namespace Tobi
 {
 
-class Camera
+class Camera : public Dispatcher<KeyPressEvent>::Listener,
+               public Dispatcher<KeyReleaseEvent>::Listener
 {
   public:
     Camera(const SwapChainDimensions &swapChainDimensions);
@@ -27,6 +30,18 @@ class Camera
         return viewProjectionMatrix;
     }
 
+    virtual void onEvent(KeyPressEvent &event, Dispatcher<KeyPressEvent> &sender)
+    {
+        // if press W
+        movingDirection.z = -1;
+    };
+
+    virtual void onEvent(KeyReleaseEvent &event, Dispatcher<KeyReleaseEvent> &sender)
+    {
+        // if press W
+        movingDirection.z = 0;
+    };
+
   private:
     void initialize();
 
@@ -35,6 +50,8 @@ class Camera
     glm::vec3 position;
     glm::vec3 lookAt;
     glm::vec3 up;
+
+    glm::vec3 movingDirection;
 
     glm::mat4 projectionMatrix;
     glm::mat4 viewMatrix;
