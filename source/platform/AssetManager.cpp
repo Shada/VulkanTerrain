@@ -19,6 +19,7 @@
  */
 
 #include "AssetManager.hpp"
+
 #include <stdio.h>
 #include <limits.h>
 #include <stdio.h>

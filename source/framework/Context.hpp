@@ -25,13 +25,14 @@
 
 #include "Common.hpp"
 #include "TobiStatus.hpp"
-#include "../platform/SwapChainDimensions.hpp"
-#include "buffers/Buffer.hpp"
 #include "ShaderDataBlock.hpp"
-#include "../Game/Camera.hpp"
+#include "ShaderDataBlock.hpp"
+#include "buffers/Buffer.hpp"
 #include "model/ModelManager.hpp"
 #include "model/ObjectManager.hpp"
-#include "../Game/KeyState.hpp"
+#include "../game/Camera.hpp"
+#include "../game/KeyState.hpp"
+#include "../platform/SwapChainDimensions.hpp"
 
 namespace Tobi
 {

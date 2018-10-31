@@ -1,5 +1,6 @@
 #include "ModelManager.hpp"
-#include "Common.hpp"
+
+#include "framework/Common.hpp"
 
 namespace Tobi
 {

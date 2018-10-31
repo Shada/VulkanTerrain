@@ -1,5 +1,5 @@
 #pragma once
-#include "../Platform.hpp"
+#include "platform/Platform.hpp"
 
 #include <X11/Xlib-xcb.h>
 #include <xcb/xcb.h>
@@ -27,7 +27,6 @@ class PlatformXcb : public Platform
     virtual const TobiStatus &getWindowStatus() const { return status; }
 
   private:
-    Display *display;
     xcb_connection_t *connection;
     xcb_window_t window;
     xcb_intern_atom_reply_t *atom_delete_window;

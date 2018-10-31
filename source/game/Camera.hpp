@@ -3,10 +3,9 @@
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 
-#include "../framework/Common.hpp"
 #include "../platform/SwapChainDimensions.hpp"
+#include "../framework/Common.hpp"
 #include "../framework/EventDispatcher.hpp"
-
 #include "KeyCodes.hpp"
 
 namespace Tobi

@@ -20,11 +20,12 @@
 
 #pragma once
 
-#include "../framework/Common.hpp"
 #include <stddef.h>
 #include <stdint.h>
 #include <vector>
 #include <string>
+
+#include "framework/Common.hpp"
 
 namespace Tobi
 {

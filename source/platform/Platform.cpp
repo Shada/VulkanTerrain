@@ -5,8 +5,8 @@
 #include <map>
 
 #include "libvulkan-loader.hpp"
-#include "SemaphoreManager.hpp"
-#include "../framework/Context.hpp"
+#include "framework/SemaphoreManager.hpp"
+#include "framework/Context.hpp"
 
 #ifdef FORCE_NO_VALIDATION
 #define ENABLE_VALIDATION_LAYERS 0

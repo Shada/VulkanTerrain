@@ -2,9 +2,10 @@
 
 #include <map>
 
-#include "../Common.hpp"
-#include "../../platform/Platform.hpp"
 #include "Buffer.hpp"
+
+#include "framework/Common.hpp"
+#include "platform/Platform.hpp"
 
 namespace Tobi
 {

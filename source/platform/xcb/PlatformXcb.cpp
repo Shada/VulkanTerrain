@@ -1,7 +1,6 @@
-#include "platform/xcb/PlatformXcb.hpp"
+#include "game/KeyState.hpp"
 #include "framework/EventDispatchers.hpp"
-#include <X11/XKBlib.h>
-#include "../../Game/KeyState.hpp"
+#include "platform/xcb/PlatformXcb.hpp"
 
 namespace Tobi
 {
@@ -12,8 +11,7 @@ std::shared_ptr<Platform> Platform::create()
 }
 
 PlatformXcb::PlatformXcb()
-    : display(nullptr),
-      connection(nullptr),
+    : connection(nullptr),
       window(0),
       atom_delete_window(nullptr)
 {
@@ -131,13 +129,7 @@ Result PlatformXcb::initialize()
 
 Result PlatformXcb::initWindow()
 {
-    display = XOpenDisplay(nullptr);
-
-    if (!display)
-        return RESULT_ERROR_IO;
-
-    connection = XGetXCBConnection(display);
-
+    connection = xcb_connect(nullptr, nullptr);
     if (xcb_connection_has_error(connection))
         return RESULT_ERROR_IO;
 
