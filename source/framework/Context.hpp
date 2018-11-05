@@ -141,8 +141,10 @@ class Context
 
     ShaderDataBlock shaderDataBlock;
 
+    // change to have these in a container?
     uint32_t triangleId;
     uint32_t cubeId;
+    uint32_t teapotId;
 
     uint32_t swapChainIndex;
 

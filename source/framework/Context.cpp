@@ -130,9 +130,11 @@ Result Context::initialize()
 
     auto triangleModelId = loadModel("triangle");
     auto cubeModelId = loadModel("cube");
+    auto teapotModelId = loadModel("teapot");
 
     triangleId = objectManager->addObject(triangleModelId, {0, 1, 0}, {0, 0, 0}, {1.5, 1.5, 1.5});
     cubeId = objectManager->addObject(cubeModelId, {1, 0, 0}, {0, 0, 0}, {0.5, 0.5, 0.5});
+    teapotId = objectManager->addObject(teapotModelId, {1, 0.5, 0}, {0, -1, 0}, {0.01, 0.01, 0.01});
 
     LOGI("FINISHED INITIALIZING Context\n");
     return RESULT_SUCCESS;
@@ -671,7 +673,7 @@ Result Context::render()
     // draw cube
 
     // Bind vertex buffer.
-    auto cubeModelId = objectManager->getMeshIndex(cubeId);
+    /*auto cubeModelId = objectManager->getMeshIndex(cubeId);
     shaderDataBlock.modelMatrix = objectManager->getModelMatrix(cubeId);
 
     vkCmdPushConstants(cmd, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ShaderDataBlock), &shaderDataBlock);
@@ -679,7 +681,20 @@ Result Context::render()
     vkCmdBindVertexBuffers(cmd, 0, 1, &vertexBufferManager->getBuffer(cubeModelId).buffer, &offset);
 
     // Draw three vertices with one instance.
-    vkCmdDraw(cmd, modelManager->getModel(cubeModelId)->getVertexCount(), 1, 0, 0);
+    vkCmdDraw(cmd, modelManager->getModel(cubeModelId)->getVertexCount(), 1, 0, 0);*/
+
+    // draw teapot
+
+    // Bind vertex buffer.
+    auto teapotModelId = objectManager->getMeshIndex(teapotId);
+    shaderDataBlock.modelMatrix = objectManager->getModelMatrix(teapotId);
+
+    vkCmdPushConstants(cmd, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ShaderDataBlock), &shaderDataBlock);
+
+    vkCmdBindVertexBuffers(cmd, 0, 1, &vertexBufferManager->getBuffer(teapotModelId).buffer, &offset);
+    auto howmany = modelManager->getModel(teapotModelId)->getVertexCount();
+    // Draw three vertices with one instance.
+    vkCmdDraw(cmd, howmany, 1, 0, 0);
 
     // Complete render pass.
     vkCmdEndRenderPass(cmd);
