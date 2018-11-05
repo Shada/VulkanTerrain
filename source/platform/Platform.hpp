@@ -84,6 +84,51 @@ class Platform
         abort();
     }
 
+    uint32_t findMemoryTypeFromRequirementsWithFallback(uint32_t deviceRequirements,
+                                                        uint32_t hostRequirements)
+    {
+        for (uint32_t i = 0; i < VK_MAX_MEMORY_TYPES; i++)
+        {
+            if (deviceRequirements & (1u << i))
+            {
+                if ((physicalDeviceMemoryProperties.memoryTypes[i].propertyFlags & hostRequirements) == hostRequirements)
+                {
+                    return i;
+                }
+            }
+        }
+
+        // If we cannot find the particular memory type we're looking for, just pick the first one available.
+        if (hostRequirements != 0)
+            return findMemoryTypeFromRequirements(deviceRequirements, 0);
+        else
+        {
+            LOGE("Failed to obtain suitable memory type.\n");
+            abort();
+        }
+    }
+
+    void createImage(
+        uint32_t width,
+        uint32_t height,
+        VkFormat format,
+        VkImageTiling tiling,
+        VkImageUsageFlags usage,
+        VkMemoryPropertyFlags properties,
+        VkImage &image,
+        VkDeviceMemory &imageMemory);
+
+    void transitionImageLayout(
+        VkImage image,
+        VkFormat format,
+        VkImageLayout oldLayout,
+        VkImageLayout newLayout);
+
+    VkImageView createImageView(
+        VkImage image,
+        VkFormat format,
+        VkImageAspectFlags aspectFlags);
+
   protected:
     Platform();
 
@@ -144,6 +189,8 @@ class Platform
     bool haveDebugReport;
 
     bool vsync;
+
+    VkCommandPool commandPool;
 
     /// List of external layers to load.
     std::vector<std::string> externalLayers;

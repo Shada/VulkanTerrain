@@ -51,7 +51,6 @@ struct BackBuffer
     // We need an image view to be able to access the image as a framebuffer.
     VkImageView view;
 
-    // The actual frameBuffer.
     VkFramebuffer frameBuffer;
 };
 
@@ -117,10 +116,20 @@ class Context
     const auto &getBackBuffer(uint32_t swapChainIndex) const { return backBuffers[swapChainIndex]; }
 
   private:
+    static const VkFormat depthBufferFormat = VK_FORMAT_D16_UNORM;
+
     std::shared_ptr<Platform> platform;
 
     std::vector<BackBuffer> backBuffers;
+
     VkRenderPass renderPass;
+
+    // Memory for the depth buffer.
+    VkDeviceMemory depthBufferMemory;
+    // Image for the depth buffer.
+    VkImage depthBufferImage;
+    // Image view for the depth buffer.
+    VkImageView depthBufferView;
 
     // TODO: move to pipeline class
     VkPipelineCache pipelineCache;
@@ -145,6 +154,7 @@ class Context
     uint32_t triangleId;
     uint32_t cubeId;
     uint32_t teapotId;
+    uint32_t spiderId;
 
     uint32_t swapChainIndex;
 
@@ -172,6 +182,7 @@ class Context
     void submitCommandBuffer(VkCommandBuffer commandBuffer, VkSemaphore acquireSemaphore, VkSemaphore releaseSemaphore);
 
     VkShaderModule loadShaderModule(VkDevice device, const char *pPath);
+    void initDepthBuffer(uint32_t width, uint32_t height);
 };
 
 } // namespace Tobi

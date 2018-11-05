@@ -98,6 +98,10 @@ void Context::terminateBackBuffers()
         renderPass = VK_NULL_HANDLE;
         pipeline = VK_NULL_HANDLE;
         pipelineLayout = VK_NULL_HANDLE;
+
+        vkDestroyImageView(device, depthBufferView, nullptr);
+        vkDestroyImage(device, depthBufferImage, nullptr);
+        vkFreeMemory(device, depthBufferMemory, nullptr);
     }
 }
 
@@ -131,10 +135,12 @@ Result Context::initialize()
     auto triangleModelId = loadModel("triangle");
     auto cubeModelId = loadModel("cube");
     auto teapotModelId = loadModel("teapot");
+    auto spiderModelId = loadModel("assets/models/spider.fbx");
 
     triangleId = objectManager->addObject(triangleModelId, {0, 1, 0}, {0, 0, 0}, {1.5, 1.5, 1.5});
     cubeId = objectManager->addObject(cubeModelId, {1, 0, 0}, {0, 0, 0}, {0.5, 0.5, 0.5});
     teapotId = objectManager->addObject(teapotModelId, {1, 0.5, 0}, {0, -1, 0}, {0.01, 0.01, 0.01});
+    spiderId = objectManager->addObject(spiderModelId, {1.5, 0.0, 0}, {0, 0, 0}, {0.01, 0.01, 0.01});
 
     LOGI("FINISHED INITIALIZING Context\n");
     return RESULT_SUCCESS;
@@ -322,7 +328,7 @@ void Context::updateSwapChain()
 
     initPipeline();
 
-    // initialize new back buffers
+    initDepthBuffer(dimensions.width, dimensions.height);
 
     // For all backbuffers in the swapchain ...
     for (auto image : newBackBufferImages)
@@ -348,10 +354,11 @@ void Context::updateSwapChain()
         VK_CHECK(vkCreateImageView(device, &view, nullptr, &backBuffer.view));
 
         // Build the framebuffer.
+        VkImageView attachments[2] = {backBuffer.view, depthBufferView};
         VkFramebufferCreateInfo fbInfo = {VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO};
         fbInfo.renderPass = renderPass;
-        fbInfo.attachmentCount = 1;
-        fbInfo.pAttachments = &backBuffer.view;
+        fbInfo.attachmentCount = 2;
+        fbInfo.pAttachments = attachments;
         fbInfo.width = dimensions.width;
         fbInfo.height = dimensions.height;
         fbInfo.layers = 1;
@@ -362,6 +369,59 @@ void Context::updateSwapChain()
     }
 }
 
+void Context::initDepthBuffer(uint32_t width, uint32_t height)
+{
+    VkDevice device = platform->getDevice();
+
+    // Create the image for the depth buffer. Note that imageInfo.usage includes the
+    // VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT flag. This flag allows lazy allocation of the depth buffer.
+    // For Mali GPU this flag will allow the driver to never allocate memory for the depth buffer and use the
+    // on-chip tile buffer instead.
+    VkImageCreateInfo imageInfo = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
+    imageInfo.imageType = VK_IMAGE_TYPE_2D;
+    imageInfo.format = depthBufferFormat;
+    imageInfo.extent.width = width;
+    imageInfo.extent.height = height;
+    imageInfo.extent.depth = 1;
+    imageInfo.mipLevels = 1;
+    imageInfo.arrayLayers = 1;
+    imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+    imageInfo.usage = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+    VK_CHECK(vkCreateImage(device, &imageInfo, nullptr, &depthBufferImage));
+
+    // Allocate memory for the depth image. Prefer a memory type with lazily allocation support.
+    VkMemoryRequirements memoryRequirements = {0};
+    vkGetImageMemoryRequirements(device, depthBufferImage, &memoryRequirements);
+    uint32_t memoryTypeIndex = platform->findMemoryTypeFromRequirementsWithFallback(memoryRequirements.memoryTypeBits,
+                                                                                    VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT);
+
+    VkMemoryAllocateInfo memInfo = {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
+    memInfo.allocationSize = memoryRequirements.size;
+    memInfo.memoryTypeIndex = memoryTypeIndex;
+
+    VK_CHECK(vkAllocateMemory(device, &memInfo, nullptr, &depthBufferMemory));
+    VK_CHECK(vkBindImageMemory(device, depthBufferImage, depthBufferMemory, 0));
+
+    // Create the depth buffer image.
+    VkImageViewCreateInfo viewInfo = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
+    viewInfo.image = depthBufferImage;
+    viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    viewInfo.format = depthBufferFormat;
+    viewInfo.components.r = VK_COMPONENT_SWIZZLE_R;
+    viewInfo.components.g = VK_COMPONENT_SWIZZLE_G;
+    viewInfo.components.b = VK_COMPONENT_SWIZZLE_B;
+    viewInfo.components.a = VK_COMPONENT_SWIZZLE_A;
+    viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+    viewInfo.subresourceRange.levelCount = 1;
+    viewInfo.subresourceRange.layerCount = 1;
+
+    VK_CHECK(vkCreateImageView(device, &viewInfo, nullptr, &depthBufferView));
+}
+
 double Context::getCurrentTime()
 {
     return OS::getCurrentTime();
@@ -369,30 +429,36 @@ double Context::getCurrentTime()
 
 void Context::initRenderPass(VkFormat format)
 {
-    VkAttachmentDescription attachment = {0};
-    // Backbuffer format.
-    attachment.format = format;
-    // Not multisampled.
-    attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-    // When starting the frame, we want tiles to be cleared.
-    attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    // When ending the frame, we want tiles to be written out.
-    attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    // Don't care about stencil since we're not using it.
-    attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    VkAttachmentDescription attachments[2] = {{0}};
+    // Setup the color attachment.
 
-    // The image layout will be undefined when the render pass begins.
-    attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    // After the render pass is complete, we will transition to PRESENT_SRC_KHR
-    // layout.
-    attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    // Color backbuffer format.
+    attachments[0].format = format;
+    // Not multisampled.
+    attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
+    // When starting the frame, we want tiles to be cleared.
+    attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    // When ending the frame, we want tiles to be written out.
+    attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    // Don't care about stencil since we're not using it.
+    attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    attachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    attachments[0].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+    // Setup the depth attachment.
+    attachments[1] = attachments[0];
+    attachments[1].format = depthBufferFormat;
+    attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    attachments[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    attachments[1].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
     // We have one subpass.
     // This subpass has 1 color attachment.
     // While executing this subpass, the attachment will be in attachment optimal
     // layout.
-    VkAttachmentReference colorRef = {0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
+    VkAttachmentReference colorAttachmentRef = {0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
+    VkAttachmentReference depthAttachmentRef = {1, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
 
     // We will end up with two transitions.
     // The first one happens right before we start subpass #0, where
@@ -405,7 +471,8 @@ void Context::initRenderPass(VkFormat format)
     VkSubpassDescription subpass = {0};
     subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     subpass.colorAttachmentCount = 1;
-    subpass.pColorAttachments = &colorRef;
+    subpass.pColorAttachments = &colorAttachmentRef;
+    subpass.pDepthStencilAttachment = &depthAttachmentRef;
 
     // Create a dependency to external events.
     // We need to wait for the WSI semaphore to signal.
@@ -415,17 +482,20 @@ void Context::initRenderPass(VkFormat format)
     VkSubpassDependency dependency = {0};
     dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
     dependency.dstSubpass = 0;
-    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+                              VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+                              VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
     // Since we changed the image layout, we need to make the memory visible to
     // color attachment to modify.
-    dependency.srcAccessMask = 0;
-    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    dependency.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+                               VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
 
     // Finally, create the renderpass.
     VkRenderPassCreateInfo rpInfo = {VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO};
-    rpInfo.attachmentCount = 1;
-    rpInfo.pAttachments = &attachment;
+    rpInfo.attachmentCount = 2;
+    rpInfo.pAttachments = attachments;
     rpInfo.subpassCount = 1;
     rpInfo.pSubpasses = &subpass;
     rpInfo.dependencyCount = 1;
@@ -512,8 +582,9 @@ void Context::initPipeline()
 
     // Disable all depth testing.
     VkPipelineDepthStencilStateCreateInfo depthStencil = {VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO};
-    depthStencil.depthTestEnable = false;
-    depthStencil.depthWriteEnable = false;
+    depthStencil.depthTestEnable = true;
+    depthStencil.depthWriteEnable = true;
+    depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
     depthStencil.depthBoundsTestEnable = false;
     depthStencil.stencilTestEnable = false;
 
@@ -616,11 +687,12 @@ Result Context::render()
     vkBeginCommandBuffer(cmd, &beginInfo);
 
     // Set clear color values.
-    VkClearValue clearValue;
-    clearValue.color.float32[0] = 0.1f;
-    clearValue.color.float32[1] = 0.1f;
-    clearValue.color.float32[2] = 0.2f;
-    clearValue.color.float32[3] = 1.0f;
+    VkClearValue clearValues[2] = {0};
+    clearValues[0].color.float32[0] = 0.1f;
+    clearValues[0].color.float32[1] = 0.1f;
+    clearValues[0].color.float32[2] = 0.2f;
+    clearValues[0].color.float32[3] = 1.0f;
+    clearValues[1].depthStencil.depth = 1.0f;
 
     // Begin the render pass.
     auto dim = getSwapChainDimensions();
@@ -629,8 +701,8 @@ Result Context::render()
     rpBegin.framebuffer = getBackBuffer(swapChainIndex).frameBuffer;
     rpBegin.renderArea.extent.width = dim.width;
     rpBegin.renderArea.extent.height = dim.height;
-    rpBegin.clearValueCount = 1;
-    rpBegin.pClearValues = &clearValue;
+    rpBegin.clearValueCount = 2;
+    rpBegin.pClearValues = clearValues;
 
     // We will add draw commands in the same command buffer.
     vkCmdBeginRenderPass(cmd, &rpBegin, VK_SUBPASS_CONTENTS_INLINE);
@@ -693,6 +765,19 @@ Result Context::render()
 
     vkCmdBindVertexBuffers(cmd, 0, 1, &vertexBufferManager->getBuffer(teapotModelId).buffer, &offset);
     auto howmany = modelManager->getModel(teapotModelId)->getVertexCount();
+    // Draw three vertices with one instance.
+    vkCmdDraw(cmd, howmany, 1, 0, 0);
+
+    // draw spider
+
+    // Bind vertex buffer.
+    auto spiderModelId = objectManager->getMeshIndex(spiderId);
+    shaderDataBlock.modelMatrix = objectManager->getModelMatrix(spiderId);
+
+    vkCmdPushConstants(cmd, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ShaderDataBlock), &shaderDataBlock);
+
+    vkCmdBindVertexBuffers(cmd, 0, 1, &vertexBufferManager->getBuffer(spiderModelId).buffer, &offset);
+    howmany = modelManager->getModel(spiderModelId)->getVertexCount();
     // Draw three vertices with one instance.
     vkCmdDraw(cmd, howmany, 1, 0, 0);
 
