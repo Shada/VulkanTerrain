@@ -452,20 +452,25 @@ void Context::initPipeline()
         VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO};
     inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 
-    // Specify our two attributes, Position and Color.
-    VkVertexInputAttributeDescription attributes[2] = {{0}};
+    // Specify our two attributes, Position, Normal, and Color.
+    VkVertexInputAttributeDescription attributes[3] = {{0}};
     attributes[0].location = 0; // Position in shader specifies layout(location =
     // 0) to link with this attribute.
     attributes[0].binding = 0; // Uses vertex buffer #0.
     attributes[0].format = VK_FORMAT_R32G32B32A32_SFLOAT;
     attributes[0].offset = 0;
-    attributes[1].location = 1; // Color in shader specifies layout(location = 1)
+    attributes[1].location = 1; // Normal in shader specifies layout(location = 1)
     // to link with this attribute.
     attributes[1].binding = 0; // Uses vertex buffer #0.
     attributes[1].format = VK_FORMAT_R32G32B32A32_SFLOAT;
     attributes[1].offset = 4 * sizeof(float);
+    attributes[2].location = 2; // Color in shader specifies layout(location = 1)
+    // to link with this attribute.
+    attributes[2].binding = 0; // Uses vertex buffer #0.
+    attributes[2].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+    attributes[2].offset = 8 * sizeof(float);
 
-    // We have one vertex buffer, with stride 8 floats (vec4 + vec4).
+    // We have one vertex buffer, with stride 12 floats (vec4 + vec4 + vec4).
     VkVertexInputBindingDescription binding = {0};
     binding.binding = 0;
     binding.stride = sizeof(Vertex); // We specify the buffer stride up front here.
@@ -475,7 +480,7 @@ void Context::initPipeline()
     VkPipelineVertexInputStateCreateInfo vertexInput = {VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
     vertexInput.vertexBindingDescriptionCount = 1;
     vertexInput.pVertexBindingDescriptions = &binding;
-    vertexInput.vertexAttributeDescriptionCount = 2;
+    vertexInput.vertexAttributeDescriptionCount = 3;
     vertexInput.pVertexAttributeDescriptions = attributes;
 
     // Specify rasterization state.
