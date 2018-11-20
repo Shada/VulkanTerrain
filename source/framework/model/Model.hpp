@@ -10,7 +10,6 @@ namespace Tobi
 class Model
 {
   public:
-    //TODO: load models from file
     Model(const char *filename);
     Model(const Model &) = delete;
     Model(Model &&) = delete;
@@ -22,9 +21,16 @@ class Model
     const uint32_t getVertexCount() const { return vertices.size(); }
     const uint32_t getVertexDataSize() const { return sizeof(Vertex) * vertices.size(); }
 
+    const void *getIndexData() const { return indices.data(); }
+    const uint32_t getIndexCount() const { return indices.size(); }
+    const uint32_t getIndexDataSize() const { return sizeof(uint32_t) * indices.size(); }
+
   private:
     std::vector<Vertex> vertices;
+    std::vector<uint32_t> indices;
     const char *filename;
+
+    // have the buffer managers here ? and the buffer ids ?
 
     void initialize();
 };

@@ -7,8 +7,8 @@
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
+#include <assimp/cimport.h>
 
-#include "Meshes.teapot.hpp"
 #include "Common.hpp"
 
 namespace Tobi
@@ -23,230 +23,176 @@ Model::Model(const char *filename)
 
 static const std::vector<Vertex> triangleMesh = {
     {
-        glm::vec4(-0.5f, -0.5f, -2.0f, +1.0f), // position
-        glm::vec4(+0.0f, +0.0f, +1.0f, +0.0f), // normal
-        glm::vec4(+1.0f, +0.0f, +0.0f, +0.0f), // colour
+        glm::vec3(-0.5f, -0.5f, -2.0f), // position
+        glm::vec3(+0.0f, +0.0f, +1.0f), // normal
+        glm::vec3(+1.0f, +0.0f, +0.0f), // colour
     },
     {
-        glm::vec4(+1.5f, -0.5f, -2.0f, +1.0f),
-        glm::vec4(+0.0f, +0.0f, +1.0f, +0.0f),
-        glm::vec4(+0.0f, +0.0f, +1.0f, +0.0f),
+        glm::vec3(+1.5f, -0.5f, -2.0f),
+        glm::vec3(+0.0f, +0.0f, +1.0f),
+        glm::vec3(+0.0f, +0.0f, +1.0f),
     },
     {
-        glm::vec4(-0.5f, +0.5f, -2.0f, +1.0f),
-        glm::vec4(+0.0f, +0.0f, +1.0f, +0.0f),
-        glm::vec4(+0.0f, +1.0f, +0.0f, +0.0f),
+        glm::vec3(-0.5f, +0.5f, -2.0f),
+        glm::vec3(+0.0f, +0.0f, +1.0f),
+        glm::vec3(+0.0f, +1.0f, +0.0f),
     }};
+
+static const std::vector<uint32_t> triangleIndices = {0, 1, 2};
 
 static const std::vector<Vertex> cubeMesh = {
     // red face
     {
-        glm::vec4(-1.0f, -1.0f, +1.0f, +1.0f),
-        glm::vec4(+0.0f, +0.0f, +1.0f, +0.0f),
-        glm::vec4(+1.0f, +0.0f, +0.0f, +0.0f),
+        glm::vec3(-1.0f, -1.0f, +1.0f),
+        glm::vec3(+0.0f, +0.0f, +1.0f),
+        glm::vec3(+1.0f, +0.0f, +0.0f),
     },
     {
-        glm::vec4(+1.0f, -1.0f, +1.0f, +1.0f),
-        glm::vec4(+0.0f, +0.0f, +1.0f, +0.0f),
-        glm::vec4(+1.0f, +0.0f, +0.0f, +0.0f),
+        glm::vec3(+1.0f, -1.0f, +1.0f),
+        glm::vec3(+0.0f, +0.0f, +1.0f),
+        glm::vec3(+1.0f, +0.0f, +0.0f),
     },
     {
-        glm::vec4(-1.0f, +1.0f, +1.0f, +1.0f),
-        glm::vec4(+0.0f, +0.0f, +1.0f, +0.0f),
-        glm::vec4(+1.0f, +0.0f, +0.0f, +0.0f),
+        glm::vec3(-1.0f, +1.0f, +1.0f),
+        glm::vec3(+0.0f, +0.0f, +1.0f),
+        glm::vec3(+1.0f, +0.0f, +0.0f),
     },
     {
-        glm::vec4(+1.0f, -1.0f, +1.0f, +1.0f),
-        glm::vec4(+0.0f, +0.0f, +1.0f, +0.0f),
-        glm::vec4(+1.0f, +0.0f, +0.0f, +0.0f),
-    },
-    {
-        glm::vec4(+1.0f, +1.0f, +1.0f, +1.0f),
-        glm::vec4(+0.0f, +0.0f, +1.0f, +0.0f),
-        glm::vec4(+1.0f, +0.0f, +0.0f, +0.0f),
-    },
-    {
-        glm::vec4(-1.0f, +1.0f, +1.0f, +1.0f),
-        glm::vec4(+0.0f, +0.0f, +1.0f, +0.0f),
-        glm::vec4(+1.0f, +0.0f, +0.0f, +0.0f),
+        glm::vec3(+1.0f, +1.0f, +1.0f),
+        glm::vec3(+0.0f, +0.0f, +1.0f),
+        glm::vec3(+1.0f, +0.0f, +0.0f),
     },
     // green face
     {
-        glm::vec4(-1.0f, -1.0f, -1.0f, +1.0f),
-        glm::vec4(+0.0f, +0.0f, -1.0f, +0.0f),
-        glm::vec4(+0.0f, +1.0f, +0.0f, +0.0f),
+        glm::vec3(-1.0f, -1.0f, -1.0f),
+        glm::vec3(+0.0f, +0.0f, -1.0f),
+        glm::vec3(+0.0f, +1.0f, +0.0f),
     },
     {
-        glm::vec4(-1.0f, +1.0f, -1.0f, +1.0f),
-        glm::vec4(+0.0f, +0.0f, -1.0f, +0.0f),
-        glm::vec4(+0.0f, +1.0f, +0.0f, +0.0f),
+        glm::vec3(-1.0f, +1.0f, -1.0f),
+        glm::vec3(+0.0f, +0.0f, -1.0f),
+        glm::vec3(+0.0f, +1.0f, +0.0f),
     },
     {
-        glm::vec4(+1.0f, -1.0f, -1.0f, +1.0f),
-        glm::vec4(+0.0f, +0.0f, -1.0f, +0.0f),
-        glm::vec4(+0.0f, +1.0f, +0.0f, +0.0f),
+        glm::vec3(+1.0f, -1.0f, -1.0f),
+        glm::vec3(+0.0f, +0.0f, -1.0f),
+        glm::vec3(+0.0f, +1.0f, +0.0f),
     },
     {
-        glm::vec4(-1.0f, +1.0f, -1.0f, +1.0f),
-        glm::vec4(+0.0f, +0.0f, -1.0f, +0.0f),
-        glm::vec4(+0.0f, +1.0f, +0.0f, +0.0f),
-    },
-    {
-        glm::vec4(+1.0f, +1.0f, -1.0f, +1.0f),
-        glm::vec4(+0.0f, +0.0f, -1.0f, +0.0f),
-        glm::vec4(+0.0f, +1.0f, +0.0f, +0.0f),
-    },
-    {
-        glm::vec4(+1.0f, -1.0f, -1.0f, +1.0f),
-        glm::vec4(+0.0f, +0.0f, -1.0f, +0.0f),
-        glm::vec4(+0.0f, +1.0f, +0.0f, +0.0f),
+        glm::vec3(+1.0f, +1.0f, -1.0f),
+        glm::vec3(+0.0f, +0.0f, -1.0f),
+        glm::vec3(+0.0f, +1.0f, +0.0f),
     },
     // blue face
     {
-        glm::vec4(-1.0f, +1.0f, +1.0f, +1.0f),
-        glm::vec4(-1.0f, +0.0f, +0.0f, +0.0f),
-        glm::vec4(+0.0f, +0.0f, +1.0f, +0.0f),
+        glm::vec3(-1.0f, +1.0f, +1.0f),
+        glm::vec3(-1.0f, +0.0f, +0.0f),
+        glm::vec3(+0.0f, +0.0f, +1.0f),
     },
     {
-        glm::vec4(-1.0f, +1.0f, -1.0f, +1.0f),
-        glm::vec4(-1.0f, +0.0f, +0.0f, +0.0f),
-        glm::vec4(+0.0f, +0.0f, +1.0f, +0.0f),
+        glm::vec3(-1.0f, +1.0f, -1.0f),
+        glm::vec3(-1.0f, +0.0f, +0.0f),
+        glm::vec3(+0.0f, +0.0f, +1.0f),
     },
     {
-        glm::vec4(-1.0f, -1.0f, +1.0f, +1.0f),
-        glm::vec4(-1.0f, +0.0f, +0.0f, +0.0f),
-        glm::vec4(+0.0f, +0.0f, +1.0f, +0.0f),
+        glm::vec3(-1.0f, -1.0f, +1.0f),
+        glm::vec3(-1.0f, +0.0f, +0.0f),
+        glm::vec3(+0.0f, +0.0f, +1.0f),
     },
     {
-        glm::vec4(-1.0f, +1.0f, -1.0f, +1.0f),
-        glm::vec4(-1.0f, +0.0f, +0.0f, +0.0f),
-        glm::vec4(+0.0f, +0.0f, +1.0f, +0.0f),
-    },
-    {
-        glm::vec4(-1.0f, -1.0f, -1.0f, +1.0f),
-        glm::vec4(-1.0f, +0.0f, +0.0f, +0.0f),
-        glm::vec4(+0.0f, +0.0f, +1.0f, +0.0f),
-    },
-    {
-        glm::vec4(-1.0f, -1.0f, +1.0f, +1.0f),
-        glm::vec4(-1.0f, +0.0f, +0.0f, +0.0f),
-        glm::vec4(+0.0f, +0.0f, +1.0f, +0.0f),
+        glm::vec3(-1.0f, -1.0f, -1.0f),
+        glm::vec3(-1.0f, +0.0f, +0.0f),
+        glm::vec3(+0.0f, +0.0f, +1.0f),
     },
     // yellow face
     {
-        glm::vec4(+1.0f, +1.0f, +1.0f, +1.0f),
-        glm::vec4(+1.0f, +0.0f, +0.0f, +0.0f),
-        glm::vec4(+1.0f, +1.0f, +0.0f, +0.0f),
+        glm::vec3(+1.0f, +1.0f, +1.0f),
+        glm::vec3(+1.0f, +0.0f, +0.0f),
+        glm::vec3(+1.0f, +1.0f, +0.0f),
     },
     {
-        glm::vec4(+1.0f, -1.0f, +1.0f, +1.0f),
-        glm::vec4(+1.0f, +0.0f, +0.0f, +0.0f),
-        glm::vec4(+1.0f, +1.0f, +0.0f, +0.0f),
+        glm::vec3(+1.0f, -1.0f, +1.0f),
+        glm::vec3(+1.0f, +0.0f, +0.0f),
+        glm::vec3(+1.0f, +1.0f, +0.0f),
     },
     {
-        glm::vec4(+1.0f, +1.0f, -1.0f, +1.0f),
-        glm::vec4(+1.0f, +0.0f, +0.0f, +0.0f),
-        glm::vec4(+1.0f, +1.0f, +0.0f, +0.0f),
+        glm::vec3(+1.0f, +1.0f, -1.0f),
+        glm::vec3(+1.0f, +0.0f, +0.0f),
+        glm::vec3(+1.0f, +1.0f, +0.0f),
     },
     {
-        glm::vec4(+1.0f, -1.0f, +1.0f, +1.0f),
-        glm::vec4(+1.0f, +0.0f, +0.0f, +0.0f),
-        glm::vec4(+1.0f, +1.0f, +0.0f, +0.0f),
-    },
-    {
-        glm::vec4(+1.0f, -1.0f, -1.0f, +1.0f),
-        glm::vec4(+1.0f, +0.0f, +0.0f, +0.0f),
-        glm::vec4(+1.0f, +1.0f, +0.0f, +0.0f),
-    },
-    {
-        glm::vec4(+1.0f, +1.0f, -1.0f, +1.0f),
-        glm::vec4(+1.0f, +0.0f, +0.0f, +0.0f),
-        glm::vec4(+1.0f, +1.0f, +0.0f, +0.0f),
+        glm::vec3(+1.0f, -1.0f, -1.0f),
+        glm::vec3(+1.0f, +0.0f, +0.0f),
+        glm::vec3(+1.0f, +1.0f, +0.0f),
     },
     // magenta face
     {
-        glm::vec4(+1.0f, +1.0f, +1.0f, +1.0f),
-        glm::vec4(+0.0f, +1.0f, +0.0f, +0.0f),
-        glm::vec4(+1.0f, +0.0f, +1.0f, +0.0f),
+        glm::vec3(+1.0f, +1.0f, +1.0f),
+        glm::vec3(+0.0f, +1.0f, +0.0f),
+        glm::vec3(+1.0f, +0.0f, +1.0f),
     },
     {
-        glm::vec4(+1.0f, +1.0f, -1.0f, +1.0f),
-        glm::vec4(+0.0f, +1.0f, +0.0f, +0.0f),
-        glm::vec4(+1.0f, +0.0f, +1.0f, +0.0f),
+        glm::vec3(+1.0f, +1.0f, -1.0f),
+        glm::vec3(+0.0f, +1.0f, +0.0f),
+        glm::vec3(+1.0f, +0.0f, +1.0f),
     },
     {
-        glm::vec4(-1.0f, +1.0f, +1.0f, +1.0f),
-        glm::vec4(+0.0f, +1.0f, +0.0f, +0.0f),
-        glm::vec4(+1.0f, +0.0f, +1.0f, +0.0f),
+        glm::vec3(-1.0f, +1.0f, +1.0f),
+        glm::vec3(+0.0f, +1.0f, +0.0f),
+        glm::vec3(+1.0f, +0.0f, +1.0f),
     },
     {
-        glm::vec4(+1.0f, +1.0f, -1.0f, +1.0f),
-        glm::vec4(+0.0f, +1.0f, +0.0f, +0.0f),
-        glm::vec4(+1.0f, +0.0f, +1.0f, +0.0f),
-    },
-    {
-        glm::vec4(-1.0f, +1.0f, -1.0f, +1.0f),
-        glm::vec4(+0.0f, +1.0f, +0.0f, +0.0f),
-        glm::vec4(+1.0f, +0.0f, +1.0f, +0.0f),
-    },
-    {
-        glm::vec4(-1.0f, +1.0f, +1.0f, +1.0f),
-        glm::vec4(+0.0f, +1.0f, +0.0f, +0.0f),
-        glm::vec4(+1.0f, +0.0f, +1.0f, +0.0f),
+        glm::vec3(-1.0f, +1.0f, -1.0f),
+        glm::vec3(+0.0f, +1.0f, +0.0f),
+        glm::vec3(+1.0f, +0.0f, +1.0f),
     },
     // cyan face
     {
-        glm::vec4(+1.0f, -1.0f, +1.0f, +1.0f),
-        glm::vec4(+0.0f, -1.0f, +0.0f, +0.0f),
-        glm::vec4(+0.0f, +1.0f, +1.0f, +0.0f),
+        glm::vec3(+1.0f, -1.0f, +1.0f),
+        glm::vec3(+0.0f, -1.0f, +0.0f),
+        glm::vec3(+0.0f, +1.0f, +1.0f),
     },
     {
-        glm::vec4(-1.0f, -1.0f, +1.0f, +1.0f),
-        glm::vec4(+0.0f, -1.0f, +0.0f, +0.0f),
-        glm::vec4(+0.0f, +1.0f, +1.0f, +0.0f),
+        glm::vec3(-1.0f, -1.0f, +1.0f),
+        glm::vec3(+0.0f, -1.0f, +0.0f),
+        glm::vec3(+0.0f, +1.0f, +1.0f),
     },
     {
-        glm::vec4(+1.0f, -1.0f, -1.0f, +1.0f),
-        glm::vec4(+0.0f, -1.0f, +0.0f, +0.0f),
-        glm::vec4(+0.0f, +1.0f, +1.0f, +0.0f),
+        glm::vec3(+1.0f, -1.0f, -1.0f),
+        glm::vec3(+0.0f, -1.0f, +0.0f),
+        glm::vec3(+0.0f, +1.0f, +1.0f),
     },
     {
-        glm::vec4(-1.0f, -1.0f, +1.0f, +1.0f),
-        glm::vec4(+0.0f, -1.0f, +0.0f, +0.0f),
-        glm::vec4(+0.0f, +1.0f, +1.0f, +0.0f),
-    },
-    {
-        glm::vec4(-1.0f, -1.0f, -1.0f, +1.0f),
-        glm::vec4(+0.0f, -1.0f, +0.0f, +0.0f),
-        glm::vec4(+0.0f, +1.0f, +1.0f, +0.0f),
-    },
-    {
-        glm::vec4(+1.0f, -1.0f, -1.0f, +1.0f),
-        glm::vec4(+0.0f, -1.0f, +0.0f, +0.0f),
-        glm::vec4(+0.0f, +1.0f, +1.0f, +0.0f),
+        glm::vec3(-1.0f, -1.0f, -1.0f),
+        glm::vec3(+0.0f, -1.0f, +0.0f),
+        glm::vec3(+0.0f, +1.0f, +1.0f),
     }};
+
+static const std::vector<uint32_t> cubeIndices = {
+    0, 1, 2,
+    1, 3, 2,
+    4, 5, 6,
+    5, 7, 6,
+    8, 9, 10,
+    9, 11, 10,
+    12, 13, 14,
+    13, 15, 14,
+    16, 17, 18,
+    17, 19, 18,
+    20, 21, 22,
+    21, 23, 22};
 
 void Model::initialize()
 {
     if (strcmp(filename, "triangle") == 0)
     {
         vertices = triangleMesh;
+        indices = triangleIndices;
     }
     else if (strcmp(filename, "cube") == 0)
     {
         vertices = cubeMesh;
-    }
-    else if (strcmp(filename, "teapot") == 0)
-    {
-        for (auto index : teapot_indices)
-        {
-            auto i = index * 3;
-            Vertex v;
-            v.position = glm::vec4(teapot_positions[i], teapot_positions[i + 1], teapot_positions[i + 2], 1.f);
-            v.normal = glm::vec4(teapot_normals[i], teapot_normals[i + 1], teapot_normals[i + 2], 0.f);
-            v.colour = glm::vec4(1.f, 1.f, 1.f, 0.f);
-            vertices.push_back(v);
-        }
+        indices = cubeIndices;
     }
     else
     {
@@ -265,7 +211,9 @@ void Model::initialize()
             return;
         }
 
-        auto scene = importer.ReadFile(filename, aiProcessPreset_TargetRealtime_Quality);
+        static const int assimpFlags = aiProcess_FlipWindingOrder | aiProcess_Triangulate | aiProcess_PreTransformVertices;
+
+        auto scene = importer.ReadFile(filename, assimpFlags);
 
         if (!scene)
         {
@@ -281,44 +229,34 @@ void Model::initialize()
             return;
         }
 
-        for (uint32_t meshId = 0; meshId < scene->mNumMeshes; meshId++)
+        for (uint32_t m = 0; m < scene->mNumMeshes; m++)
         {
-            const auto &mesh = scene->mMeshes[meshId];
-            for (uint32_t faceId = 0; faceId < mesh->mNumFaces; faceId++)
+            const auto &mesh = scene->mMeshes[m];
+            for (uint32_t v = 0; v < mesh->mNumVertices; v++)
             {
-                const auto &face = mesh->mFaces[faceId];
-                if (face.mNumIndices != 3)
-                    continue;
+                Vertex vertex;
+
+                vertex.position = glm::make_vec3(&mesh->mVertices[v].x);
+
+                vertex.normal = glm::make_vec3(&mesh->mNormals[v].x);
+
+                vertex.colour = (mesh->HasVertexColors(0))
+                                    ? glm::make_vec3(&mesh->mColors[0][v].r)
+                                    : glm::vec3(1.0f);
+                vertex.position.y *= -1.f;
+                vertices.push_back(vertex);
+            }
+        }
+
+        for (uint32_t m = 0; m < scene->mNumMeshes; m++)
+        {
+            uint32_t indexBase = static_cast<uint32_t>(indices.size());
+            for (uint32_t f = 0; f < scene->mMeshes[m]->mNumFaces; f++)
+            {
+                // We assume that all faces are triangulated
                 for (uint32_t i = 0; i < 3; i++)
                 {
-                    uint32_t vIndex = face.mIndices[i];
-                    Vertex v;
-
-                    v.position = glm::vec4(
-                        mesh->mVertices[vIndex].x,
-                        mesh->mVertices[vIndex].y,
-                        mesh->mVertices[vIndex].z,
-                        1.0f);
-
-                    v.normal = glm::vec4(
-                        mesh->mNormals[vIndex].x,
-                        mesh->mNormals[vIndex].y,
-                        mesh->mNormals[vIndex].z,
-                        0.0f);
-                    if (mesh->HasVertexColors(vIndex))
-                    {
-                        v.colour = glm::vec4(
-                            mesh->mColors[vIndex]->r,
-                            mesh->mColors[vIndex]->g,
-                            mesh->mColors[vIndex]->b,
-                            1.0f);
-                    }
-                    else
-                    {
-                        v.colour = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-                    }
-
-                    vertices.push_back(v);
+                    indices.push_back(scene->mMeshes[m]->mFaces[f].mIndices[i] + indexBase);
                 }
             }
         }

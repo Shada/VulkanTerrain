@@ -23,6 +23,7 @@
 #include "../platform/Platform.hpp"
 #include "PerFrame.hpp"
 #include "buffers/VertexBufferManager.hpp"
+#include "buffers/IndexBufferManager.hpp"
 #include "buffers/UniformBufferManager.hpp"
 #include "model/Model.hpp"
 
@@ -41,12 +42,14 @@ Context::Context()
       pipeline(VK_NULL_HANDLE),
       pipelineLayout(VK_NULL_HANDLE),
       perFrame(std::vector<std::unique_ptr<PerFrame>>()),
-      vertexBufferManager(std::make_unique<VertexBufferManager>(platform)),
-      uniformBufferManager(std::make_unique<UniformBufferManager>(platform)),
+      vertexBufferManager(std::make_shared<VertexBufferManager>(platform)),
+      indexBufferManager(std::make_shared<IndexBufferManager>(platform)),
+      uniformBufferManager(std::make_shared<UniformBufferManager>(platform)),
       swapChainIndex(0),
       camera(nullptr),
       keyStates(std::make_shared<KeyStates>()),
-      modelManager(std::make_unique<ModelManager>()),
+      modelManager(std::make_unique<ModelManager>(vertexBufferManager,
+                                                  indexBufferManager)),
       objectManager(std::make_unique<ObjectManager>())
 {
     LOGI("CONSTRUCTING Context\n");
@@ -134,13 +137,13 @@ Result Context::initialize()
 
     auto triangleModelId = loadModel("triangle");
     auto cubeModelId = loadModel("cube");
-    auto teapotModelId = loadModel("teapot");
     auto spiderModelId = loadModel("assets/models/spider.fbx");
+    auto cube2ModelId = loadModel("assets/models/cube.obj");
 
     triangleId = objectManager->addObject(triangleModelId, {0, 1, 0}, {0, 0, 0}, {1.5, 1.5, 1.5});
     cubeId = objectManager->addObject(cubeModelId, {1, 0, 0}, {0, 0, 0}, {0.5, 0.5, 0.5});
-    teapotId = objectManager->addObject(teapotModelId, {1, 0.5, 0}, {0, -1, 0}, {0.01, 0.01, 0.01});
-    spiderId = objectManager->addObject(spiderModelId, {1.5, 0.0, 0}, {0, 0, 0}, {0.01, 0.01, 0.01});
+    spiderId = objectManager->addObject(spiderModelId, {1.0, 1.0, -5}, {0, M_PI, 0}, {0.0001f, 0.0001f, 0.0001f});
+    cube2Id = objectManager->addObject(cube2ModelId, {-2.0, -2.0, -1}, {0, 0, 0}, {1.f, 1.f, 1.f});
 
     LOGI("FINISHED INITIALIZING Context\n");
     return RESULT_SUCCESS;
@@ -223,13 +226,7 @@ uint32_t Context::loadModel(const char *filename)
 
     auto modelId = modelManager->loadModel(filename);
 
-    auto model = modelManager->getModel(modelId);
-
-    auto vertexBufferId = vertexBufferManager->createBuffer(
-        model->getVertexData(),
-        model->getVertexDataSize());
-
-    return vertexBufferId;
+    return modelId;
 }
 
 const VkCommandBuffer &Context::requestPrimaryCommandBuffer() const
@@ -535,12 +532,12 @@ void Context::initPipeline()
     // to link with this attribute.
     attributes[1].binding = 0; // Uses vertex buffer #0.
     attributes[1].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-    attributes[1].offset = 4 * sizeof(float);
+    attributes[1].offset = 3 * sizeof(float);
     attributes[2].location = 2; // Color in shader specifies layout(location = 1)
     // to link with this attribute.
     attributes[2].binding = 0; // Uses vertex buffer #0.
     attributes[2].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-    attributes[2].offset = 8 * sizeof(float);
+    attributes[2].offset = 6 * sizeof(float);
 
     // We have one vertex buffer, with stride 12 floats (vec4 + vec4 + vec4).
     VkVertexInputBindingDescription binding = {0};
@@ -558,7 +555,7 @@ void Context::initPipeline()
     // Specify rasterization state.
     VkPipelineRasterizationStateCreateInfo raster = {VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO};
     raster.polygonMode = VK_POLYGON_MODE_FILL;
-    raster.cullMode = VK_CULL_MODE_BACK_BIT;
+    raster.cullMode = VK_CULL_MODE_NONE;
     raster.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
     raster.depthClampEnable = false;
     raster.rasterizerDiscardEnable = false;
@@ -733,53 +730,64 @@ Result Context::render()
     // Bind vertex buffer.
     VkDeviceSize offset = 0;
     auto triangleModelId = objectManager->getMeshIndex(triangleId);
+    auto vbId = modelManager->getVertexBufferIndex(triangleModelId);
+
     shaderDataBlock.modelMatrix = objectManager->getModelMatrix(triangleId);
 
     vkCmdPushConstants(cmd, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ShaderDataBlock), &shaderDataBlock);
 
-    vkCmdBindVertexBuffers(cmd, 0, 1, &vertexBufferManager->getBuffer(triangleModelId).buffer, &offset);
+    vkCmdBindVertexBuffers(cmd, 0, 1, &vertexBufferManager->getBuffer(vbId).buffer, &offset);
+    vkCmdBindIndexBuffer(cmd, indexBufferManager->getBuffer(vbId).buffer, offset, VK_INDEX_TYPE_UINT32);
 
     // Draw three vertices with one instance.
-    vkCmdDraw(cmd, modelManager->getModel(triangleModelId)->getVertexCount(), 1, 0, 0);
+    vkCmdDrawIndexed(cmd, modelManager->getModel(triangleModelId)->getIndexCount(), 1, 0, 0, 0);
 
     // draw cube
 
     // Bind vertex buffer.
-    /*auto cubeModelId = objectManager->getMeshIndex(cubeId);
+    auto cubeModelId = objectManager->getMeshIndex(cubeId);
+    vbId = modelManager->getVertexBufferIndex(cubeModelId);
     shaderDataBlock.modelMatrix = objectManager->getModelMatrix(cubeId);
 
     vkCmdPushConstants(cmd, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ShaderDataBlock), &shaderDataBlock);
 
-    vkCmdBindVertexBuffers(cmd, 0, 1, &vertexBufferManager->getBuffer(cubeModelId).buffer, &offset);
+    vkCmdBindVertexBuffers(cmd, 0, 1, &vertexBufferManager->getBuffer(vbId).buffer, &offset);
+    vkCmdBindIndexBuffer(cmd, indexBufferManager->getBuffer(vbId).buffer, offset, VK_INDEX_TYPE_UINT32);
 
     // Draw three vertices with one instance.
-    vkCmdDraw(cmd, modelManager->getModel(cubeModelId)->getVertexCount(), 1, 0, 0);*/
-
-    // draw teapot
-
-    // Bind vertex buffer.
-    auto teapotModelId = objectManager->getMeshIndex(teapotId);
-    shaderDataBlock.modelMatrix = objectManager->getModelMatrix(teapotId);
-
-    vkCmdPushConstants(cmd, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ShaderDataBlock), &shaderDataBlock);
-
-    vkCmdBindVertexBuffers(cmd, 0, 1, &vertexBufferManager->getBuffer(teapotModelId).buffer, &offset);
-    auto howmany = modelManager->getModel(teapotModelId)->getVertexCount();
-    // Draw three vertices with one instance.
-    vkCmdDraw(cmd, howmany, 1, 0, 0);
+    vkCmdDrawIndexed(cmd, modelManager->getModel(cubeModelId)->getIndexCount(), 1, 0, 0, 0);
 
     // draw spider
 
     // Bind vertex buffer.
     auto spiderModelId = objectManager->getMeshIndex(spiderId);
+    vbId = modelManager->getVertexBufferIndex(spiderModelId);
     shaderDataBlock.modelMatrix = objectManager->getModelMatrix(spiderId);
 
     vkCmdPushConstants(cmd, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ShaderDataBlock), &shaderDataBlock);
 
-    vkCmdBindVertexBuffers(cmd, 0, 1, &vertexBufferManager->getBuffer(spiderModelId).buffer, &offset);
-    howmany = modelManager->getModel(spiderModelId)->getVertexCount();
+    vkCmdBindVertexBuffers(cmd, 0, 1, &vertexBufferManager->getBuffer(vbId).buffer, &offset);
+    vkCmdBindIndexBuffer(cmd, indexBufferManager->getBuffer(vbId).buffer, offset, VK_INDEX_TYPE_UINT32);
+
+    auto howmany = modelManager->getModel(spiderModelId)->getIndexCount();
     // Draw three vertices with one instance.
-    vkCmdDraw(cmd, howmany, 1, 0, 0);
+    vkCmdDrawIndexed(cmd, howmany, 1, 0, 0, 0);
+
+    // draw cube 2
+
+    // Bind vertex buffer.
+    auto cube2ModelId = objectManager->getMeshIndex(cubeId);
+    vbId = modelManager->getVertexBufferIndex(cube2ModelId);
+    shaderDataBlock.modelMatrix = objectManager->getModelMatrix(cubeId);
+
+    vkCmdPushConstants(cmd, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ShaderDataBlock), &shaderDataBlock);
+
+    vkCmdBindVertexBuffers(cmd, 0, 1, &vertexBufferManager->getBuffer(vbId).buffer, &offset);
+    vkCmdBindIndexBuffer(cmd, indexBufferManager->getBuffer(vbId).buffer, offset, VK_INDEX_TYPE_UINT32);
+
+    howmany = modelManager->getModel(cube2ModelId)->getIndexCount();
+    // Draw three vertices with one instance.
+    vkCmdDrawIndexed(cmd, howmany, 1, 0, 0, 0);
 
     // Complete render pass.
     vkCmdEndRenderPass(cmd);

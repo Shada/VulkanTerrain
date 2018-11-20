@@ -39,6 +39,7 @@ namespace Tobi
 class Platform;
 class PerFrame;
 class VertexBufferManager;
+class IndexBufferManager;
 class UniformBufferManager;
 class FenceManager;
 
@@ -138,8 +139,9 @@ class Context
 
     std::vector<std::unique_ptr<PerFrame>> perFrame;
 
-    std::unique_ptr<VertexBufferManager> vertexBufferManager;
-    std::unique_ptr<UniformBufferManager> uniformBufferManager;
+    std::shared_ptr<VertexBufferManager> vertexBufferManager;
+    std::shared_ptr<IndexBufferManager> indexBufferManager;
+    std::shared_ptr<UniformBufferManager> uniformBufferManager;
 
     std::unique_ptr<ModelManager> modelManager;
     std::unique_ptr<ObjectManager> objectManager;
@@ -153,8 +155,8 @@ class Context
     // change to have these in a container?
     uint32_t triangleId;
     uint32_t cubeId;
-    uint32_t teapotId;
     uint32_t spiderId;
+    uint32_t cube2Id;
 
     uint32_t swapChainIndex;
 

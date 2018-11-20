@@ -2,9 +2,9 @@
 
 #include <vulkan/vulkan.hpp>
 
-#include "framework/Common.hpp"
-#include "framework/TobiStatus.hpp"
-#include "platform/SwapChainDimensions.hpp"
+#include "../framework/Common.hpp"
+#include "../framework/TobiStatus.hpp"
+#include "SwapChainDimensions.hpp"
 
 namespace Tobi
 {
