@@ -16,10 +16,14 @@ TODO:
 * Add glslang (and other future external libs) as submodules 
 * Refactor vulkan-parts (mostly done, but still too much in vulkan stuff in context)
 * Add unit tests
-* Load models from file
 * Iterate through objects when rendering/updating
 * Make scene that can hold collection of objects
 * Make option to load shaders with glslang 
 * Extract descriptor info from shaders
 * Make camera rotatable
-* Better key mapping
+* Better model / mesh / object management
+* Window aspect ratio distorts the scene (update projection matrix after window resize?)
+* Add texture support to models
+* Add instancing
+* Separate rendering from context-class
+* More optimized rendering (low frame rate when getting close to high-res object)
