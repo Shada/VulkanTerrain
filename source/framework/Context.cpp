@@ -138,12 +138,12 @@ Result Context::initialize()
     auto triangleModelId = loadModel("triangle");
     auto cubeModelId = loadModel("cube");
     auto spiderModelId = loadModel("assets/models/spider.fbx");
-    auto cube2ModelId = loadModel("assets/models/cube.obj");
+    auto cube2ModelId = loadModel("assets/models/BindPose.fbx");
 
     triangleId = objectManager->addObject(triangleModelId, {0, 1, 0}, {0, 0, 0}, {1.5, 1.5, 1.5});
     cubeId = objectManager->addObject(cubeModelId, {1, 0, 0}, {0, 0, 0}, {0.5, 0.5, 0.5});
     spiderId = objectManager->addObject(spiderModelId, {1.0, 1.0, -5}, {0, M_PI, 0}, {0.0001f, 0.0001f, 0.0001f});
-    cube2Id = objectManager->addObject(cube2ModelId, {-2.0, -2.0, -1}, {0, 0, 0}, {1.f, 1.f, 1.f});
+    cube2Id = objectManager->addObject(cube2ModelId, {0.0, -0.5, 2.5}, {0, M_PI, 0}, {0.1f, 0.1f, 0.1f});
 
     LOGI("FINISHED INITIALIZING Context\n");
     return RESULT_SUCCESS;
@@ -555,7 +555,7 @@ void Context::initPipeline()
     // Specify rasterization state.
     VkPipelineRasterizationStateCreateInfo raster = {VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO};
     raster.polygonMode = VK_POLYGON_MODE_FILL;
-    raster.cullMode = VK_CULL_MODE_NONE;
+    raster.cullMode = VK_CULL_MODE_BACK_BIT;
     raster.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
     raster.depthClampEnable = false;
     raster.rasterizerDiscardEnable = false;
@@ -776,9 +776,9 @@ Result Context::render()
     // draw cube 2
 
     // Bind vertex buffer.
-    auto cube2ModelId = objectManager->getMeshIndex(cubeId);
+    auto cube2ModelId = objectManager->getMeshIndex(cube2Id);
     vbId = modelManager->getVertexBufferIndex(cube2ModelId);
-    shaderDataBlock.modelMatrix = objectManager->getModelMatrix(cubeId);
+    shaderDataBlock.modelMatrix = objectManager->getModelMatrix(cube2Id);
 
     vkCmdPushConstants(cmd, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ShaderDataBlock), &shaderDataBlock);
 

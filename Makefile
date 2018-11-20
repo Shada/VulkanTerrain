@@ -27,9 +27,9 @@ BASEOBJ = obj/source/libvulkan-loader.o
 OBJ=$(BASEOBJ) $(PLATFORMOBJ) $(GAMEOBJ) $(FRAMEWORKOBJ)
 
 obj/%.o: %.cpp $(DEPS)
-	$(CXX) -c -g -o$@ $< $(CXXFLAGS) -std=c++17 
+	$(CXX) -c -O3 -o$@ $< $(CXXFLAGS) -std=c++17 
 
 TobiGame.out: $(OBJ)
-	$(CXX) -o $@ $^ -g -std=c++17 source/main.cpp -I$(VULKAN_SDK)/include -L$(VULKAN_SDK)/lib \
+	$(CXX) -o $@ $^ -O3 -std=c++17 source/main.cpp -I$(VULKAN_SDK)/include -L$(VULKAN_SDK)/lib \
 		-ldl -lxcb -lX11 -lX11-xcb -lxcb-util -lvulkan -lpthread -L/home/admin/Documents/Programming/vulkan/glslang/install/lib \
 		-lglslang -lHLSL -lSPIRV -lSPIRV-Tools-opt -lSPIRV-Tools -lassimp
