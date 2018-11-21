@@ -491,6 +491,62 @@ const VkPhysicalDevice Platform::pickPhysicalDevice() const
     }
 }
 
+/**
+		* Get the index of a queue family that supports the requested queue flags
+		*
+		* @param queueFlags Queue flags to find a queue family index for
+		*
+		* @return Index of the queue family index that matches the flags
+		*
+		* @throw Throws an exception if no queue family index could be found that supports the requested flags
+		*/
+uint32_t Platform::getQueueFamilyIndex(VkQueueFlagBits queueFlags)
+{
+    // Dedicated queue for compute
+    // Try to find a queue family index that supports compute but not graphics
+    if (queueFlags & VK_QUEUE_COMPUTE_BIT)
+    {
+        for (uint32_t i = 0; i < static_cast<uint32_t>(queueFamilyProperties.size()); i++)
+        {
+            if ((queueFamilyProperties[i].queueFlags & queueFlags) && ((queueFamilyProperties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) == 0))
+            {
+                supportedQueues |= VK_QUEUE_COMPUTE_BIT;
+                return i;
+                break;
+            }
+        }
+    }
+
+    // Dedicated queue for transfer
+    // Try to find a queue family index that supports transfer but not graphics and compute
+    if (queueFlags & VK_QUEUE_TRANSFER_BIT)
+    {
+        for (uint32_t i = 0; i < static_cast<uint32_t>(queueFamilyProperties.size()); i++)
+        {
+            if ((queueFamilyProperties[i].queueFlags & queueFlags) && ((queueFamilyProperties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) == 0) && ((queueFamilyProperties[i].queueFlags & VK_QUEUE_COMPUTE_BIT) == 0))
+            {
+                supportedQueues |= VK_QUEUE_TRANSFER_BIT;
+                return i;
+                break;
+            }
+        }
+    }
+
+    // For other queue types or if no separate compute queue is present, return the first one to support the requested flags
+    for (uint32_t i = 0; i < static_cast<uint32_t>(queueFamilyProperties.size()); i++)
+    {
+        if (queueFamilyProperties[i].queueFlags & queueFlags)
+        {
+            supportedQueues |= queueFlags;
+            return i;
+            break;
+        }
+    }
+    LOGE("Could not find a matching queue family index.\n");
+    return -1;
+}
+
+// TODO: specify which queue types that should be initialized
 Result Platform::initQueueFamilyIndices()
 {
     uint32_t queueCount;
@@ -503,64 +559,33 @@ Result Platform::initQueueFamilyIndices()
         return RESULT_ERROR_GENERIC;
     }
 
-    int32_t graphicsFamily = -1;
-    int32_t presentFamily = -1;
-    int32_t computeFamily = -1;
-    int32_t transferFamily = -1;
+    graphicsQueueFamilyIndex = getQueueFamilyIndex(VK_QUEUE_GRAPHICS_BIT);
+    computeQueueFamilyIndex = getQueueFamilyIndex(VK_QUEUE_COMPUTE_BIT);
+    transferQueueFamilyIndex = getQueueFamilyIndex(VK_QUEUE_TRANSFER_BIT);
+
     for (uint32_t i = 0; i < queueCount; i++)
     {
-        // Check for graphics support.
-        if (queueFamilyProperties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
-        {
-            graphicsFamily = i;
-            graphicsQueueFamilyIndex = i;
-            supportedQueues |= VK_QUEUE_GRAPHICS_BIT;
-        }
-
         // Check for presentation support.
         VkBool32 presentSupport = VK_FALSE;
         vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, surface, &presentSupport);
 
         if (queueFamilyProperties[i].queueCount > 0 && presentSupport)
         {
-            presentFamily = i;
             presentQueueFamilyIndex = i;
-        }
-
-        // Check for compute support.
-        if (queueFamilyProperties[i].queueFlags & VK_QUEUE_COMPUTE_BIT)
-        {
-            computeFamily = i;
-            computeQueueFamilyIndex = i;
-            supportedQueues |= VK_QUEUE_COMPUTE_BIT;
-        }
-
-        // Check for transfer support.
-        if (queueFamilyProperties[i].queueFlags & VK_QUEUE_TRANSFER_BIT)
-        {
-            transferFamily = i;
-            transferQueueFamilyIndex = i;
-            supportedQueues |= VK_QUEUE_TRANSFER_BIT;
-        }
-
-        if (graphicsFamily != -1 && presentFamily != -1 && computeFamily != -1 && transferFamily != -1)
-        {
             break;
         }
     }
 
-    if (graphicsFamily == -1)
+    if (graphicsQueueFamilyIndex == -1)
     {
-        LOGE("Did not find suitable queue which supports graphics, compute and "
-             "presentation.\n");
+        LOGE("Did not find suitable queue which supports graphics.\n");
         return RESULT_ERROR_GENERIC;
     }
 
     return RESULT_SUCCESS;
 }
 
-Result Platform::initDevice(
-    const std::vector<const char *> &requiredDeviceExtensions)
+Result Platform::initDevice(const std::vector<const char *> &requiredDeviceExtensions)
 {
     // create device
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos{};

@@ -229,6 +229,7 @@ class Platform
 
     virtual Result initSurface() = 0;
 
+    uint32_t getQueueFamilyIndex(VkQueueFlagBits queueFlags);
     Result initQueueFamilyIndices();
 
     Result initDevice(
