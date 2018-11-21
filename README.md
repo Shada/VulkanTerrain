@@ -26,4 +26,4 @@ TODO:
 * Add texture support to models
 * Add instancing
 * Separate rendering from context-class
-* More optimized rendering (low frame rate when getting close to high-res object)
+* More optimized rendering (use pre-build command buffer, etc)

@@ -203,18 +203,18 @@ void Context::submitCommandBuffer(VkCommandBuffer cmd, VkSemaphore acquireSemaph
     // on for synchronization purposes.
     VkFence fence = getFenceManager()->requestClearedFence();
 
-    VkSubmitInfo info = {VK_STRUCTURE_TYPE_SUBMIT_INFO};
-    info.commandBufferCount = 1;
-    info.pCommandBuffers = &cmd;
+    VkSubmitInfo submitInfo = {VK_STRUCTURE_TYPE_SUBMIT_INFO};
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &cmd;
 
     const VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    info.waitSemaphoreCount = acquireSemaphore != VK_NULL_HANDLE ? 1 : 0;
-    info.pWaitSemaphores = &acquireSemaphore;
-    info.pWaitDstStageMask = &waitStage;
-    info.signalSemaphoreCount = releaseSemaphore != VK_NULL_HANDLE ? 1 : 0;
-    info.pSignalSemaphores = &releaseSemaphore;
+    submitInfo.waitSemaphoreCount = acquireSemaphore != VK_NULL_HANDLE ? 1 : 0;
+    submitInfo.pWaitSemaphores = &acquireSemaphore;
+    submitInfo.pWaitDstStageMask = &waitStage;
+    submitInfo.signalSemaphoreCount = releaseSemaphore != VK_NULL_HANDLE ? 1 : 0;
+    submitInfo.pSignalSemaphores = &releaseSemaphore;
 
-    VK_CHECK(vkQueueSubmit(platform->getGraphicsQueue(), 1, &info, fence));
+    VK_CHECK(vkQueueSubmit(platform->getGraphicsQueue(), 1, &submitInfo, fence));
 }
 
 uint32_t Context::loadModel(const char *filename)
