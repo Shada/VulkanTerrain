@@ -117,14 +117,13 @@ class Context
     const auto &getBackBuffer(uint32_t swapChainIndex) const { return backBuffers[swapChainIndex]; }
 
   private:
-    static const VkFormat depthBufferFormat = VK_FORMAT_D16_UNORM;
-
     std::shared_ptr<Platform> platform;
 
     std::vector<BackBuffer> backBuffers;
 
     VkRenderPass renderPass;
 
+    VkFormat depthBufferFormat;
     // Memory for the depth buffer.
     VkDeviceMemory depthBufferMemory;
     // Image for the depth buffer.

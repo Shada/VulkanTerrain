@@ -319,9 +319,7 @@ Result Platform::initInstance(
 
     VkApplicationInfo applicationCreateInfo = {VK_STRUCTURE_TYPE_APPLICATION_INFO};
     applicationCreateInfo.pApplicationName = "Tobi Engine";
-    applicationCreateInfo.applicationVersion = 0;
     applicationCreateInfo.pEngineName = "Tobi Engine";
-    applicationCreateInfo.engineVersion = 0;
     applicationCreateInfo.apiVersion = VK_MAKE_VERSION(1, 1, 85);
 
     VkInstanceCreateInfo instanceCreateInfo = {VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO};
@@ -627,7 +625,7 @@ Result Platform::initDevice(const std::vector<const char *> &requiredDeviceExten
         transferQueueFamilyIndex = graphicsQueueFamilyIndex;
     }
 
-    VkPhysicalDeviceFeatures features = {false};
+    VkPhysicalDeviceFeatures features = {};
     VkDeviceCreateInfo deviceCreateInfo = {VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO};
     deviceCreateInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
     deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data();

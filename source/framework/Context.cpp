@@ -36,6 +36,7 @@ namespace Tobi
 
 Context::Context()
     : platform(Platform::create()),
+      depthBufferFormat(VK_FORMAT_D16_UNORM),
       backBuffers(std::vector<BackBuffer>()),
       renderPass(VK_NULL_HANDLE),
       pipelineCache(VK_NULL_HANDLE),
@@ -319,13 +320,13 @@ void Context::updateSwapChain()
     // In case we're reinitializing the swapchain, terminate the old one first.
     terminateBackBuffers();
 
+    initDepthBuffer(dimensions.width, dimensions.height);
+
     // We can't initialize the renderpass until we know the swapchain format.
     initRenderPass(dimensions.format);
     // We can't initialize the pipeline until we know the render pass.
 
     initPipeline();
-
-    initDepthBuffer(dimensions.width, dimensions.height);
 
     // For all backbuffers in the swapchain ...
     for (auto image : newBackBufferImages)
@@ -369,6 +370,12 @@ void Context::updateSwapChain()
 void Context::initDepthBuffer(uint32_t width, uint32_t height)
 {
     VkDevice device = platform->getDevice();
+
+    if (!platform->getSupportedDepthFormat(&depthBufferFormat))
+    {
+        LOGE("Could not find supported depth format!");
+        throw std::runtime_error("Could not find supported depth format!");
+    }
 
     // Create the image for the depth buffer. Note that imageInfo.usage includes the
     // VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT flag. This flag allows lazy allocation of the depth buffer.
