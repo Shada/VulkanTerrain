@@ -163,11 +163,10 @@ class Platform
 
     // present graphics, transfer and compute queues. If the gpu supports it, they will be separate queues
     std::vector<VkQueueFamilyProperties> queueFamilyProperties;
-    VkQueueFlags supportedQueues;
-    uint32_t graphicsQueueFamilyIndex;
-    uint32_t presentQueueFamilyIndex;
-    uint32_t computeQueueFamilyIndex;
-    uint32_t transferQueueFamilyIndex;
+    int32_t graphicsQueueFamilyIndex;
+    int32_t presentQueueFamilyIndex;
+    int32_t computeQueueFamilyIndex;
+    int32_t transferQueueFamilyIndex;
     VkQueue graphicsQueue;
     VkQueue presentQueue;
     VkQueue computeQueue;

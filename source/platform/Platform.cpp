@@ -74,7 +74,6 @@ Platform::Platform()
       surface(VK_NULL_HANDLE),
       physicalDevice(VK_NULL_HANDLE),
       queueFamilyProperties(std::vector<VkQueueFamilyProperties>()),
-      supportedQueues(0),
       graphicsQueueFamilyIndex(-1),
       presentQueueFamilyIndex(-1),
       computeQueueFamilyIndex(-1),
@@ -510,7 +509,6 @@ uint32_t Platform::getQueueFamilyIndex(VkQueueFlagBits queueFlags)
         {
             if ((queueFamilyProperties[i].queueFlags & queueFlags) && ((queueFamilyProperties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) == 0))
             {
-                supportedQueues |= VK_QUEUE_COMPUTE_BIT;
                 return i;
                 break;
             }
@@ -525,7 +523,6 @@ uint32_t Platform::getQueueFamilyIndex(VkQueueFlagBits queueFlags)
         {
             if ((queueFamilyProperties[i].queueFlags & queueFlags) && ((queueFamilyProperties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) == 0) && ((queueFamilyProperties[i].queueFlags & VK_QUEUE_COMPUTE_BIT) == 0))
             {
-                supportedQueues |= VK_QUEUE_TRANSFER_BIT;
                 return i;
                 break;
             }
@@ -537,12 +534,11 @@ uint32_t Platform::getQueueFamilyIndex(VkQueueFlagBits queueFlags)
     {
         if (queueFamilyProperties[i].queueFlags & queueFlags)
         {
-            supportedQueues |= queueFlags;
             return i;
             break;
         }
     }
-    LOGE("Could not find a matching queue family index.\n");
+    LOGW("Could not find a matching queue family index.\n");
     return -1;
 }
 
@@ -591,7 +587,7 @@ Result Platform::initDevice(const std::vector<const char *> &requiredDeviceExten
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos{};
     float queuePriorities[] = {0.0f};
 
-    if (supportedQueues & VK_QUEUE_GRAPHICS_BIT)
+    if (graphicsQueueFamilyIndex != -1)
     {
         VkDeviceQueueCreateInfo graphicsQueueCreateInfo = {VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO};
         graphicsQueueCreateInfo.queueFamilyIndex = graphicsQueueFamilyIndex;
@@ -601,9 +597,10 @@ Result Platform::initDevice(const std::vector<const char *> &requiredDeviceExten
     }
     else
     {
-        graphicsQueueFamilyIndex = VK_NULL_HANDLE;
+        // no graphics queue, no application?
+        return RESULT_ERROR_GENERIC;
     }
-    if (supportedQueues & VK_QUEUE_COMPUTE_BIT && computeQueueFamilyIndex != graphicsQueueFamilyIndex)
+    if (computeQueueFamilyIndex = ! - 1 && computeQueueFamilyIndex != graphicsQueueFamilyIndex)
     {
         VkDeviceQueueCreateInfo computeQueueCreateInfo = {VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO};
         computeQueueCreateInfo.queueFamilyIndex = computeQueueFamilyIndex;
@@ -613,9 +610,10 @@ Result Platform::initDevice(const std::vector<const char *> &requiredDeviceExten
     }
     else
     {
+        // TODO: remove?
         computeQueueFamilyIndex = graphicsQueueFamilyIndex;
     }
-    if (supportedQueues & VK_QUEUE_TRANSFER_BIT && transferQueueFamilyIndex != graphicsQueueFamilyIndex && transferQueueFamilyIndex != computeQueueFamilyIndex)
+    if (transferQueueFamilyIndex = ! - 1 && transferQueueFamilyIndex != graphicsQueueFamilyIndex && transferQueueFamilyIndex != computeQueueFamilyIndex)
     {
         VkDeviceQueueCreateInfo transferQueueCreateInfo = {VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO};
         transferQueueCreateInfo.queueFamilyIndex = transferQueueFamilyIndex;
@@ -625,6 +623,7 @@ Result Platform::initDevice(const std::vector<const char *> &requiredDeviceExten
     }
     else
     {
+        // TODO: remove?
         transferQueueFamilyIndex = graphicsQueueFamilyIndex;
     }
 
