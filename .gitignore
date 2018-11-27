@@ -1,5 +1,6 @@
 *.out
 *.o
+*.so
 GPATH
 GRTAGS
 GTAGS
@@ -7,3 +8,5 @@ suppress.supp
 .valgrindrc
 .vscode
 .git
+build
+install
