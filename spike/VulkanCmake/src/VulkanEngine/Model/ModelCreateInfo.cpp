@@ -4,9 +4,9 @@ namespace TobiEngine
 {
 
 ModelCreateInfo::ModelCreateInfo()
-    : center(glm::vec3()),
-      scale(glm::vec3()),
-      uvscale(glm::vec3())
+    : center(glm::vec3(0.f)),
+      scale(glm::vec3(1.f)),
+      uvscale(glm::vec3(1.f))
 {
 }
 

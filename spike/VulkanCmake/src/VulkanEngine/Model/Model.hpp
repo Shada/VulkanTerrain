@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <vector>
+#include <string>
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
@@ -9,8 +10,8 @@
 #include <assimp/cimport.h>
 
 #include "ModelCreateInfo.hpp"
-#include "VertexLayout.hpp"
 #include "ModelPart.hpp"
+#include "VertexLayout.hpp"
 
 namespace TobiEngine
 {
@@ -18,7 +19,10 @@ namespace TobiEngine
 class Model
 {
   public:
-    Model();
+    Model(const std::string &filename,
+          const VertexLayout &vertexLayout,
+          const ModelCreateInfo &createInfo,
+          int flags = defaultFlags);
     ~Model() = default;
 
     /**
@@ -29,25 +33,30 @@ class Model
 		* @param createInfo MeshCreateInfo structure for load time settings like scale, center, etc.
 		* @param (Optional) flags ASSIMP model loading flags
 		*/
-    bool loadFromFile(
-        const std::string &filename,
-        VertexLayout layout,
-        ModelCreateInfo *createInfo,
-        const int flags = defaultFlags);
+    void loadFromFile();
 
-    uint32_t getIndexCount() { return indexCount; }
-    uint32_t getVertexCount() { return vertexCount; }
+    const auto &getFileName() const { return filename; }
+    const auto &getIndexCount() const { return indexCount; }
+    const auto &getVertexCount() const { return vertexCount; }
 
   private:
+    static const int defaultFlags;
+
+    std::string filename;
+    VertexLayout vertexLayout;
+    ModelCreateInfo createInfo;
+    int flags;
+
     //VkDevice device = nullptr;
     //vks::Buffer vertices;
     //vks::Buffer indices;
-    uint32_t indexCount = 0;
-    uint32_t vertexCount = 0;
+    uint32_t indexCount;
+    uint32_t vertexCount;
 
     std::vector<ModelPart> modelParts;
 
-    static const int defaultFlags;
+    void addVertices(const aiMesh *mesh, std::vector<float> &vertices);
+    void addIndices(const aiMesh *mesh, std::vector<uint32_t> &indices);
 };
 
 } // namespace TobiEngine

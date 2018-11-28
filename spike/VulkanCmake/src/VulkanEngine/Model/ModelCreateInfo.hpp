@@ -15,9 +15,9 @@ class ModelCreateInfo
     ModelCreateInfo(float scale, float uvscale, float center);
     ~ModelCreateInfo() = default;
 
-    glm::vec3 getCenter() { return center; }
-    glm::vec3 getScale() { return scale; }
-    glm::vec2 getUvscale() { return uvscale; }
+    const auto &getCenter() const { return center; }
+    const auto &getScale() const { return scale; }
+    const auto &getUvscale() const { return uvscale; }
 
   private:
     glm::vec3 center;
