@@ -32,4 +32,4 @@ obj/%.o: %.cpp $(DEPS)
 TobiGame.out: $(OBJ)
 	$(CXX) -o $@ $^ -g -std=c++17 source/main.cpp -I$(VULKAN_SDK)/include -L$(VULKAN_SDK)/lib \
 		-ldl -lxcb -lX11 -lX11-xcb -lxcb-util -lvulkan -lpthread -L/home/admin/Documents/Programming/vulkan/glslang/install/lib \
-		-lglslang -lHLSL -lSPIRV -lSPIRV-Tools-opt -lSPIRV-Tools -lassimp 
+		-lassimp 
