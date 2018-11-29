@@ -1,6 +1,7 @@
 # VulkanTerrain
 Another vulkan test project. 
 
+[![Build Status](https://dev.azure.com/shada/VulkanTerrain/_apis/build/status/VulkanTerrain-CI?branchName=master)](https://dev.azure.com/shada/VulkanTerrain/_build/latest?definitionId=1)
 
 I have been creating many Vulkan test projects but never really have finished any.
 
