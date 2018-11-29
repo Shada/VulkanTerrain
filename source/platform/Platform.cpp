@@ -345,7 +345,7 @@ Result Platform::initInstance(
     // older, but compatible API versions.
     if (result == VK_ERROR_INCOMPATIBLE_DRIVER)
     {
-        applicationCreateInfo.apiVersion = VK_API_VERSION_1_1;
+        applicationCreateInfo.apiVersion = VK_MAKE_VERSION(1, 1, 0);
         result = vkCreateInstance(&instanceCreateInfo, nullptr, &instance);
         if (result == VK_SUCCESS)
             LOGI("Created Vulkan instance with API version 1.1.0.\n");
@@ -353,7 +353,7 @@ Result Platform::initInstance(
 
     if (result == VK_ERROR_INCOMPATIBLE_DRIVER)
     {
-        applicationCreateInfo.apiVersion = VK_API_VERSION_1_0;
+        applicationCreateInfo.apiVersion = VK_MAKE_VERSION(1, 0, 0);
         result = vkCreateInstance(&instanceCreateInfo, nullptr, &instance);
         if (result == VK_SUCCESS)
             LOGI("Created Vulkan instance with API version 1.0.0.\n");
